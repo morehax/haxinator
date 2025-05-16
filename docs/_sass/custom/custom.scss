@@ -121,12 +121,4 @@ table {
   }
 }
 
-// Code blocks
-pre.highlight {
-  border-radius: $border-radius;
-  background: #111;
-  
-  code {
-    color: #0f0;
-  }
-} 
+// Let Just the Docs handle code block styling by default 
