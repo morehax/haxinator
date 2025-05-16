@@ -11,6 +11,21 @@ This page is automatically generated from the last 10 commits.
 
 ## Commit History
 
+### 2025-05-16 - [d5c2d35](https://github.com/morehax/haxinator/commit/d5c2d35a42168afcc2880f7f1ff4e7801a6cac54)
+
+chore: add git-chglog configuration
+
+
+### 2025-05-16 - [5e26dba](https://github.com/morehax/haxinator/commit/5e26dba88220ebc0400756316592323fdd16aac8)
+
+docs: add changelog and build documentation - Add CHANGELOG.md, Docker build docs, and server setup placeholder
+
+
+### 2025-05-16 - [3a83ace](https://github.com/morehax/haxinator/commit/3a83aceb7898e1e1f7d1356af0627624b194b390)
+
+docs: update changelog with recent commits
+
+
 ### 2025-05-16 - [848ebc2](https://github.com/morehax/haxinator/commit/848ebc2167263eff1af15d4188f60edfde756e2b)
 
 docs: add server requirements and clarify tunneling setup needs
@@ -44,20 +59,5 @@ docs: update changelog with recent commits
 ### 2025-05-16 - [f1363e6](https://github.com/morehax/haxinator/commit/f1363e6df507e2b1c912640846a16248275399de)
 
 fix: improve bullet point handling in changelog
-
-
-### 2025-05-16 - [224f456](https://github.com/morehax/haxinator/commit/224f45627a4c9c90e14d682927cde546ffd2afd0)
-
-docs: update changelog with recent commits
-
-
-### 2025-05-16 - [f16dadb](https://github.com/morehax/haxinator/commit/f16dadb0a00f4648462928b450ed4b10d463bea4)
-
-fix: remove double bullet points in changelog formatting
-
-
-### 2025-05-16 - [f85387c](https://github.com/morehax/haxinator/commit/f85387c490bb289a26367cfa241327bd8a7f7350)
-
-docs: update changelog with recent commits
 
 
