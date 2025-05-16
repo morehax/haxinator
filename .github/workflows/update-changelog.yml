@@ -38,7 +38,16 @@ jobs:
           # Add the last 10 commits
           echo "## Commit History" >> docs/changelog.md
           echo "" >> docs/changelog.md
-          git log -n 10 --pretty=format:"### %ad - [%h](${REPO_URL}/commit/%H)%n%n%s%n%n%b%n" --date=short >> docs/changelog.md
+          
+          # Process each commit individually to handle newlines properly
+          git log -n 10 --format="### %ad - [%h](${REPO_URL}/commit/%H)%n%n%s%n%n%b" --date=short | while IFS= read -r line; do
+            if [[ "$line" == *"\n"* ]]; then
+              # Convert \n to actual newlines and create proper list items
+              echo "$line" | sed 's/\\n/\n- /g' >> docs/changelog.md
+            else
+              echo "$line" >> docs/changelog.md
+            fi
+          done
 
       - name: Check for changes
         id: check_changes
