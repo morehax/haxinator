@@ -1,0 +1,7 @@
+nmcli connection add \
+  type vpn \
+  vpn-type iodine \
+  con-name "iodine-vpn" \
+  ifname "*" \
+  vpn.data "topdomain=$IODINE_TOPDOMAIN,nameserver=$IODINE_NAMESERVER,fragsize=$IODINE_MTU,lazy-mode=$IODINE_LAZY,interval=$IODINE_INTERVAL" \
+  vpn.secrets "password=$IODINE_PASS"

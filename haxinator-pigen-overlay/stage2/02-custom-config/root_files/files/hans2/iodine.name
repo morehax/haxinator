@@ -1,0 +1,5 @@
+[VPN Connection]
+name=iodine
+service=org.freedesktop.NetworkManager.iodine
+program=/usr/libexec/iodine-service.py
+supports-multiple-connections=false

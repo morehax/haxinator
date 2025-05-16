@@ -1,0 +1,37 @@
+diff --git a/src/nm-iodine-plugin.c b/src/nm-iodine-plugin.c
+index abcdef1..1234567 100644
+--- a/src/nm-iodine-plugin.c
++++ b/src/nm-iodine-plugin.c
+@@ static gboolean
+ real_disconnect (NMVpnServicePlugin *plugin, GError **err)
+ {
+     NMIodinePluginPrivate *priv = nm_iodine_plugin_get_instance_private (NM_IODINE_PLUGIN(plugin));
+
+     if (priv->pid) {
+         if (kill (priv->pid, SIGTERM) == 0)
+             g_timeout_add (2000, ensure_killed, GINT_TO_POINTER (priv->pid));
+         else
+             kill (priv->pid, SIGKILL);
+
+         g_message ("Terminated iodine daemon with PID %d.", priv->pid);
+         priv->pid = 0;
+     }
+
++    /* Signal the plugin to quit the mainloop */
++    g_signal_emit_by_name (plugin, "quit");
+
+     return TRUE;
+ }
+
+@@ int main (int argc, char *argv[])
+     plugin = nm_iodine_plugin_new ();
+     if (!plugin)
+         exit (EXIT_FAILURE);
+
+     main_loop = g_main_loop_new (NULL, FALSE);
+
++    /* Listen for quit signal to terminate cleanly */
+     g_signal_connect (plugin, "quit",
+                       G_CALLBACK (quit_mainloop),
+                       main_loop);
+
