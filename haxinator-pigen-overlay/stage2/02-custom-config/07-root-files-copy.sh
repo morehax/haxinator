@@ -95,11 +95,18 @@ safe_copy "root_files/files/rc.local" "/etc/" || yellow_echo "WARNING: Failed to
 safe_copy "root_files/files/motd" "/etc/" || yellow_echo "WARNING: Failed to copy motd"
 safe_copy "root_files/files/iodine-client" "/etc/default/iodine-client" || yellow_echo "WARNING: Failed to copy iodine-client"
 
-# Hans Service Scripts
+# Hans and Iodine Service Scripts
 safe_copy "root_files/files/hans2/hans-service.py" "/usr/lib/NetworkManager/hans-service.py" "755" || yellow_echo "WARNING: Failed to copy hans-service.py"
-safe_copy "root_files/files/hans2/99-clean-vpn-routes" "/etc/NetworkManager/dispatcher.d/99-clean-vpn-routes" "755" || yellow_echo "WARNING: Failed to copy 99-clean-vpn-routes"
+safe_copy "root_files/files/hans2/iodine-service.py" "/usr/lib/NetworkManager/iodine-service.py" "755" || yellow_echo "WARNING: Failed to copy iodine-service.py"
+
 safe_copy "root_files/files/hans2/hans.name" "/usr/lib/NetworkManager/VPN/hans.name" || yellow_echo "WARNING: Failed to copy hans.name"
+safe_copy "root_files/files/hans2/iodine.name" "/usr/lib/NetworkManager/VPN/iodine.name" || yellow_echo "WARNING: Failed to copy iodine.name"
+
 safe_copy "root_files/files/hans2/nm-hans-service.conf" "/etc/dbus-1/system.d/" || yellow_echo "WARNING: Failed to copy nm-hans-service.conf"
+safe_copy "root_files/files/hans2/nm-iodine-service.conf" "/etc/dbus-1/system.d/" || yellow_echo "WARNING: Failed to copy nm-iodine-service.conf"
+
+safe_copy "root_files/files/hans2/99-clean-vpn-routes" "/etc/NetworkManager/dispatcher.d/99-clean-vpn-routes" "755" || yellow_echo "WARNING: Failed to copy 99-clean-vpn-routes"
+
 
 # BT Auto Pair
 safe_copy "root_files/files/bluetooth/auto-pair" "/usr/local/bin/" "755" || yellow_echo "WARNING: Failed to copy auto-pair"
