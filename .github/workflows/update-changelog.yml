@@ -4,11 +4,33 @@ on:
   push:
     branches:
       - main
+    paths:
+      # Code changes
+      - 'src/**/*.py'
+      - 'scripts/**/*.sh'
+      - 'haxinator-pigen-overlay/**'
+      # Documentation changes (excluding config)
+      - 'docs/**/*.md'
+      - 'docs/features/**'
+      - 'docs/assets/**'
+      - 'README.md'
     paths-ignore:
-      - 'docs/changelog.md'  # Prevent recursive triggers
+      # Configuration and generated files
+      - 'docs/changelog.md'
+      - 'docs/_config.yml'
+      - 'docs/Gemfile*'
+      - '.github/**'
+      - '.chglog/**'
+      - 'CHANGELOG.md'
+      - '**/package.json'
+      - '**/package-lock.json'
+      - '**/yarn.lock'
+      - '**/*.config.js'
 
 jobs:
   update-changelog:
+    # Only run if not triggered by the bot itself
+    if: github.actor != 'github-actions[bot]'
     runs-on: ubuntu-latest
     permissions:
       contents: write
