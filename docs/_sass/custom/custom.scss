@@ -1,4 +1,4 @@
-// Custom Haxinator theme for Just the Docs
+// Custom Haxinator theme for Just the Docs - Matching Web UI
 
 // Import color variables from Haxinator UI
 $haxinator-primary: #1a365d;
@@ -8,7 +8,14 @@ $haxinator-warning: #ffc107;
 $haxinator-danger: #dc3545;
 $haxinator-bg: #f6f8fa;
 $haxinator-card-bg: #ffffff;
+$haxinator-border-light: rgba(0,0,0,0.05);
 $border-radius: 0.7rem;
+$border-radius-sm: 0.5rem;
+$box-shadow: 0 2px 16px rgba(0,0,0,0.07);
+$transition-speed: 0.13s;
+$table-header-bg: #e9f1fb;
+$table-header-border: #b6d4fe;
+$table-hover-bg: #f1f8ff;
 
 // Override Just the Docs variables
 $body-background-color: $haxinator-bg;
@@ -19,89 +26,165 @@ $nav-child-link-color: $haxinator-secondary;
 $link-color: $haxinator-primary;
 $btn-primary-color: $haxinator-primary;
 $base-button-color: $haxinator-primary;
+$code-background-color: #f8f9fa;
+$feedback-color: $haxinator-primary;
+$table-background-color: $haxinator-card-bg;
+$search-background-color: $haxinator-card-bg;
+$border-color: $haxinator-border-light;
 
-// Custom styles
+// Fonts and Typography
+body {
+  font-family: 'Segoe UI', Arial, sans-serif;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  margin-top: 1.5rem;
+  margin-bottom: 1rem;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  color: $haxinator-primary;
+}
+
+.site-header {
+  border-bottom: 1px solid $haxinator-border-light;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.03);
+}
+
 .site-title {
   color: $haxinator-primary !important;
   font-weight: 700;
   letter-spacing: 1px;
+  font-size: 1.5rem;
 }
 
-.navigation-list-link {
-  border-radius: $border-radius;
-  transition: all 0.13s;
+// Main Navigation
+.side-bar {
+  background-color: $haxinator-card-bg;
+  border-right: 1px solid $haxinator-border-light;
+}
+
+.nav-list .nav-list-item .nav-list-link {
+  color: $haxinator-secondary;
+  transition: all $transition-speed;
+  border-radius: $border-radius-sm;
   
   &:hover {
     background: rgba(233, 241, 251, 0.5);
+    text-decoration: none;
   }
   
   &.active {
-    background: #e9f1fb;
+    background: $table-header-bg;
     color: $haxinator-primary !important;
     font-weight: 600;
   }
 }
 
+// Breadcrumbs
+.breadcrumb-nav {
+  margin-bottom: 1.5rem;
+  
+  .breadcrumb-nav-list-item {
+    font-size: 0.9rem;
+    
+    a {
+      color: $haxinator-secondary;
+    }
+  }
+}
+
+// Main Content
 .main-content {
-  h1, h2, h3, h4, h5, h6 {
+  a {
     color: $haxinator-primary;
-    font-weight: 700;
-    letter-spacing: 0.5px;
-    margin-bottom: 1rem;
+    text-decoration: none;
+    
+    &:hover {
+      text-decoration: underline;
+    }
   }
   
-  .highlight {
-    border-radius: $border-radius;
-    box-shadow: 0 2px 16px rgba(0,0,0,0.07);
+  h1, h2, h3, h4, h5, h6 {
+    a {
+      color: $haxinator-primary;
+    }
   }
 }
 
-// Callouts styling
-.callout {
-  border-radius: $border-radius;
+// Callouts styling (alerts/notices/warnings)
+.info, .note, .warning, .danger, .success, .new {
+  border-radius: $border-radius-sm;
   border: none;
-  box-shadow: 0 2px 16px rgba(0,0,0,0.07);
-  
-  &.warning {
-    background: #fff8e6;
-    border-left: 4px solid $haxinator-warning;
-  }
-  
-  &.note {
-    background: #e9f1fb;
-    border-left: 4px solid $haxinator-primary;
-  }
-  
-  &.tip {
-    background: #e6f9e6;
-    border-left: 4px solid $haxinator-success;
-  }
+  box-shadow: $box-shadow;
+  padding: 1rem 1.25rem;
+  margin: 1.5rem 0;
 }
 
-// Tables
+.info, .note {
+  background: #e9f1fb;
+  border-left: 4px solid $haxinator-primary;
+}
+
+.warning {
+  background: #fff8e6;
+  border-left: 4px solid $haxinator-warning;
+}
+
+.danger {
+  background: #fde8e8;
+  border-left: 4px solid $haxinator-danger;
+}
+
+.success {
+  background: #e6f9e6;
+  border-left: 4px solid $haxinator-success;
+}
+
+// Tables - matching the nm-table class
 table {
   border-radius: $border-radius;
   overflow: hidden;
+  border: none;
   box-shadow: 0 1px 6px rgba(0,0,0,0.04);
+  margin-bottom: 2rem;
   
-  th {
-    background: #e9f1fb;
-    border-bottom: 2px solid #b6d4fe;
-    color: $haxinator-primary;
-    font-weight: 600;
-    text-transform: uppercase;
-    font-size: 0.93rem;
-    letter-spacing: 0.5px;
+  thead {
+    border: none;
+    
+    th {
+      background: $table-header-bg;
+      border-bottom: 2px solid $table-header-border;
+      color: $haxinator-primary;
+      font-weight: 600;
+      text-transform: uppercase;
+      font-size: 0.93rem;
+      letter-spacing: 0.5px;
+      padding: 0.75rem 1rem;
+    }
   }
   
-  tr:hover {
-    background: #f1f8ff;
+  tbody {
+    tr {
+      background-color: $haxinator-card-bg;
+      border-bottom: 1px solid $haxinator-border-light;
+      
+      &:hover {
+        background-color: $table-hover-bg;
+      }
+      
+      td {
+        padding: 0.75rem 1rem;
+        color: #2d3748;
+      }
+    }
   }
 }
 
 // Search
 .search {
-  border-radius: $border-radius;
+  border-radius: $border-radius-sm;
+  border: 1px solid rgba(0,0,0,0.1);
+  padding: 0.5rem 0.75rem;
   
   &:focus {
     border-color: $haxinator-primary;
@@ -111,17 +194,37 @@ table {
 
 // Buttons
 .btn {
-  border-radius: $border-radius;
+  height: 40px;
+  padding: 0.5rem 1.1rem;
+  border-radius: $border-radius-sm;
   font-weight: 500;
   letter-spacing: 0.5px;
-  transition: all 0.13s;
+  transition: all $transition-speed;
   
   &:active {
     transform: scale(0.97);
   }
 }
 
-// GitHub-style syntax highlighting
+.btn-primary {
+  background-color: $haxinator-primary;
+  
+  &:hover {
+    background-color: darken($haxinator-primary, 5%);
+  }
+}
+
+.btn-outline {
+  border: 1px solid $haxinator-primary;
+  color: $haxinator-primary;
+  
+  &:hover {
+    background-color: $haxinator-primary;
+    color: white;
+  }
+}
+
+// GitHub-style syntax highlighting with Haxinator borders
 .highlight {
   background-color: #f6f8fa;
   border-radius: $border-radius;
@@ -154,4 +257,39 @@ table {
   .s, .sb, .sc, .sd, .s2, .se, .sh, .si, .sx, .sr, .s1, .ss { color: #032f62; } // Strings
   .m, .mf, .mh, .mi, .mo, .il { color: #005cc5; } // Numbers
   .dl, .l { color: #032f62; } // Literals
+}
+
+// Footer
+.site-footer {
+  border-top: 1px solid $haxinator-border-light;
+  padding-top: 1rem;
+  color: $haxinator-secondary;
+}
+
+// Cards - mimicking the nm-card class
+.card {
+  border: none;
+  border-radius: $border-radius;
+  box-shadow: $box-shadow;
+  background: $haxinator-card-bg;
+  margin-bottom: 2rem;
+  padding: 1.5rem;
+  
+  .card-header {
+    background: $haxinator-card-bg;
+    border-bottom: 1px solid $haxinator-border-light;
+    padding: 1rem 1.25rem;
+    font-weight: 600;
+    color: $haxinator-primary;
+  }
+}
+
+// Print styles
+@media print {
+  .side-bar, .page-header { 
+    display: none; 
+  }
+  .main-content { 
+    max-width: 100%; 
+  }
 } 
