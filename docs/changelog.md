@@ -11,6 +11,16 @@ This page is automatically generated from the last 10 commits.
 
 ## Commit History
 
+### 2025-05-16 - [3a6d58c](https://github.com/morehax/haxinator/commit/3a6d58c80697752246220c2a2097e60e10da36e2)
+
+docs: clarify post install env-secrets and openvpn config file boot partition configuration process
+
+
+### 2025-05-16 - [8fe1806](https://github.com/morehax/haxinator/commit/8fe180658f2825b83bda7aebb10ac6ba229227b7)
+
+docs: update changelog with recent commits
+
+
 ### 2025-05-16 - [6223103](https://github.com/morehax/haxinator/commit/622310391f956197cfe70d0d4c70cd6abca35ad5)
 
 docs: improve terminal access documentation with Bluetooth and security sections
@@ -50,19 +60,4 @@ fix: properly handle newlines in changelog commit messages
 
 docs: update changelog with recent commits
 
-
-### 2025-05-16 - [1debccd](https://github.com/morehax/haxinator/commit/1debccde3937406e282044885825106b2c434e38)
-
-ci: add automated changelog generation workflow
-
-
-### 2025-05-16 - [b928a0e](https://github.com/morehax/haxinator/commit/b928a0e4c0a8977d75743d4ebc717f21aac2f0b9)
-
-docs: improve Docker build documentation and configuration
-
-- Add comprehensive Docker build instructions for multiple platforms
-- Include detailed system requirements and prerequisites
-- Add troubleshooting guide and debugging tips
-- Update .gitignore for build artifacts
-- Improve docker-build.sh script
 
