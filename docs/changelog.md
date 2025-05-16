@@ -11,6 +11,16 @@ This page is automatically generated from the last 10 commits.
 
 ## Commit History
 
+### 2025-05-16 - [f16dadb](https://github.com/morehax/haxinator/commit/f16dadb0a00f4648462928b450ed4b10d463bea4)
+
+fix: remove double bullet points in changelog formatting
+
+
+### 2025-05-16 - [f85387c](https://github.com/morehax/haxinator/commit/f85387c490bb289a26367cfa241327bd8a7f7350)
+
+docs: update changelog with recent commits
+
+
 ### 2025-05-16 - [fc0ca75](https://github.com/morehax/haxinator/commit/fc0ca75345139afa131c89a7457fed5edcd21a70)
 
 fix: properly handle newlines in changelog commit messages
