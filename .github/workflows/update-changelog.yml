@@ -42,8 +42,9 @@ jobs:
           # Process each commit individually to handle newlines properly
           git log -n 10 --format="### %ad - [%h](${REPO_URL}/commit/%H)%n%n%s%n%n%b" --date=short | while IFS= read -r line; do
             if [[ "$line" == *"\n"* ]]; then
-              # Remove existing bullet points, then convert \n to newlines with single bullet points
-              echo "$line" | sed 's/- \\n/\\n/g' | sed 's/\\n/\n- /g' >> docs/changelog.md
+              # First remove any existing bullet points, then add single bullet points
+              processed_line=$(echo "$line" | sed 's/- \\n/\\n/g' | sed 's/\\n- /\\n/g' | sed 's/\\n/\n- /g')
+              echo "$processed_line" >> docs/changelog.md
             else
               echo "$line" >> docs/changelog.md
             fi
