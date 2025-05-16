@@ -1,0 +1,55 @@
+name: Update Changelog
+
+on:
+  push:
+    branches:
+      - main
+    paths-ignore:
+      - 'docs/changelog.md'  # Prevent recursive triggers
+
+jobs:
+  update-changelog:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 11  # Fetch 11 commits to ensure we get 10 for the log
+
+      - name: Update changelog
+        run: |
+          # Get repository URL
+          REPO_URL=$(git config --get remote.origin.url | sed 's/\.git$//' | sed 's/git@github.com:/https:\/\/github.com\//')
+          
+          # Create changelog content
+          echo "---" > docs/changelog.md
+          echo "title: Changelog" >> docs/changelog.md
+          echo "nav_order: 8" >> docs/changelog.md
+          echo "description: \"Recent changes in Haxinator 2000\"" >> docs/changelog.md
+          echo "---" >> docs/changelog.md
+          echo "" >> docs/changelog.md
+          echo "# Recent Changes" >> docs/changelog.md
+          echo "" >> docs/changelog.md
+          echo "This page is automatically generated from the last 10 commits. " >> docs/changelog.md
+          echo "[View full history on GitHub](${REPO_URL}/commits/main)." >> docs/changelog.md
+          echo "" >> docs/changelog.md
+          
+          # Add the last 10 commits
+          echo "## Commit History" >> docs/changelog.md
+          echo "" >> docs/changelog.md
+          git log -n 10 --pretty=format:"### %ad - [%h](${REPO_URL}/commit/%H)%n%n%s%n%n%b%n" --date=short >> docs/changelog.md
+
+      - name: Check for changes
+        id: check_changes
+        run: |
+          git diff --quiet docs/changelog.md || echo "changes=true" >> $GITHUB_OUTPUT
+
+      - name: Commit changes
+        if: steps.check_changes.outputs.changes == 'true'
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git add docs/changelog.md
+          git commit -m "docs: update changelog with recent commits"
+          git push 
