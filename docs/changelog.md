@@ -11,6 +11,16 @@ This page is automatically generated from the last 10 commits.
 
 ## Commit History
 
+### 2025-05-16 - [f1363e6](https://github.com/morehax/haxinator/commit/f1363e6df507e2b1c912640846a16248275399de)
+
+fix: improve bullet point handling in changelog
+
+
+### 2025-05-16 - [224f456](https://github.com/morehax/haxinator/commit/224f45627a4c9c90e14d682927cde546ffd2afd0)
+
+docs: update changelog with recent commits
+
+
 ### 2025-05-16 - [f16dadb](https://github.com/morehax/haxinator/commit/f16dadb0a00f4648462928b450ed4b10d463bea4)
 
 fix: remove double bullet points in changelog formatting
@@ -41,10 +51,10 @@ ci: add automated changelog generation workflow
 docs: improve Docker build documentation and configuration
 
 - Add comprehensive Docker build instructions for multiple platforms
-- - Include detailed system requirements and prerequisites
-- - Add troubleshooting guide and debugging tips
-- - Update .gitignore for build artifacts
-- - Improve docker-build.sh script
+- Include detailed system requirements and prerequisites
+- Add troubleshooting guide and debugging tips
+- Update .gitignore for build artifacts
+- Improve docker-build.sh script
 
 ### 2025-05-16 - [7f3849b](https://github.com/morehax/haxinator/commit/7f3849bce63659f9111aad31e214737716f97fb2)
 
