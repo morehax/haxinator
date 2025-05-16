@@ -5,31 +5,22 @@ on:
     branches:
       - main
     paths:
-      # Code changes
-      - 'src/**/*.py'
-      - 'scripts/**/*.sh'
+      # Only trigger on content changes that should affect the changelog
+      - 'src/**'
+      - 'scripts/**'
       - 'haxinator-pigen-overlay/**'
-      # Documentation changes (only trigger on content changes)
-      - 'docs/**/*.md'
+      - 'docs/[!_]**'  # Match docs content but exclude _config.yml and other underscore files
       - 'docs/features/**'
       - 'docs/assets/**'
       - 'README.md'
-      # Exclude configuration and generated files by using '!', which is more efficient
-      - '!docs/changelog.md'
-      - '!docs/_config.yml'
-      - '!docs/Gemfile*'
-      - '!.github/**'
-      - '!.chglog/**'
-      - '!CHANGELOG.md'
-      - '!**/package.json'
-      - '!**/package-lock.json'
-      - '!**/yarn.lock'
-      - '!**/*.config.js'
 
 jobs:
   update-changelog:
-    # Only run if not triggered by the bot itself
-    if: github.actor != 'github-actions[bot]'
+    # Only run if not triggered by the bot itself and not modifying changelog
+    if: |
+      github.actor != 'github-actions[bot]' &&
+      !contains(github.event.head_commit.modified, 'docs/changelog.md') &&
+      !contains(github.event.head_commit.modified, 'CHANGELOG.md')
     runs-on: ubuntu-latest
     permissions:
       contents: write
