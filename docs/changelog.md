@@ -11,6 +11,16 @@ This page is automatically generated from the last 10 commits.
 
 ## Commit History
 
+### 2025-05-16 - [6223103](https://github.com/morehax/haxinator/commit/622310391f956197cfe70d0d4c70cd6abca35ad5)
+
+docs: improve terminal access documentation with Bluetooth and security sections
+
+
+### 2025-05-16 - [e90c496](https://github.com/morehax/haxinator/commit/e90c496b8a33620538e2b1b11641f4952c553899)
+
+docs: update changelog with recent commits
+
+
 ### 2025-05-16 - [f1363e6](https://github.com/morehax/haxinator/commit/f1363e6df507e2b1c912640846a16248275399de)
 
 fix: improve bullet point handling in changelog
@@ -55,14 +65,4 @@ docs: improve Docker build documentation and configuration
 - Add troubleshooting guide and debugging tips
 - Update .gitignore for build artifacts
 - Improve docker-build.sh script
-
-### 2025-05-16 - [7f3849b](https://github.com/morehax/haxinator/commit/7f3849bce63659f9111aad31e214737716f97fb2)
-
-Add Docker support for building Haxinator 2000 Raspberry Pi images
-
-
-### 2025-05-16 - [2d869cb](https://github.com/morehax/haxinator/commit/2d869cb7720d5a80a2f471b3f6023823348d3ec1)
-
-Hello Haxinator 2000
-
 
