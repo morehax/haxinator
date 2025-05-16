@@ -9,23 +9,22 @@ on:
       - 'src/**/*.py'
       - 'scripts/**/*.sh'
       - 'haxinator-pigen-overlay/**'
-      # Documentation changes (excluding config)
+      # Documentation changes (only trigger on content changes)
       - 'docs/**/*.md'
       - 'docs/features/**'
       - 'docs/assets/**'
       - 'README.md'
-    paths-ignore:
-      # Configuration and generated files
-      - 'docs/changelog.md'
-      - 'docs/_config.yml'
-      - 'docs/Gemfile*'
-      - '.github/**'
-      - '.chglog/**'
-      - 'CHANGELOG.md'
-      - '**/package.json'
-      - '**/package-lock.json'
-      - '**/yarn.lock'
-      - '**/*.config.js'
+      # Exclude configuration and generated files by using '!', which is more efficient
+      - '!docs/changelog.md'
+      - '!docs/_config.yml'
+      - '!docs/Gemfile*'
+      - '!.github/**'
+      - '!.chglog/**'
+      - '!CHANGELOG.md'
+      - '!**/package.json'
+      - '!**/package-lock.json'
+      - '!**/yarn.lock'
+      - '!**/*.config.js'
 
 jobs:
   update-changelog:
