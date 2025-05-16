@@ -129,33 +129,137 @@ During the first boot, the `firstboot.sh` script performs these key operations:
 
 After the initial configuration completes and the system reboots, your Haxinator is ready to use.
 
+## Default Access Methods
+
+Haxinator 2000 provides several ways to access and manage your device:
+
+### Web Interface Access
+- URL: `https://haxinator.local` or `https://192.168.8.1`
+- Default credentials:
+  - Username: `admin`
+  - Password: `changeme`
+
+### SSH Access
+- Default credentials:
+  - Username: `hax`
+  - Password: `hax`
+- SSH is enabled by default for easy access
+- A default SSH key is pre-installed (see Security Considerations below)
+
+### Web Terminal (shellinabox)
+- Available through the web interface via the "Terminal" button in the top right
+- Uses the same credentials as SSH
+- Provides secure HTTPS access on port 4200
+- Useful when direct SSH access is not possible
+
+> **Security Warning:** The default SSH key and credentials are publicly known. For production use:
+> 1. Change the default password immediately
+> 2. Replace the default SSH key with your own
+> 3. Consider disabling password authentication and using only key-based authentication
+{: .warning }
+
+### Changing Default Credentials
+
+1. Change the web interface password:
+   ```bash
+   sudo nano /var/www/html/config/config.php
+   ```
+
+2. Change the SSH password:
+   ```bash
+   passwd
+   ```
+
+3. Replace the default SSH key:
+   ```bash
+   # Remove the default key
+   rm ~/.ssh/authorized_keys
+   # Add your own key
+   echo "your-public-key" > ~/.ssh/authorized_keys
+   chmod 600 ~/.ssh/authorized_keys
+   ```
+
 ## Pre-configuring via Boot Partition
 
 Haxinator 2000 supports easy pre-configuration by placing files directly on the SD card's boot partition before first boot. This allows you to configure VPN connections, tunneling options, and other settings without needing to access the web interface first.
 
-> **Tip:** The boot partition is a FAT32 filesystem that can be accessed from Windows, macOS, or Linux when the SD card is inserted into your computer after flashing the image.
+> **Tip:** After flashing your SD card, you can add configuration files to the boot partition from any operating system:
+> - **Windows**: The partition appears as "bootfs" drive letter
+> - **macOS**: Automatically mounts as "bootfs" volume
+> - **Linux**: Can be mounted manually or appears as "bootfs"
 {: .info }
+
+### Adding Configuration Files
+
+You have two options for adding your configuration:
+
+1. **During Image Build**:
+   ```bash
+   # Create and edit your secrets before building
+   cp haxinator-pigen-overlay/stage2/02-custom-config/root_files/files/env-secrets.template ~/.haxinator-secrets
+   nano ~/.haxinator-secrets
+   ```
+
+2. **After Flashing** (Recommended):
+   1. Flash the Haxinator image to your SD card using Etcher or similar
+   2. Remove and reinsert the SD card into your computer
+   3. The boot partition will appear as "bootfs"
+   4. Copy your configuration files directly to this partition:
+      - Copy your `env-secrets` file
+      - Copy your OpenVPN config as `openvpn-udp.ovpn`
+   5. Safely eject the SD card
+   6. Boot your Haxinator - it will automatically detect and use these files
 
 ### Supported Configuration Files
 
-You can place the following files on the boot partition:
+The following files are supported in the boot partition:
 
-1. **env-secrets**: Contains configuration variables for VPN credentials, tunneling settings, WiFi settings, etc.
+1. **env-secrets**: Main configuration file
    - Location: `/boot/firmware/env-secrets`
-   - Format: See template below
-   - Purpose: Configures all tunneling services and network settings automatically on first boot
+   - Purpose: Configures all services (VPN, tunneling, WiFi, Bluetooth)
+   - Template: Copy from `env-secrets.template`
+   - Format: Bash environment variables (see below)
 
-2. **openvpn-udp.ovpn**: Your OpenVPN configuration file
+2. **openvpn-udp.ovpn**: OpenVPN configuration
    - Location: `/boot/firmware/openvpn-udp.ovpn`
-   - Format: Standard OpenVPN client configuration file
-   - Purpose: Provides all necessary connection details for OpenVPN
+   - Purpose: Provides OpenVPN connection details
+   - Format: Standard OpenVPN client configuration
+   - Note: Must be named exactly `openvpn-udp.ovpn`
+
+### Configuration Process
+
+1. **During Image Creation**:
+   ```bash
+   # Copy and edit the template
+   cp haxinator-pigen-overlay/stage2/02-custom-config/root_files/files/env-secrets.template ~/.haxinator-secrets
+   nano ~/.haxinator-secrets
+   ```
+
+2. **After Flashing**:
+   ```bash
+   # Mount the SD card
+   # Copy files to the boot partition
+   cp ~/.haxinator-secrets /path/to/sdcard/firmware/env-secrets
+   cp your-vpn-config.ovpn /path/to/sdcard/firmware/openvpn-udp.ovpn
+   ```
+
+3. **First Boot Process**:
+   - System checks `/boot/firmware/env-secrets` first
+   - Falls back to `/root/.env` if not found
+   - Copies OpenVPN config if present
+   - Configures all services with valid credentials
+   - Disables services with missing configuration
+
+> **Security Warning:** The `env-secrets` file in the boot partition is world-readable. After first boot:
+> 1. The file is processed and stored securely as `/root/.env` with proper permissions (600)
+> 2. You should remove your SD card and delete `env-secrets` from the boot partition
+> 3. OpenVPN configuration is copied to a secure location
+{: .warning }
 
 ### Example env-secrets File
 
-Create a file named `env-secrets` on the boot partition with the following format:
-
 ```bash
-# OpenVPN credentials
+# OpenVPN credentials (requires openvpn-udp.ovpn file)
 VPN_USER="your_vpn_username"
 VPN_PASS="your_vpn_password"
 
@@ -179,108 +283,35 @@ WIFI_PASSWORD="your_secure_password"
 BLUETOOTH_MAC="00:11:22:33:44:55"
 ```
 
-> **Security Note:** The `env-secrets` file contains sensitive information. After first boot, this file is processed and then secured with proper permissions. However, you may want to remove the SD card and delete the file from the boot partition after first boot for maximum security.
-{: .warning }
+### Service Dependencies
+
+| Service | Required Files | Required Variables |
+|---------|---------------|-------------------|
+| OpenVPN | `openvpn-udp.ovpn` + `env-secrets` | `VPN_USER`, `VPN_PASS` |
+| Hans VPN | `env-secrets` | `HANS_SERVER`, `HANS_PASSWORD` |
+| Iodine | `env-secrets` | `IODINE_TOPDOMAIN`, `IODINE_NAMESERVER`, `IODINE_PASS` |
+| WiFi AP | `env-secrets` | `WIFI_SSID`, `WIFI_PASSWORD` |
+| Bluetooth | `env-secrets` | `BLUETOOTH_MAC` |
+
+### Verifying Configuration
+
+After first boot, you can verify your configuration:
+
+```bash
+# Check service status
+systemctl status openvpn-client@openvpn-udp
+systemctl status hans-icmp-vpn
+systemctl status iodine
+systemctl status hostapd
+systemctl status bluetooth_pair
+
+# Check configuration security
+ls -l /root/.env  # Should show: -rw------- 1 root root
+```
 
 ### Steps to Pre-configure Your Haxinator
 
 1. Flash the Haxinator image to your SD card using Etcher or similar tool
 2. After flashing completes, remove and reinsert the SD card into your computer
 3. Your computer should detect a partition named "boot" or "firmware"
-4. Copy your prepared `env-secrets` file to this partition
-5. If you have an OpenVPN configuration, copy your `.ovpn` file to this partition and rename it to `openvpn-udp.ovpn`
-6. Safely eject the SD card
-7. Insert the SD card into your Raspberry Pi and power it on
-8. On first boot, Haxinator will automatically detect and apply these configurations
-
-When the system boots for the first time, it will:
-1. Detect and use configuration files from the boot partition
-2. Set up all configured services automatically
-3. Create the WiFi Access Point with your custom settings
-4. Configure all tunneling services based on your provided credentials
-
-### Available Connectivity Methods
-
-Haxinator provides multiple ways to connect to your device:
-
-#### 1. WiFi Access Point (Default)
-
-The easiest connection method for most users:
-
-1. Look for a WiFi network named "Haxinator 2000" (default password: "ChangeMe")
-2. Connect to this network from your computer or mobile device
-3. Open a web browser and navigate to https://192.168.8.1 or http://haxinator.local
-4. You'll receive a **self-signed certificate warning** in your browser - this is expected and can be safely bypassed
-
-> **Note:** HTTP traffic (port 80) is automatically redirected to HTTPS (port 443) for security. When accessing via http://haxinator.local, you'll be redirected to the secure version automatically.
-{: .info }
-
-#### 2. USB Connection (Serial or Ethernet)
-
-When connected via USB cable to your computer:
-
-- **USB Ethernet Mode** (Default): The Raspberry Pi appears as a network adapter
-  - Your computer receives an IP from the 192.168.8.x range
-  - Access the web interface at https://192.168.8.1
-  - No additional drivers needed on most operating systems
-
-- **USB Serial Mode**: Access the command line directly
-  - Connect using a terminal program (e.g., screen, PuTTY, minicom)
-  - On Linux/macOS: `screen /dev/ttyACM0 115200` (device name may vary)
-  - On Windows: Use Device Manager to find the COM port, then connect with PuTTY
-
-To switch between USB modes, use the command:
-```bash
-sudo /usr/local/bin/toggle_usb_serial.sh [serial|usb]
-```
-
-#### 3. Bluetooth Serial Connection
-
-> **Note:** Bluetooth serial mode becomes available approximately 2-3 minutes after boot as the pairing service initializes.
-{: .info }
-
-If you've configured a Bluetooth MAC address in your secrets file:
-
-1. The device will automatically attempt to pair with your configured Bluetooth device
-2. Once paired, a serial connection will be established
-3. Use a Bluetooth terminal app on your phone or computer to access the console
-4. See the [Bluetooth Serial](features/bluetooth-serial.md) page for detailed instructions
-
-## Initial Configuration
-
-Once connected to the web interface, you'll see the Haxinator login screen:
-
-![Haxinator Login Screen](/assets/images/interface/haxinator-login.png)
-{: .screenshot }
-
-1. Log in with the default credentials (username: `admin`, password: `changeme`)
-2. Change the default password immediately via the Settings page
-3. Configure your preferred VPN and tunneling options
-4. Set up network connections as needed
-
-### Web Interface Overview
-
-The Haxinator web interface provides several key sections:
-
-- **Dashboard**: Overview of system status, active connections, and resource usage
-- **Network**: 
-  - WiFi client connections (connect to external networks)
-  - Access Point configuration
-  - Network scanning tools
-- **Tunneling**:
-  - ICMP Tunnel (Hans VPN)
-  - DNS Tunnel (Iodine)
-  - OpenVPN configuration
-- **System**:
-  - Device settings
-  - Password management
-  - System logs
-  - Update options
-
-All tunneling services can be controlled independently through their respective interface sections.
-
-## Next Steps
-
-- Review the [Features](features/index.md) documentation to understand all available capabilities
-- Check out [Building Custom Images](custom-images.md) if you want to customize your Haxinator
-- Refer to the [FAQ](faq.md) for common questions and troubleshooting
+4. Copy your prepared `env-secrets`
