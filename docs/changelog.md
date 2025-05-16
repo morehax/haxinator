@@ -1,75 +1,37 @@
 ---
 title: Changelog
 nav_order: 8
-description: "Version history and updates for Haxinator 2000"
+description: "Recent changes in Haxinator 2000"
 ---
 
-# Changelog
+# Recent Changes
 
-This page documents all notable changes to Haxinator 2000.
+This page is automatically generated from the last 10 commits. 
+[View full history on GitHub](https://github.com/morehax/haxinator/commits/main).
 
-## [v1.0.0] - Coming Soon
+## Commit History
 
-Initial public release of Haxinator 2000.
+### 2025-05-16 - [1debccd](https://github.com/morehax/haxinator/commit/1debccde3937406e282044885825106b2c434e38)
 
-### Added
-- Complete web interface for device management
-- ICMP tunneling with Hans VPN
-- DNS tunneling with Iodine
-- OpenVPN support
-- WiFi client and access point functionality
-- Bluetooth serial interface with auto-pairing
-- Network scanning tools
-- Comprehensive documentation
+ci: add automated changelog generation workflow
 
-## [v0.9.2] - 2024-05-15
 
-### Added
-- Support for Raspberry Pi 5
-- Updated kernel modules for improved stability
-- Advanced traffic routing options
-- Multi-tunnel failover capability
-- Additional security hardening
 
-### Fixed
-- DNS resolution issues in some network configurations
-- WiFi connection stability on Pi Zero W2
-- Access point DHCP configuration errors
-- Bluetooth auto-pairing intermittent failures
+### 2025-05-16 - [b928a0e](https://github.com/morehax/haxinator/commit/b928a0e4c0a8977d75743d4ebc717f21aac2f0b9)
 
-### Changed
-- Optimized web interface for faster performance
-- Improved error handling and user feedback
-- Updated dependency packages to latest versions
+docs: improve Docker build documentation and configuration
 
-## [v0.9.1] - 2024-04-03
+- Add comprehensive Docker build instructions for multiple platforms\n- Include detailed system requirements and prerequisites\n- Add troubleshooting guide and debugging tips\n- Update .gitignore for build artifacts\n- Improve docker-build.sh script
 
-### Added
-- Initial support for DNS tunneling 
-- Basic web interface implementation
-- WiFi management capability
-- OpenVPN client integration
 
-### Fixed
-- Boot sequence optimization
-- Storage allocation for logs
-- Temperature monitoring accuracy
+### 2025-05-16 - [7f3849b](https://github.com/morehax/haxinator/commit/7f3849bce63659f9111aad31e214737716f97fb2)
 
-## [v0.9.0] - 2024-03-01
+Add Docker support for building Haxinator 2000 Raspberry Pi images
 
-### Added
-- Initial beta release
-- ICMP tunneling prototype
-- Command-line interface for basic functionality
-- Pi Zero W2 base support
 
-## Future Plans
 
-Planned features for upcoming releases:
+### 2025-05-16 - [2d869cb](https://github.com/morehax/haxinator/commit/2d869cb7720d5a80a2f471b3f6023823348d3ec1)
 
-- Additional tunneling protocols
-- Pre-built server-side components
-- Mobile app companion
-- User authentication improvements
-- Extended hardware support
-- Mesh networking capabilities
+Hello Haxinator 2000
+
+
