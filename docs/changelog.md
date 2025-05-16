@@ -11,53 +11,53 @@ This page is automatically generated from the last 10 commits.
 
 ## Commit History
 
-### 2025-05-16 - [d5c2d35](https://github.com/morehax/haxinator/commit/d5c2d35a42168afcc2880f7f1ff4e7801a6cac54)
+### 2025-05-16 - [37c34e8](https://github.com/morehax/haxinator/commit/37c34e8eddddee08ac5cd180cb45b3732b805fdc)
 
-chore: add git-chglog configuration
-
-
-### 2025-05-16 - [5e26dba](https://github.com/morehax/haxinator/commit/5e26dba88220ebc0400756316592323fdd16aac8)
-
-docs: add changelog and build documentation - Add CHANGELOG.md, Docker build docs, and server setup placeholder
+Trying out custom network managers for hans and iodine. Initial staging for a test build.
 
 
-### 2025-05-16 - [3a83ace](https://github.com/morehax/haxinator/commit/3a83aceb7898e1e1f7d1356af0627624b194b390)
+### 2025-05-16 - [0a4964d](https://github.com/morehax/haxinator/commit/0a4964de359722edd28514484c9ad27f98602321)
 
-docs: update changelog with recent commits
-
-
-### 2025-05-16 - [848ebc2](https://github.com/morehax/haxinator/commit/848ebc2167263eff1af15d4188f60edfde756e2b)
-
-docs: add server requirements and clarify tunneling setup needs
+docs: revise theme with clean, professional minimalist design
 
 
-### 2025-05-16 - [15973fa](https://github.com/morehax/haxinator/commit/15973faa69aee5f9b08703cdaa2c84d762602132)
+### 2025-05-16 - [cc41702](https://github.com/morehax/haxinator/commit/cc41702c4b8e37b03313914247d38abad1fab3f5)
 
-docs: update changelog with recent commits
-
-
-### 2025-05-16 - [3a6d58c](https://github.com/morehax/haxinator/commit/3a6d58c80697752246220c2a2097e60e10da36e2)
-
-docs: clarify post install env-secrets and openvpn config file boot partition configuration process
+docs: improve code block styling with larger text and clean design
 
 
-### 2025-05-16 - [8fe1806](https://github.com/morehax/haxinator/commit/8fe180658f2825b83bda7aebb10ac6ba229227b7)
+### 2025-05-16 - [f6e01d5](https://github.com/morehax/haxinator/commit/f6e01d5783537dd56980b4d8aec60ad0daa92f31)
 
-docs: update changelog with recent commits
-
-
-### 2025-05-16 - [6223103](https://github.com/morehax/haxinator/commit/622310391f956197cfe70d0d4c70cd6abca35ad5)
-
-docs: improve terminal access documentation with Bluetooth and security sections
+docs: complete overhaul to match Haxinator web UI styling
 
 
-### 2025-05-16 - [e90c496](https://github.com/morehax/haxinator/commit/e90c496b8a33620538e2b1b11641f4952c553899)
+### 2025-05-16 - [30bb9a1](https://github.com/morehax/haxinator/commit/30bb9a1c76d55f5c35f59addbad0c696a558777a)
 
-docs: update changelog with recent commits
+docs: add GitHub-style syntax highlighting
 
 
-### 2025-05-16 - [f1363e6](https://github.com/morehax/haxinator/commit/f1363e6df507e2b1c912640846a16248275399de)
+### 2025-05-16 - [68e2cae](https://github.com/morehax/haxinator/commit/68e2cae87a3fa191c634c012983040d0505ff1fb)
 
-fix: improve bullet point handling in changelog
+docs: revert to default code block styling
+
+
+### 2025-05-16 - [fb2a51a](https://github.com/morehax/haxinator/commit/fb2a51a6c49a49b25cd69ba08f2459752704f488)
+
+ci: fix workflow paths with standard pattern syntax
+
+
+### 2025-05-16 - [359637c](https://github.com/morehax/haxinator/commit/359637c9bfeae9c9ea447204194e451f2f06f2a4)
+
+ci: simplify workflow paths to avoid trigger conflicts
+
+
+### 2025-05-16 - [3826fbc](https://github.com/morehax/haxinator/commit/3826fbc29d328ccb9d65ebd421b09d54c0505f49)
+
+ci: fix GitHub Actions workflow paths configuration
+
+
+### 2025-05-16 - [9fa4cf3](https://github.com/morehax/haxinator/commit/9fa4cf3c76b4102d16c09cfc2006c1db56106456)
+
+docs: theme GitHub Pages to match Haxinator UI styling
 
 
