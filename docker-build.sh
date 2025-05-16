@@ -1,48 +1,121 @@
 #!/bin/bash
-set -e
 
-# Image name and tag
-IMAGE_NAME="haxinator-builder"
-IMAGE_TAG="latest"
+# Strict mode
+set -euo pipefail
+IFS=$'\n\t'
 
-# Directory for output
-OUTPUT_DIR="$(pwd)/output"
+# Script configuration
+readonly IMAGE_NAME="haxinator-builder"
+readonly IMAGE_TAG="latest"
+readonly OUTPUT_DIR="$(pwd)/output"
+readonly SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+readonly SCRIPT_NAME=$(basename "$0")
 
-# Create output directory if it doesn't exist
-mkdir -p "$OUTPUT_DIR"
+# Logging functions
+log() { echo "==> $*" >&2; }
+error() { echo "ERROR: $*" >&2; }
+warn() { echo "WARNING: $*" >&2; }
+die() { error "$*"; exit 1; }
 
-# Display start message
-echo "==> Starting Haxinator build with Docker..."
-
-# Always rebuild the Docker image
-echo "==> Building Docker image..."
-docker build -t "$IMAGE_NAME:$IMAGE_TAG" .
-
-# Run the container
-echo "==> Running build process in Docker container..."
-echo "==> Output will be stored in: $OUTPUT_DIR"
-
-# Pass APT_PROXY if it exists in environment
-if [ -n "$APT_PROXY" ]; then
-    echo "==> Using APT_PROXY: $APT_PROXY"
-    PROXY_ARG="--build-arg APT_PROXY=$APT_PROXY"
+# Verify docker is available
+check_requirements() {
+    if ! command -v docker >/dev/null 2>&1; then
+        die "Docker is not installed or not in PATH"
+    fi
     
-    # Rebuild with proxy
-    echo "==> Rebuilding with APT_PROXY..."
-    docker build $PROXY_ARG -t "$IMAGE_NAME:$IMAGE_TAG" .
-fi
+    if ! docker info >/dev/null 2>&1; then
+        die "Docker daemon is not running or current user lacks permissions"
+    fi
+}
 
-# Get container ID - add --privileged flag to allow mounting filesystems 
-CONTAINER_ID=$(docker create --privileged ${APT_PROXY:+-e APT_PROXY="$APT_PROXY"} "$IMAGE_NAME:$IMAGE_TAG")
+# Cleanup function
+cleanup() {
+    local exit_code=$?
+    log "Performing cleanup..."
+    
+    # Remove any existing container with our image
+    if [ -n "${CONTAINER_ID:-}" ]; then
+        log "Removing container..."
+        docker rm -f "$CONTAINER_ID" 2>/dev/null || true
+    fi
+    
+    # Remove our image
+    log "Removing build image..."
+    docker rmi "$IMAGE_NAME:$IMAGE_TAG" 2>/dev/null || true
+    
+    # Clean up any dangling images and build cache
+    log "Cleaning up Docker system..."
+    docker system prune -f >/dev/null 2>&1 || true
+    
+    log "Cleanup complete"
+    exit $exit_code
+}
 
-# Start the container
-docker start -a $CONTAINER_ID
+# Handle script interruption
+handle_error() {
+    local line_no=$1
+    local error_code=$2
+    error "Error in ${SCRIPT_NAME} line ${line_no} (exit code: ${error_code})"
+}
 
-# Copy the result from the container
-echo "==> Copying build artifacts from container..."
-docker cp $CONTAINER_ID:/haxinator/pi-gen/deploy/. "$OUTPUT_DIR"
+main() {
+    # Set up error handling
+    trap 'handle_error ${LINENO} $?' ERR
+    trap cleanup EXIT
+    
+    # Verify requirements
+    check_requirements
 
-# Remove the container
-docker rm $CONTAINER_ID
+    # Create output directory if it doesn't exist
+    mkdir -p "$OUTPUT_DIR"
 
-echo "==> Build complete! Check $OUTPUT_DIR for the generated image." 
+    # Initial cleanup of any previous builds
+    log "Cleaning up previous builds..."
+    docker rm -f $(docker ps -a -q --filter ancestor="$IMAGE_NAME:$IMAGE_TAG") 2>/dev/null || true
+    docker rmi "$IMAGE_NAME:$IMAGE_TAG" 2>/dev/null || true
+
+    # Display start message
+    log "Starting Haxinator build with Docker..."
+
+    # Always rebuild the Docker image
+    log "Building Docker image..."
+    if ! docker build -t "$IMAGE_NAME:$IMAGE_TAG" .; then
+        die "Docker build failed"
+    fi
+
+    # Run the container
+    log "Running build process in Docker container..."
+    log "Output will be stored in: $OUTPUT_DIR"
+
+    # Pass APT_PROXY if it exists in environment
+    if [ -n "${APT_PROXY:-}" ]; then
+        log "Using APT_PROXY: $APT_PROXY"
+        PROXY_ARG="--build-arg APT_PROXY=$APT_PROXY"
+        
+        # Rebuild with proxy
+        log "Rebuilding with APT_PROXY..."
+        if ! docker build $PROXY_ARG -t "$IMAGE_NAME:$IMAGE_TAG" .; then
+            die "Docker build with proxy failed"
+        fi
+    fi
+
+    # Get container ID - add --privileged flag to allow mounting filesystems 
+    CONTAINER_ID=$(docker create --privileged ${APT_PROXY:+-e APT_PROXY="$APT_PROXY"} "$IMAGE_NAME:$IMAGE_TAG") || \
+        die "Failed to create container"
+
+    # Start the container
+    if ! docker start -a $CONTAINER_ID; then
+        die "Container failed to start or run"
+    fi
+
+    # Copy the result from the container
+    log "Copying build artifacts from container..."
+    if ! docker cp $CONTAINER_ID:/haxinator/pi-gen/deploy/. "$OUTPUT_DIR"; then
+        die "Failed to copy build artifacts"
+    fi
+
+    log "Build complete! Check $OUTPUT_DIR for the generated image."
+}
+
+# Execute main function
+main "$@" 

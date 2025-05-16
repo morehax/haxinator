@@ -2,3 +2,5 @@
 pi-gen
 .DS_Store
 haxinator-pigen-overlay/stage2/02-custom-config/root_files/files/env-secrets
+env-secrets
+output/
