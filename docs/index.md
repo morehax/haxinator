@@ -5,6 +5,13 @@ description: "Home of the Hax – A Swiss Army Knife for Network Tunneling and P
 permalink: /
 ---
 
+# Haxinator 2000 Documentation
+
+Welcome to the Haxinator 2000 documentation! This guide will help you get started with your device and explore its features.
+
+> **Note:** Pre-built images are now available! Visit our [Quick Start Guide](quickstart.md) to download the latest image.
+{: .info }
+
 # Haxinator 2000
 
 Welcome to the documentation for **Haxinator 2000** – your ultimate toolbox for network security testing and circumvention techniques.

@@ -8,8 +8,8 @@ description: "Get up and running with Haxinator 2000 quickly"
 
 This guide will help you get Haxinator 2000 up and running on your Raspberry Pi in just a few minutes.
 
-> **Note:** Haxinator 2000 is currently in its early development stages. Pre-built images are available only by request. The recommended approach is to build your own image using the instructions below.
-{: .warning }
+> **Note:** Pre-built images are now available! You can download the latest image from our build server.
+{: .info }
 
 ## Prerequisites
 
@@ -22,15 +22,55 @@ This guide will help you get Haxinator 2000 up and running on your Raspberry Pi 
 
 ## Installation Options
 
-### Option 1: Request a Pre-built Image
+### Option 1: Download Pre-built Image
 
-As the project is in early development, pre-built images are available by request only:
+The fastest way to get started is to download our pre-built image:
 
-1. Open an issue on our [GitHub repository](https://github.com/morehax/haxinator/issues) with the subject "Image Request"
-2. Specify your intended use case and Raspberry Pi model
-3. Once approved, you'll receive download instructions
-4. Extract the zip file to obtain the .img file
-5. Use Etcher or similar tool to flash the image to your SD card
+1. Download the latest image from [build.hax.me/images/](https://build.hax.me/images/)
+2. Verify the SHA-1 checksum (provided on the download page)
+3. Extract the zip file to obtain the .img file
+4. Flash the image to your SD card using Etcher or similar tool
+5. *(Optional but Recommended)* Configure your settings:
+   - After flashing, remove and reinsert the SD card
+   - Create an `env-secrets` file with your configuration (see template below)
+   - Place it in the boot partition (appears as "bootfs")
+   - You can also add your OpenVPN config file here if needed
+
+Here's a template for your `env-secrets` file:
+
+```bash
+# Bluetooth MAC address for auto-pair script
+BLUETOOTH_MAC=XX:XX:XX:XX:XX:XX
+
+# OpenVPN credentials
+VPN_USER=
+VPN_PASS=
+
+# Iodine DNS tunnel configuration
+IODINE_TOPDOMAIN=
+IODINE_NAMESERVER=
+IODINE_PASS=
+IODINE_MTU=1400
+IODINE_LAZY=true
+IODINE_INTERVAL=4
+
+# Hans VPN configuration
+HANS_SERVER=
+HANS_PASSWORD=
+
+# WiFi AP configuration
+WIFI_SSID="Haxinator 2000"
+WIFI_PASSWORD="ChangeMe"
+```
+
+> **Important:** For tunneling features to work, you need to set up the corresponding server infrastructure. See [Server Requirements](server-requirements.md) for detailed setup instructions.
+{: .warning }
+
+> **Note:** If you plan to use ICMP (Hans) or DNS (Iodine) tunneling, you'll need to set up your own server infrastructure first. See [Server Requirements](server-requirements.md) for setup instructions. This is not needed if you're only using OpenVPN with an existing provider or just using WiFi/Bluetooth features.
+{: .warning }
+
+> **Tip:** Only fill in the settings you plan to use. Empty values will disable those features.
+{: .info }
 
 ### Option 2: Build Your Own Image (Recommended)
 

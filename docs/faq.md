@@ -6,6 +6,17 @@ description: "Common questions and answers about Haxinator 2000"
 
 # Frequently Asked Questions
 
+## Getting Started
+
+### Where can I download Haxinator images?
+
+Pre-built images are available from our build server at [build.hax.me/images/](https://build.hax.me/images/). Each image includes:
+- SHA-1 checksum for verification
+- Changelog of recent updates
+- Build date and version information
+
+While you can still build your own image using the provided scripts, downloading a pre-built image is the fastest way to get started.
+
 ## General Questions
 
 ### What is Haxinator 2000?
