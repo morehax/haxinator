@@ -5,7 +5,7 @@ description: "Advanced tunneling capabilities for your Raspberry Pi"
 repository_url: https://github.com/morehax/haxinator
 
 remote_theme: just-the-docs/just-the-docs
-color_scheme: light
+color_scheme: nil # Using custom theme
 
 # Custom CSS
 sass:

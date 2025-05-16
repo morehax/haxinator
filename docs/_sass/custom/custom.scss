@@ -1,0 +1,132 @@
+// Custom Haxinator theme for Just the Docs
+
+// Import color variables from Haxinator UI
+$haxinator-primary: #1a365d;
+$haxinator-secondary: #4e5d6c;
+$haxinator-success: #198754;
+$haxinator-warning: #ffc107;
+$haxinator-danger: #dc3545;
+$haxinator-bg: #f6f8fa;
+$haxinator-card-bg: #ffffff;
+$border-radius: 0.7rem;
+
+// Override Just the Docs variables
+$body-background-color: $haxinator-bg;
+$sidebar-color: $haxinator-card-bg;
+$body-text-color: $haxinator-secondary;
+$body-heading-color: $haxinator-primary;
+$nav-child-link-color: $haxinator-secondary;
+$link-color: $haxinator-primary;
+$btn-primary-color: $haxinator-primary;
+$base-button-color: $haxinator-primary;
+
+// Custom styles
+.site-title {
+  color: $haxinator-primary !important;
+  font-weight: 700;
+  letter-spacing: 1px;
+}
+
+.navigation-list-link {
+  border-radius: $border-radius;
+  transition: all 0.13s;
+  
+  &:hover {
+    background: rgba(233, 241, 251, 0.5);
+  }
+  
+  &.active {
+    background: #e9f1fb;
+    color: $haxinator-primary !important;
+    font-weight: 600;
+  }
+}
+
+.main-content {
+  h1, h2, h3, h4, h5, h6 {
+    color: $haxinator-primary;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    margin-bottom: 1rem;
+  }
+  
+  .highlight {
+    border-radius: $border-radius;
+    box-shadow: 0 2px 16px rgba(0,0,0,0.07);
+  }
+}
+
+// Callouts styling
+.callout {
+  border-radius: $border-radius;
+  border: none;
+  box-shadow: 0 2px 16px rgba(0,0,0,0.07);
+  
+  &.warning {
+    background: #fff8e6;
+    border-left: 4px solid $haxinator-warning;
+  }
+  
+  &.note {
+    background: #e9f1fb;
+    border-left: 4px solid $haxinator-primary;
+  }
+  
+  &.tip {
+    background: #e6f9e6;
+    border-left: 4px solid $haxinator-success;
+  }
+}
+
+// Tables
+table {
+  border-radius: $border-radius;
+  overflow: hidden;
+  box-shadow: 0 1px 6px rgba(0,0,0,0.04);
+  
+  th {
+    background: #e9f1fb;
+    border-bottom: 2px solid #b6d4fe;
+    color: $haxinator-primary;
+    font-weight: 600;
+    text-transform: uppercase;
+    font-size: 0.93rem;
+    letter-spacing: 0.5px;
+  }
+  
+  tr:hover {
+    background: #f1f8ff;
+  }
+}
+
+// Search
+.search {
+  border-radius: $border-radius;
+  
+  &:focus {
+    border-color: $haxinator-primary;
+    box-shadow: 0 0 0 0.2rem rgba(26, 54, 93, 0.15);
+  }
+}
+
+// Buttons
+.btn {
+  border-radius: $border-radius;
+  font-weight: 500;
+  letter-spacing: 0.5px;
+  transition: all 0.13s;
+  
+  &:active {
+    transform: scale(0.97);
+  }
+}
+
+// Code blocks
+pre.highlight {
+  border-radius: $border-radius;
+  background: #111;
+  
+  code {
+    color: #0f0;
+  }
+} 
