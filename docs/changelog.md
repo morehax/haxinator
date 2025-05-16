@@ -11,6 +11,16 @@ This page is automatically generated from the last 10 commits.
 
 ## Commit History
 
+### 2025-05-16 - [848ebc2](https://github.com/morehax/haxinator/commit/848ebc2167263eff1af15d4188f60edfde756e2b)
+
+docs: add server requirements and clarify tunneling setup needs
+
+
+### 2025-05-16 - [15973fa](https://github.com/morehax/haxinator/commit/15973faa69aee5f9b08703cdaa2c84d762602132)
+
+docs: update changelog with recent commits
+
+
 ### 2025-05-16 - [3a6d58c](https://github.com/morehax/haxinator/commit/3a6d58c80697752246220c2a2097e60e10da36e2)
 
 docs: clarify post install env-secrets and openvpn config file boot partition configuration process
@@ -47,16 +57,6 @@ fix: remove double bullet points in changelog formatting
 
 
 ### 2025-05-16 - [f85387c](https://github.com/morehax/haxinator/commit/f85387c490bb289a26367cfa241327bd8a7f7350)
-
-docs: update changelog with recent commits
-
-
-### 2025-05-16 - [fc0ca75](https://github.com/morehax/haxinator/commit/fc0ca75345139afa131c89a7457fed5edcd21a70)
-
-fix: properly handle newlines in changelog commit messages
-
-
-### 2025-05-16 - [e5bc7ef](https://github.com/morehax/haxinator/commit/e5bc7ef5b2ffb43a0bf6b9bb6c5f18be8a1abee0)
 
 docs: update changelog with recent commits
 
