@@ -224,21 +224,21 @@ table {
   }
 }
 
-// GitHub-style syntax highlighting with Haxinator borders
+// GitHub-style syntax highlighting with custom settings
 .highlight {
   background-color: #f6f8fa;
-  border-radius: $border-radius;
+  border-radius: 0; // No rounded corners
   
   pre.highlight, figure.highlight {
     background-color: #f6f8fa;
     padding: 16px;
     margin-bottom: 16px;
     overflow: auto;
-    font-size: 85%;
-    line-height: 1.45;
-    border-radius: $border-radius;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-    border: 1px solid #d0d7de;
+    font-size: 100%; // Larger text
+    line-height: 1.5;
+    border-radius: 0; // No rounded corners
+    box-shadow: none; // No shadow
+    border: none; // No border
   }
 
   // Token colors - GitHub style
