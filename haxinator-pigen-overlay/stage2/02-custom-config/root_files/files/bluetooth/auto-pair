@@ -1,0 +1,136 @@
+#!/usr/bin/env python3
+# SPDX-License-Identifier: LGPL-2.1-or-later
+
+from __future__ import absolute_import, print_function, unicode_literals
+
+import dbus
+import dbus.service
+import dbus.mainloop.glib
+from gi.repository import GLib
+from dotenv import load_dotenv
+import os
+
+# Load .env file
+load_dotenv('/root/.env')
+
+# Get TARGET_MAC from .env
+TARGET_MAC = os.getenv('BLUETOOTH_MAC')
+TEMPLATE_MAC = "XX:XX:XX:XX:XX:XX"
+
+# Exit if TARGET_MAC is not set or is the template value
+if not TARGET_MAC or TARGET_MAC == TEMPLATE_MAC:
+    print("Bluetooth not auto enabled - MAC address not configured")
+    exit(0)
+
+# Constants
+BUS_NAME = 'org.bluez'
+AGENT_INTERFACE = 'org.bluez.Agent1'
+AGENT_PATH = "/test/agent"
+
+# Custom exception for rejecting unauthorized devices
+class Rejected(dbus.DBusException):
+    _dbus_error_name = "org.bluez.Error.Rejected"
+
+# Bluetooth Agent class
+class Agent(dbus.service.Object):
+    def __init__(self, bus, path):
+        dbus.service.Object.__init__(self, bus, path)
+
+    @dbus.service.method(AGENT_INTERFACE, in_signature="o", out_signature="s")
+    def RequestPinCode(self, device):
+        print(f"RequestPinCode ({device})")
+        self.check_device(device)
+        return "0000"  # Default PIN for SPP
+
+    @dbus.service.method(AGENT_INTERFACE, in_signature="o", out_signature="u")
+    def RequestPasskey(self, device):
+        print(f"RequestPasskey ({device})")
+        self.check_device(device)
+        return dbus.UInt32(123456)  # Default passkey
+
+    @dbus.service.method(AGENT_INTERFACE, in_signature="ou", out_signature="")
+    def RequestConfirmation(self, device, passkey):
+        print(f"RequestConfirmation ({device}, {passkey:06d})")
+        self.check_device(device)  # Auto-confirm for target device
+
+    @dbus.service.method(AGENT_INTERFACE, in_signature="o", out_signature="")
+    def RequestAuthorization(self, device):
+        print(f"RequestAuthorization ({device})")
+        self.check_device(device)
+
+    @dbus.service.method(AGENT_INTERFACE, in_signature="", out_signature="")
+    def Release(self):
+        print("Agent released")
+
+    def check_device(self, device):
+        dev = bus.get_object(BUS_NAME, device)
+        props = dbus.Interface(dev, "org.freedesktop.DBus.Properties")
+        address = props.Get("org.bluez.Device1", "Address")
+        if address != TARGET_MAC:
+            raise Rejected("Device not authorized")
+
+# Signal handlers
+def interfaces_added(path, interfaces):
+    if "org.bluez.Device1" in interfaces:
+        dev = bus.get_object(BUS_NAME, path)
+        props = dbus.Interface(dev, "org.freedesktop.DBus.Properties")
+        address = props.Get("org.bluez.Device1", "Address")
+        if address == TARGET_MAC:
+            print(f"Target device {address} detected")
+            bus.add_signal_receiver(
+                properties_changed,
+                bus_name=BUS_NAME,
+                path=path,
+                dbus_interface="org.freedesktop.DBus.Properties",
+                signal_name="PropertiesChanged"
+            )
+
+def properties_changed(interface, changed, invalidated, path):
+    if "Paired" in changed and changed["Paired"]:
+        print(f"Device {path} paired")
+        trust_device(path)
+        mainloop.quit()
+
+def trust_device(path):
+    dev = bus.get_object(BUS_NAME, path)
+    props = dbus.Interface(dev, "org.freedesktop.DBus.Properties")
+    props.Set("org.bluez.Device1", "Trusted", True)
+    print(f"Device {path} trusted")
+
+# Main function
+def main():
+    global bus, mainloop
+    dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)
+    bus = dbus.SystemBus()
+    mainloop = GLib.MainLoop()
+
+    # Register agent
+    agent = Agent(bus, AGENT_PATH)
+    obj = bus.get_object(BUS_NAME, "/org/bluez")
+    manager = dbus.Interface(obj, "org.bluez.AgentManager1")
+    manager.RegisterAgent(AGENT_PATH, "KeyboardDisplay")
+
+    # Configure adapter
+    adapter_path = "/org/bluez/hci0"  # Default adapter
+    adapter = bus.get_object(BUS_NAME, adapter_path)
+    adapter_props = dbus.Interface(adapter, "org.freedesktop.DBus.Properties")
+    adapter_props.Set("org.bluez.Adapter1", "Discoverable", True)
+    adapter_props.Set("org.bluez.Adapter1", "Pairable", True)
+
+    # Set up signal receivers
+    bus.add_signal_receiver(
+        interfaces_added,
+        bus_name=BUS_NAME,
+        dbus_interface="org.freedesktop.DBus.ObjectManager",
+        signal_name="InterfacesAdded"
+    )
+
+    # Timeout after 120 seconds
+    GLib.timeout_add_seconds(120, mainloop.quit)
+
+    # Run
+    mainloop.run()
+    manager.UnregisterAgent(AGENT_PATH)
+
+if __name__ == "__main__":
+    main()

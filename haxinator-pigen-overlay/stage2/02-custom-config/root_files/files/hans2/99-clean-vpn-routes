@@ -1,0 +1,5 @@
+#!/bin/sh
+# $1 is the interface (e.g., tun0), $2 is the event (e.g., vpn-up)
+if [ "$1" = "tun0" ] && [ "$2" = "vpn-up" ]; then
+    ip route del 8.8.8.8 2>/dev/null || true
+fi

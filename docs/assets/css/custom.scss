@@ -1,0 +1,179 @@
+// Add custom styling here
+@import "{{ site.theme }}";
+
+// Improve typography
+body {
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  line-height: 1.6;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  margin-top: 1.5em;
+  margin-bottom: 0.75em;
+  color: #27262b;
+  font-weight: 600;
+}
+
+h1 {
+  color: #343a99;
+  margin-bottom: 1em;
+}
+
+a {
+  color: #3752a3;
+  text-decoration: none;
+  
+  &:hover {
+    text-decoration: underline;
+  }
+}
+
+// Custom callouts and notices
+.warning {
+  background-color: #fff8e6;
+  border-left: 4px solid #e6a700;
+  border-radius: 4px;
+  padding: 0.8rem;
+  margin: 1.5rem 0;
+  
+  &::before {
+    content: "⚠️ ";
+    font-weight: bold;
+  }
+}
+
+// Code blocks
+pre.highlight, code {
+  border-radius: 4px;
+}
+
+// Tables
+table {
+  border-collapse: collapse;
+  width: 100%;
+  margin-bottom: 1.5rem;
+  border: 1px solid #e3e6e8;
+  
+  th {
+    background-color: #f5f7f9;
+    border-bottom: 2px solid #d9d9d9;
+    padding: 0.75rem;
+    text-align: left;
+  }
+  
+  td {
+    padding: 0.75rem;
+    border-bottom: 1px solid #e3e6e8;
+  }
+  
+  tr:nth-child(even) {
+    background-color: #f9fafb;
+  }
+}
+
+// Button styling
+.btn {
+  border-radius: 4px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  transition: all 0.2s ease;
+  
+  &:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  }
+}
+
+.btn-primary {
+  background-color: #3752a3 !important;
+}
+
+// Navigation improvements
+.site-header {
+  border-bottom: 1px solid #eaecef;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+// Footer styling
+.site-footer {
+  border-top: 1px solid #eaecef;
+  padding-top: 1rem;
+}
+
+// Logo styling
+.site-logo {
+  width: 40px;
+  height: 40px;
+}
+
+// Screenshot styling
+.screenshot {
+  margin: 1.5rem 0;
+  text-align: center;
+  
+  img {
+    max-width: 100%;
+    height: auto;
+    border: 1px solid #e3e6e8;
+    border-radius: 4px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  }
+}
+
+// Screenshot gallery
+.screenshot-gallery {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1.5rem;
+  margin: 2rem 0;
+  
+  .gallery-item {
+    display: flex;
+    flex-direction: column;
+    
+    a {
+      display: block;
+      border-radius: 6px;
+      overflow: hidden;
+      border: 1px solid #e3e6e8;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+      transition: all 0.2s ease-in-out;
+      
+      &:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+      }
+    }
+    
+    img {
+      width: 100%;
+      height: auto;
+      display: block;
+    }
+    
+    .caption {
+      margin: 0.5rem 0 0;
+      text-align: center;
+      font-size: 0.9rem;
+      color: #555;
+    }
+  }
+}
+
+// Responsive adjustments for screenshot gallery
+@media (max-width: 800px) {
+  .screenshot-gallery {
+    grid-template-columns: 1fr;
+  }
+}
+
+// Mobile responsiveness improvements
+@media (max-width: 800px) {
+  .site-nav {
+    padding-top: 0.5rem;
+    padding-bottom: 0.5rem;
+  }
+  
+  .main-content {
+    padding: 1rem;
+  }
+} 

@@ -1,0 +1,17 @@
+#iodine -f -r -T NULL -m 1024 -I1 -P supersecret tun.dsa.pub
+# hans -c 143.198.29.141 -p password
+
+# Clear existing rules
+iptables -F
+iptables -t nat -F
+
+# Enable NAT for traffic from usb0 to dns0
+iptables -t nat -A POSTROUTING -o dns0 -j MASQUERADE
+
+# Allow forwarding from usb0 to dns0
+iptables -A FORWARD -i usb0 -o dns0 -j ACCEPT
+
+# Allow established and related traffic back
+iptables -A FORWARD -i dns0 -o usb0 -m state --state RELATED,ESTABLISHED -j ACCEPT
+ip route del default
+ip route add default via 10.0.0.1 dev dns0

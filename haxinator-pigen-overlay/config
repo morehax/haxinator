@@ -1,0 +1,21 @@
+IMG_NAME="haxinator"
+RELEASE="bookworm"
+TARGET_HOSTNAME="nano"
+LOCALE_DEFAULT="en_US.UTF-8"
+KEYBOARD_LAYOUT="us"
+FIRST_USER_NAME="hax"
+FIRST_USER_PASS="hax"
+DISABLE_FIRST_BOOT_USER_RENAME=1
+WPA_COUNTRY=GB
+KEYBOARD_KEYMAP=us
+KEYBOARD_LAYOUT="English (US)"
+TIMEZONE_DEFAULT=America/New_York
+ENABLE_SSH=1
+PUBKEY_SSH_FIRST_USER="ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIKyuHp29rmbRz7/SqH6lSA+CeVDFlO0DRt3dikGAoryq hax@hax.local"
+STAGE_LIST="stage0 stage1 stage2"
+DEPLOY_COMPRESSION=zip
+ARCH=arm64
+# Append proxy only when requested
+if [[ -n "$BUILD_PROXY" ]]; then
+    echo "APT_PROXY=\"${BUILD_PROXY}\"" >> pi-gen/config
+fi

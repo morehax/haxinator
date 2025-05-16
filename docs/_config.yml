@@ -1,0 +1,71 @@
+title: Haxinator 2000 Documentation
+tagline: A Swiss Army Knife for Network Tunneling and Penetration Testing
+description: "Advanced tunneling capabilities for your Raspberry Pi"
+repository_url: https://github.com/morehax/haxinator
+
+remote_theme: just-the-docs/just-the-docs
+color_scheme: light
+
+# Custom CSS
+sass:
+  style: compressed
+
+# Enable or disable the site search
+search_enabled: true
+# Set the search token separator
+search_tokenizer_separator: /[\s/]+/
+
+# Enable or disable heading anchors
+heading_anchors: true
+
+# Aux links for the upper right navigation
+aux_links:
+  "GitHub":
+    - "https://github.com/morehax/haxinator"
+
+aux_links_new_tab: true
+
+# Footer content
+footer_content: "Copyright &copy; 2024 Haxinator Project. Distributed under an MIT license."
+
+# Back to top link
+back_to_top: true
+back_to_top_text: "Back to top"
+
+# Enable copy button for code blocks
+enable_copy_code_button: true
+
+# Make the navigation responsive
+gh_edit_link: false
+
+# Custom styling
+callouts:
+  warning:
+    title: Warning
+    color: yellow
+  note:
+    title: Note
+    color: blue
+  tip:
+    title: Tip
+    color: green
+
+# Collections for organizing content
+collections:
+  features:
+    permalink: "/:collection/:path/"
+    output: true
+
+# Default YAML values
+defaults:
+  -
+    scope:
+      path: ""
+      type: "features"
+    values:
+      layout: "page"
+  -
+    scope:
+      path: ""
+    values:
+      layout: "page"

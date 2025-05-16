@@ -1,0 +1,11 @@
+##########################################
+# Haxinator 2000 ultra device
+##########################################
+#
+# You can run commands such as:
+#    * nm_change_wifi.sh : to change wifi networks
+#    * nm_start_ap.sh    : to set up an AP on the Haxinator
+#    * toggle_hd_rw.sh   : to toggle the fs rw/ro
+#
+##########################################
+

@@ -1,0 +1,13 @@
+[Unit]
+Description=Bluetooth Auto Pairing
+After=bluetooth.service
+Requires=bluetooth.service
+
+[Service]
+Type=simple
+ExecStart=/usr/local/bin/auto-pair
+TimeoutStartSec=130
+User=root
+
+[Install]
+WantedBy=multi-user.target
