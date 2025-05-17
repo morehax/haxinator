@@ -4,3 +4,15 @@ pi-gen
 haxinator-pigen-overlay/stage2/02-custom-config/root_files/files/env-secrets
 env-secrets
 output/
+
+# Jekyll generated files
+docs/_site/
+docs/.sass-cache/
+docs/.jekyll-cache/
+docs/.jekyll-metadata
+docs/_drafts/
+docs/vendor/
+.bundle/
+
+# Auto-generated files
+docs/changelog.md
