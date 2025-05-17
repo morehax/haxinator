@@ -1,6 +1,10 @@
 #!/usr/bin/env python3
-# nm-iodine-service: NetworkManager VPN plugin for iodine (Python version)
-# Aligned with C plugin structure for state signaling and IP config layout.
+# nm-iodine-service: Python-based NetworkManager VPN plugin for iodine.
+# Final version:
+# - Fixes byte order for 'gateway' (host order required by NM)
+# - Adds address, address-data, addresses
+# - Adds route-metric to prioritize explicit routes
+# - Exits cleanly after Disconnect so NM can restart it
 
 import dbus
 import dbus.service
@@ -14,6 +18,9 @@ from dbus.mainloop.glib import DBusGMainLoop
 NM_VPN_PLUGIN_FAILURE_LOGIN_FAILED = 0
 NM_VPN_PLUGIN_FAILURE_CONNECT_FAILED = 1
 NM_VPN_PLUGIN_FAILURE_BAD_IP_CONFIG = 2
+
+def ip4_to_uint32_network(ip_str):
+    return struct.unpack('!I', socket.inet_aton(ip_str))[0]
 
 def ip4_to_uint32_host(ip_str):
     return struct.unpack('<I', socket.inet_aton(ip_str))[0]
@@ -29,6 +36,7 @@ class IodineVPNService(dbus.service.Object):
         self._config_sent = False
         self.client_ip_str = None
         self.server_ip_str = None
+        self.external_ip_str = None
         self.discovered_mtu = None
         self.tundev_name = None
         try:
@@ -62,37 +70,56 @@ class IodineVPNService(dbus.service.Object):
 
     def _emit_ip4_config(self):
         mtu_val = self.discovered_mtu if self.discovered_mtu else 1130
+        tundev_str = self.tundev_name if self.tundev_name else "dns0"
         prefix_val = 27
+        client_ip_u32 = dbus.UInt32(ip4_to_uint32_host(self.client_ip_str))  # Fix: Use host byte order
+        server_ip_u32 = dbus.UInt32(ip4_to_uint32_network(self.server_ip_str))  # Keep network order for ptp if required
+        prefix_u32 = dbus.UInt32(prefix_val)
         mtu_u32 = dbus.UInt32(mtu_val)
-        tundev_str = self.tundev_name or "dns0"
+        gateway_ip_str = self.external_ip_str or self.server_ip_str
+        gateway_u32_host = dbus.UInt32(ip4_to_uint32_host(gateway_ip_str))  # Host order for gateway
+        gateway_u32_net = dbus.UInt32(ip4_to_uint32_network(gateway_ip_str))  # Network order for routes if required
+
+        route = dbus.Struct([
+            dbus.UInt32(ip4_to_uint32_network("10.0.0.0")),  # Network order for route destination
+            dbus.UInt32(27),
+            gateway_u32_net  # Network order for route gateway
+        ])
 
         ip4config = {
-            "address": dbus.UInt32(ip4_to_uint32_host(self.client_ip_str)),
-            "prefix": dbus.UInt32(prefix_val),
-            "ptp": self.server_ip_str,
-            "gateway": dbus.UInt32(ip4_to_uint32_host(self.server_ip_str)),
+            "gateway": gateway_u32_host,  # Host order
+            "address": client_ip_u32,  # Host order
+            "prefix": prefix_u32,
+            "ptp": self.server_ip_str,  # String format, no byte order issue
             "mtu": mtu_u32,
             "tundev": tundev_str,
+#            "routes": dbus.Array([route], signature="(uuu)"),
             "address-data": dbus.Array([
                 dbus.Dictionary({
-                    "address": dbus.String(self.client_ip_str),
+                    "address": dbus.String(self.client_ip_str),  # String format, correct
                     "prefix": dbus.UInt32(prefix_val)
                 }, signature="sv")
             ]),
-            "route-metric": dbus.UInt32(5)
+#            "addresses": dbus.Array([
+#                dbus.Struct([
+#                    client_ip_u32,  # Fix: Host order
+#                    prefix_u32,
+##                    gateway_u32_net  # Network order if required
+#                ], signature=None)
+#            ], signature="(uuu)"),
+#            "route-metric": dbus.UInt32(5)
         }
 
-        self._log(f"Emitting Ip4Config: client={self.client_ip_str}, server={self.server_ip_str}, prefix={prefix_val}, mtu={mtu_val}")
-        try:
-            subprocess.call(["ip", "addr", "flush", "dev", self.tundev_name])
-        except Exception as e:
-            self._log(f"Failed to flush interface {self.tundev_name}: {e}")
+        self._log(f"Emitting Ip4Config: client={self.client_ip_str}, server={self.server_ip_str}, "
+                  f"gateway={gateway_ip_str}, prefix={prefix_val}, mtu={mtu_val}")
+
         try:
             self.Ip4Config(ip4config)
         except Exception as e:
             self._log(f"Error emitting Ip4Config: {e}")
         else:
             self._config_sent = True
+            self._emit_state(4)
 
     def _parse_and_handle_output(self, line):
         self._log(f"[iodine] {line}")
@@ -102,6 +129,8 @@ class IodineVPNService(dbus.service.Object):
             self.client_ip_str = line.split("to")[-1].strip()
         elif "Server tunnel IP is" in line:
             self.server_ip_str = line.split("is")[-1].strip()
+        elif "Sending DNS queries for" in line or "Sending raw traffic directly to" in line:
+            self.external_ip_str = line.strip().split()[-1]
         elif "Setting MTU of" in line:
             try:
                 self.discovered_mtu = int(line.strip().split()[-1])
@@ -113,8 +142,7 @@ class IodineVPNService(dbus.service.Object):
         self._log("Reader thread started for iodine process")
         try:
             for raw_line in iter(proc.stdout.readline, ''):
-                if raw_line == '':
-                    break
+                if raw_line == '': break
                 self._parse_and_handle_output(raw_line.rstrip("\n"))
             ret = proc.wait()
             self._log(f"iodine process exited with code {ret}")

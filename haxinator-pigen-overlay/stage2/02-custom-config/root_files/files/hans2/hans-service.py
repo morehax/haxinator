@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 
 import os
-import sys
 import subprocess
 import logging
 import time
@@ -10,11 +9,8 @@ import dbus
 import dbus.service
 import dbus.mainloop.glib
 from gi.repository import GLib
-import ipaddress
-import traceback
-import datetime
-import struct
 import socket
+import struct
 
 # Setup logging with high-precision timestamps
 logging.basicConfig(
@@ -38,6 +34,7 @@ class HansVPNPlugin(dbus.service.Object):
         self.vpn_settings = None
         self.process = None
         self.check_timer = None
+        self.loop = GLib.MainLoop()
         logging.info("HANS VPN Plugin initialized")
         logging.debug(f"Environment: {os.environ}")
 
@@ -76,8 +73,10 @@ class HansVPNPlugin(dbus.service.Object):
                     self.state_changed(3, "Connecting")
                     self.send_config(assigned_ip, assigned_prefix)
                     self.state_changed(4, "Connected")
-                    return
-            self.check_timer = GLib.timeout_add(1000, self.check_tunnel)
+                else:
+                    self.check_timer = GLib.timeout_add(1000, self.check_tunnel)
+            else:
+                self.check_timer = GLib.timeout_add(1000, self.check_tunnel)
         except Exception as e:
             logging.error("Error starting HANS: %s", e)
             self.state_changed(6, f"HANS startup error: {str(e)}")
@@ -113,13 +112,13 @@ class HansVPNPlugin(dbus.service.Object):
             return None, None
 
     def send_config(self, assigned_ip, assigned_prefix):
-        gw_str = '10.1.2.1'
-        dns_str = '8.8.8.8'
+        vpn_data = self.vpn_settings['vpn']['data']
+        dns_str = vpn_data.get('dns', '8.8.8.8')
 
         ip4config = {
             'address': dbus.UInt32(ip4_to_uint32_host(assigned_ip)),
             'prefix': dbus.UInt32(int(assigned_prefix)),
-            'gateway': dbus.UInt32(ip4_to_uint32_host(gw_str)),
+            'gateway': dbus.UInt32(ip4_to_uint32_host('10.1.2.254')),  # Hardcoded gateway
             'mtu': dbus.UInt32(1467),
             'tundev': 'tun0',
             'address-data': dbus.Array([
@@ -129,7 +128,14 @@ class HansVPNPlugin(dbus.service.Object):
                 }, signature='sv')
             ]),
             'dns': dbus.Array([dbus.UInt32(ip4_to_uint32_host(dns_str))], signature='u'),
-            'route-metric': dbus.UInt32(5)
+            'route-metric': dbus.UInt32(5),
+            'routes': dbus.Array([
+                dbus.Struct([
+                    dbus.UInt32(ip4_to_uint32_host("10.1.2.1")),  # Server tunnel IP
+                    dbus.UInt32(32),  # /32 for specific host
+                    dbus.UInt32(0)  # No gateway, use tun0
+                ], signature='(uuu)')
+            ], signature='(uuu)')
         }
 
         try:
@@ -154,14 +160,17 @@ class HansVPNPlugin(dbus.service.Object):
             GLib.source_remove(self.check_timer)
             self.check_timer = None
         self.state_changed(6, "Disconnected")
+        GLib.idle_add(self.loop.quit)
 
     def check_tunnel(self):
         if self.process.poll() is not None:
             self.state_changed(6, "HANS process exited")
             return False
         try:
+            vpn_data = self.vpn_settings['vpn']['data']
+            gw_str = vpn_data.get('gateway', '10.1.2.1')
             ping_result = subprocess.run(
-                ['ping', '-c', '1', '-W', '1', '10.1.2.1'],
+                ['ping', '-c', '1', '-W', '1', gw_str],
                 stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True
             )
             if ping_result.returncode == 0:
@@ -193,8 +202,7 @@ def main():
     bus = dbus.SystemBus()
     name = dbus.service.BusName(BUS_NAME, bus)
     plugin = HansVPNPlugin(bus)
-    loop = GLib.MainLoop()
-    loop.run()
+    plugin.loop.run()
 
 if __name__ == '__main__':
     main()
