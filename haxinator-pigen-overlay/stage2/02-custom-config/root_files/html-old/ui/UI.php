@@ -37,19 +37,6 @@ function dns_resolves_google() {
 }
 $dns_ok = dns_resolves_google();
 
-// Ping check for google.com
-function ping_google() {
-    $output = [];
-    $retval = -1;
-    exec('ping -c 1 -W 1 8.8.8.8 2>/dev/null', $output, $retval);
-    if ($retval === 0) {
-        return true;
-    }
-    return false;
-}
-$ping_ok = ping_google();  // Store result
-error_log("Ping status: " . ($ping_ok ? "SUCCESS" : "FAILED"));
-
 function renderLoginPage($login_error)
 {
     ob_start();
@@ -141,7 +128,6 @@ function renderLoginPage($login_error)
 
 function renderMainPage($message, $error, $wifi_list, $saved_connections, $iface_status, $active_uuids, $unique_wifi_list, $public_ip, $dns_ok, $hostname)
 {
-    global $ping_ok;  // Add this line to make $ping_ok available inside the function
     global $data;
     ob_start();
     ?>
@@ -205,25 +191,17 @@ function renderMainPage($message, $error, $wifi_list, $saved_connections, $iface
           margin: 0 1rem;
           flex-grow: 1;
           justify-content: center;
-        }
-        .interface-bar {
-          background: rgba(255, 255, 255, 0.95);
-          padding: 0.7rem 1.2rem;
-          border-bottom: 1px solid #e0e7ef;
-          margin-bottom: 24px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
           flex-wrap: wrap;
-          gap: 0.8rem;
-          box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
         }
         .interface-status {
           display: flex;
           align-items: center;
           gap: 0.8rem;
+          background: rgba(255,255,255,0.7);
+          padding: 0.4rem 0.8rem;
+          border-radius: 6px;
+          border: 1px solid #e0e7ef;
           flex-wrap: wrap;
-          justify-content: center;
         }
         .interface-item {
           display: flex;
@@ -231,18 +209,12 @@ function renderMainPage($message, $error, $wifi_list, $saved_connections, $iface
           gap: 0.4rem;
           font-size: 0.91rem;
           color: #1a365d;
-          padding: 0.3rem 0.7rem;
-          border-radius: 6px;
-          background: #fff;
+          padding: 0.15rem 0.4rem;
+          border-radius: 4px;
+          background: rgba(255,255,255,0.8);
           border: 1px solid #e0e7ef;
           min-width: 140px;
-          height: 36px;
-          transition: all 0.2s ease;
-          box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
-        }
-        .interface-item:hover {
-          border-color: #2563eb;
-          box-shadow: 0 2px 4px rgba(37, 99, 235, 0.08);
+          height: 32px;
         }
         .interface-item i {
           font-size: 0.91em;
@@ -273,7 +245,7 @@ function renderMainPage($message, $error, $wifi_list, $saved_connections, $iface
           .interface-item { 
             min-width: 120px;
             font-size: 0.85rem;
-        }
+          }
           .interface-ip { 
             font-size: 0.82em;
           }
@@ -288,13 +260,100 @@ function renderMainPage($message, $error, $wifi_list, $saved_connections, $iface
             width: 100%;
             margin: 0;
           }
-          .interface-bar {
-            padding: 0.5rem 1rem;
-          }
           .interface-status {
             width: 100%;
             justify-content: center;
           }
+        }
+        .nm-header {
+          display: inline;
+          font-size: 2.1rem;
+          font-weight: 800;
+          color: #1a365d;
+          letter-spacing: 1px;
+          margin-bottom: 0;
+          text-shadow: 0 2px 8px rgba(0,0,0,0.04);
+        }
+        .nm-header-logo {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          width: 54px;
+          height: 54px;
+          background: #2563eb;
+          color: #fff;
+          font-size: 2.2rem;
+          font-weight: 900;
+          border-radius: 50%;
+          margin-bottom: 0;
+          box-shadow: 0 4px 16px rgba(37,99,235,0.10);
+        }
+        .nm-tagline {
+          font-size: 1.05rem;
+          color: #b0b8c9;
+          font-weight: 500;
+          margin-left: 0.7rem;
+          vertical-align: middle;
+        }
+        .nm-subheader {
+          color: #4e5d6c;
+          font-size: 1.15rem;
+          margin-bottom: 1.7rem;
+          text-align: center;
+        }
+        .nm-card {
+          border: 1.5px solid #e0e7ef;
+          border-radius: var(--border-radius);
+          box-shadow: 0 4px 24px rgba(37,99,235,0.08), 0 1.5px 6px rgba(0,0,0,0.04);
+          background: rgba(255,255,255,0.97);
+          backdrop-filter: blur(4px);
+          margin-bottom: 2rem;
+        }
+        .nav-tabs {
+          display: flex;
+          flex-wrap: wrap;
+          width: 100%;
+          border-bottom: 2.5px solid #444;
+          position: relative;
+          z-index: 1;
+          margin-bottom: 1.5rem;
+          background: transparent;
+          padding: 0;
+        }
+        .nav-tabs .nav-item {
+          flex: 1 1 25%;
+          min-width: 0;
+          margin: 0;
+        }
+        .nav-tabs .nav-link {
+          width: 100%;
+          margin: 0;
+          text-align: center;
+          border-radius: var(--border-radius) var(--border-radius) 0 0;
+          background: none;
+          border: none;
+          position: relative;
+          z-index: 2;
+          transition: background 0.13s, color 0.13s;
+          padding: 1.1em 0;
+          font-weight: 700;
+          color: #4e5d6c;
+        }
+        .nav-tabs .nav-link.active {
+          background: rgba(30, 41, 59, 0.65);
+          color: #fff;
+          border-radius: var(--border-radius) var(--border-radius) 0 0;
+          font-weight: 700;
+          box-shadow: none;
+        }
+        .nav-tabs .nav-link:hover:not(.active) {
+          background: rgba(30, 41, 59, 0.35);
+          color: #fff;
+          border-radius: var(--border-radius) var(--border-radius) 0 0;
+          box-shadow: none;
+        }
+        @media (max-width: 899px) {
+          .nav-tabs .nav-item { flex: 1 1 50%; }
         }
         @media (max-width: 599px) {
           .nav-tabs .nav-item { flex: 1 1 100%; }
@@ -460,122 +519,53 @@ function renderMainPage($message, $error, $wifi_list, $saved_connections, $iface
           align-items: center;
           gap: 0.5rem;
         }
-        .status-group {
-          display: flex;
-          align-items: center;
-          gap: 1.2rem;
-        }
-        .status-indicator {
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          line-height: 1;
-        }
-        .status-indicator i {
-          font-size: 1.35em;
-          margin-bottom: 2px;
-          width: 1.4em;  /* Fixed width for all icons */
-          height: 1.4em; /* Fixed height for all icons */
-          display: flex;
-          align-items: center;
-          justify-content: center;
-        }
-        .status-indicator .status-label {
-          font-size: 0.65em;
-          color: #666;
-          margin-top: 1px;
-        }
       </style>
     </head>
     <body>
     <!-- TEST123: public_ip=<?php var_export($public_ip); ?> dns_ok=<?php var_export($dns_ok); ?> -->
-    <div class="topbar sticky-top">
+    <div class="topbar">
       <div class="topbar-left">
-        <div class="topbar-logo">X</div>
-        <h1 class="topbar-title">Haxinator 2000</h1>
+        <div class="topbar-logo">H</div>
+        <span class="topbar-title">Haxinator 2000</span>
       </div>
       <div class="topbar-center">
-        <div class="d-flex align-items-center gap-2">
-          <i class="bi bi-hdd-network"></i>
-          <span><?= htmlspecialchars($hostname) ?></span>
+        <div class="interface-status">
+          <?php 
+          try {
+            $interfaces = $data->getTopBarInterfaces();
+            foreach ($interfaces as $iface): ?>
+              <div class="interface-item <?= $iface['connected'] ? 'connected' : 'disconnected' ?>">
+                <i class="bi <?= htmlspecialchars($iface['icon']) ?>"></i>
+                <span class="interface-name"><?= htmlspecialchars($iface['name']) ?></span>
+                <?php if ($iface['ipv4']): ?>
+                  <span class="interface-ip"><?= htmlspecialchars($iface['ipv4']) ?></span>
+                <?php endif; ?>
+              </div>
+            <?php endforeach;
+          } catch (Exception $e) {
+            error_log("Error in interface status: " . $e->getMessage());
+          }
+          ?>
         </div>
       </div>
       <div class="topbar-right">
-        <div class="status-group">
-          <!-- Debug: <?php echo "Ping status: " . var_export($ping_ok, true) . " (" . gettype($ping_ok) . ")"; ?> -->
-          <?php if ($ping_ok): ?>
-            <span title="Ping to 8.8.8.8 successful" class="status-indicator">
-              <i class="bi bi-door-open" style="color:#22c55e;"></i>
-              <span class="status-label">ping</span>
-            </span>
-          <?php else: ?>
-            <span title="Ping to 8.8.8.8 failed" class="status-indicator">
-              <i class="bi bi-door-closed" style="color:#f4427d;"></i>
-              <span class="status-label">ping</span>
-            </span>
-          <?php endif; ?>
-          <?php if ($public_ip): ?>
-            <span title="Internet Connected" class="status-indicator">
-              <i class="bi bi-globe2" style="color:#22c55e;"></i>
-              <span class="status-label">web</span>
-            </span>
-          <?php else: ?>
-            <span title="No Internet" class="status-indicator">
-              <i class="bi bi-globe2" style="color:#f59e42;"></i>
-              <span class="status-label">web</span>
-            </span>
-          <?php endif; ?>
-          <?php if ($dns_ok): ?>
-            <span title="DNS resolves google.com" class="status-indicator">
-              <i class="bi bi-plugin" style="color:#22c55e;"></i>
-              <span class="status-label">dns</span>
-            </span>
-          <?php else: ?>
-            <span title="DNS does not resolve google.com" class="status-indicator">
-              <i class="bi bi-plug" style="color:#f4427d;"></i>
-              <span class="status-label">dns</span>
-            </span>
-          <?php endif; ?>
-        </div>
+        <?php if ($public_ip): ?>
+          <span title="Internet Connected"><i class="bi bi-wifi" style="color:#22c55e;"></i></span>
+        <?php else: ?>
+          <span title="No Internet"><i class="bi bi-wifi-off" style="color:#f59e42;"></i></span>
+        <?php endif; ?>
+        <?php if ($dns_ok): ?>
+          <span title="DNS resolves google.com"><i class="bi bi-plugin" style="color:#22c55e;margin-left:0.7em;"></i></span>
+        <?php else: ?>
+          <span title="DNS does not resolve google.com"><i class="bi bi-plug" style="color:#f4427d;margin-left:0.7em;"></i></span>
+        <?php endif; ?>
         <a href="https://<?php echo $_SERVER['SERVER_ADDR']; ?>:4200" target="_blank" class="btn btn-outline-secondary btn-sm ms-3" style="min-width: 40px;"><i class="bi bi-terminal"></i> <span class="d-none d-md-inline">Terminal</span></a>
-        <a href="/configure.php" class="btn btn-outline-secondary btn-sm ms-2" style="min-width: 40px;"><i class="bi bi-gear"></i> <span class="d-none d-md-inline">Configure</span></a>
         <button onclick="shutdownSystem()" class="btn btn-outline-danger btn-sm ms-2" style="min-width: 40px;"><i class="bi bi-power"></i> <span class="d-none d-md-inline">Shutdown</span></button>
         <form method="get" class="d-inline ms-2">
           <button type="submit" name="logout" class="btn btn-outline-secondary btn-sm" style="min-width: 40px;"><i class="bi bi-box-arrow-right"></i> <span class="d-none d-md-inline">Logout</span></button>
         </form>
       </div>
     </div>
-
-    <div class="interface-bar">
-      <div class="interface-status">
-        <?php 
-        try {
-          $interfaces = $data->getTopBarInterfaces();
-          // Add public IP as external interface if online
-          if ($public_ip) {
-            $interfaces[] = [
-              'name' => 'ext',
-              'connected' => true,
-              'icon' => 'bi-globe',
-              'ipv4' => $public_ip
-            ];
-          }
-          foreach ($interfaces as $iface): ?>
-            <div class="interface-item <?= $iface['connected'] ? 'connected' : 'disconnected' ?>">
-              <i class="bi <?= htmlspecialchars($iface['icon']) ?>"></i>
-              <span class="interface-name"><?= htmlspecialchars($iface['name']) ?></span>
-              <?php if ($iface['ipv4']): ?>
-                <span class="interface-ip"><?= htmlspecialchars($iface['ipv4']) ?></span>
-              <?php endif; ?>
-            </div>
-          <?php endforeach;
-        } catch (Exception $e) {
-          error_log("Error in interface status: " . $e->getMessage());
-        }
-        ?>
-      </div>
-    </div>
-
     <div class="nm-main-container mx-auto px-3 px-md-4" style="max-width:1100px;">
       <?php if ($message): ?>
         <div class="alert alert-success"><?= $message ?></div>
@@ -930,7 +920,7 @@ function renderMainPage($message, $error, $wifi_list, $saved_connections, $iface
                           } else {
                               $stateText = ucfirst($st['state']);
                           }
-                        ?>
+                          ?>
                         <span class="nm-status-badge badge <?= $isConnected ? 'bg-success' : 'bg-secondary' ?>">
                           <?= htmlspecialchars($stateText) ?>
                         </span>

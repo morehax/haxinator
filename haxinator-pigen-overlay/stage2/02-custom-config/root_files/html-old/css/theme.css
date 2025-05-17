@@ -1,0 +1,380 @@
+/* NetworkManager Web UI Theme
+ * A unified theme for the NetworkManager Web Interface
+ */
+
+/* Base Styles */
+:root {
+    --primary-color: #1a365d;
+    --secondary-color: #4e5d6c;
+    --success-color: #198754;
+    --warning-color: #ffc107;
+    --danger-color: #dc3545;
+    --background-color: #f6f8fa;
+    --card-background: #ffffff;
+    --border-radius: 0.7rem;
+    --border-radius-sm: 0.5rem;
+    --box-shadow: 0 2px 16px rgba(0,0,0,0.07);
+    --transition-speed: 0.13s;
+    --table-header-bg: #e9f1fb;
+    --table-header-border: #b6d4fe;
+    --table-hover-bg: #f1f8ff;
+    --table-success-bg: #e6f9e6;
+    --table-success-color: #256029;
+    --console-bg: #111;
+    --console-text: #0f0;
+    --error-bg: #fde8e8;
+    --error-text: #c53030;
+}
+
+body {
+    background: var(--background-color);
+    font-family: 'Segoe UI', Arial, sans-serif;
+}
+
+/* Typography */
+.nm-header {
+    font-size: 2.2rem;
+    font-weight: 700;
+    letter-spacing: 1px;
+    color: var(--primary-color);
+    margin-bottom: 0.5rem;
+    text-shadow: 0 2px 8px rgba(0,0,0,0.04);
+}
+
+.nm-subheader {
+    color: var(--secondary-color);
+    font-size: 1.1rem;
+    margin-bottom: 1.5rem;
+}
+
+/* Cards */
+.nm-card {
+    border: none;
+    border-radius: var(--border-radius);
+    box-shadow: var(--box-shadow);
+    background: var(--card-background);
+    margin-bottom: 2rem;
+}
+
+.nm-card .card-header {
+    background: var(--card-background);
+    border-bottom: 1px solid rgba(0,0,0,0.05);
+    padding: 1rem 1.25rem;
+    font-weight: 600;
+    color: var(--primary-color);
+}
+
+/* Tables */
+.nm-table {
+    background: var(--card-background);
+    border-radius: var(--border-radius);
+    overflow: hidden;
+    box-shadow: 0 1px 6px rgba(0,0,0,0.04);
+    margin: 0;
+}
+
+.nm-table th {
+    background: var(--table-header-bg);
+    font-weight: 600;
+    text-transform: uppercase;
+    font-size: 0.93rem;
+    color: var(--primary-color);
+    border-bottom: 2px solid var(--table-header-border);
+    letter-spacing: 0.5px;
+    padding: 0.75rem 1rem;
+}
+
+.nm-table td {
+    font-size: 1rem;
+    color: #2d3748;
+    background: var(--card-background);
+    vertical-align: middle;
+    padding: 0.75rem 1rem;
+}
+
+.nm-table tr.table-success td {
+    background: var(--table-success-bg);
+    color: var(--table-success-color);
+}
+
+.nm-table tr:hover td {
+    background: var(--table-hover-bg);
+}
+
+/* Status Indicators */
+.nm-table .badge {
+    font-size: 0.85em;
+    font-weight: 500;
+    border-radius: var(--border-radius-sm);
+    padding: 0.35em 0.8em;
+}
+
+.nm-table .connected-text {
+    color: var(--success-color);
+    font-weight: 600;
+}
+
+.nm-table .disconnected-text {
+    color: #adb5bd;
+    font-weight: 500;
+}
+
+/* Buttons */
+.nm-btn, .btn-primary {
+    height: 40px;
+    padding: 0.5rem 1.1rem;
+    font-size: 1rem;
+    min-width: 92px;
+    border-radius: var(--border-radius-sm);
+    font-weight: 500;
+    letter-spacing: 0.5px;
+    margin-right: 0.3em;
+    margin-bottom: 0.2em;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+    transition: all var(--transition-speed);
+}
+
+.nm-btn:last-child {
+    margin-right: 0;
+}
+
+.nm-btn:active {
+    transform: scale(0.97);
+}
+
+.nm-btn-sm {
+    min-width: 60px;
+    padding: 0.22em 0.7em;
+    font-size: 0.93rem;
+    border-radius: var(--border-radius-sm);
+}
+
+/* Navigation */
+.nav-tabs {
+    border-bottom: 1px solid rgba(0,0,0,0.05);
+    margin-bottom: 1.5rem;
+}
+
+.nav-tabs .nav-link {
+    color: var(--secondary-color);
+    font-weight: 500;
+    border: none;
+    padding: 0.75rem 1.25rem;
+    transition: all var(--transition-speed);
+}
+
+.nav-tabs .nav-link:hover {
+    color: var(--primary-color);
+    background: rgba(233, 241, 251, 0.5);
+}
+
+.nav-tabs .nav-link.active {
+    background: var(--table-header-bg);
+    color: var(--primary-color);
+    border-radius: var(--border-radius) var(--border-radius) 0 0;
+    font-weight: 600;
+}
+
+/* Modals */
+.modal-content {
+    border-radius: var(--border-radius);
+    box-shadow: 0 4px 24px rgba(0,0,0,0.10);
+}
+
+.modal-header {
+    border-bottom: 1px solid rgba(0,0,0,0.05);
+    padding: 1rem 1.25rem;
+}
+
+.modal-footer {
+    border-top: 1px solid rgba(0,0,0,0.05);
+    padding: 1rem 1.25rem;
+}
+
+/* Forms */
+.form-label {
+    font-weight: 500;
+    color: var(--primary-color);
+    margin-bottom: 0.5rem;
+}
+
+.form-control, .form-select {
+    border-radius: var(--border-radius-sm);
+    border: 1px solid rgba(0,0,0,0.1);
+    padding: 0.5rem 0.75rem;
+    transition: all var(--transition-speed);
+}
+
+.form-control:focus, .form-select:focus {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 0.2rem rgba(26, 54, 93, 0.15);
+}
+
+/* Alerts */
+.alert {
+    border-radius: var(--border-radius);
+    border: none;
+    padding: 1rem 1.25rem;
+    margin-bottom: 1.5rem;
+}
+
+.alert-success {
+    background: var(--table-success-bg);
+    color: var(--table-success-color);
+}
+
+.alert-danger {
+    background: var(--error-bg);
+    color: var(--error-text);
+}
+
+/* Responsive Utilities */
+.table-responsive {
+    border-radius: var(--border-radius);
+    margin: 0;
+}
+
+/* Animations */
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+.fade-in {
+    animation: fadeIn 0.3s ease-in;
+}
+
+/* Empty States */
+.text-muted {
+    color: #6c757d !important;
+    font-style: italic;
+}
+
+/* Console Window and Script Panels */
+.script-panel {
+    margin-bottom: 1rem;
+}
+
+.script-output {
+    background: var(--console-bg);
+    color: var(--console-text);
+    padding: 1rem;
+    height: 23.5rem;
+    overflow-y: auto;
+    white-space: pre-wrap;
+    border-radius: var(--border-radius-sm);
+    font-family: 'Consolas', 'Monaco', monospace;
+    font-size: 0.9rem;
+    line-height: 1.4;
+}
+
+.script-panel .form-control,
+.script-panel .form-select {
+    background-color: var(--card-background);
+    border: 1px solid rgba(0,0,0,0.1);
+    transition: all var(--transition-speed);
+}
+
+.script-panel .form-control:focus,
+.script-panel .form-select:focus {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 0.2rem rgba(26, 54, 93, 0.15);
+}
+
+.script-panel .btn {
+    min-width: 100px;
+}
+
+.script-panel .status-indicator {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.9rem;
+    color: var(--secondary-color);
+}
+
+.script-panel .status-indicator::before {
+    content: '';
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background-color: currentColor;
+}
+
+.script-panel .status-indicator.running::before {
+    animation: pulse 1s infinite;
+}
+
+@keyframes pulse {
+    0% { opacity: 1; }
+    50% { opacity: 0.5; }
+    100% { opacity: 1; }
+}
+
+/* Script Selector */
+#script-selector {
+    border: 1px solid rgba(0,0,0,0.1);
+    background-color: var(--card-background);
+    transition: all var(--transition-speed);
+}
+
+#script-selector:focus {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 0.2rem rgba(26, 54, 93, 0.15);
+}
+
+/* Status Messages */
+.status-message {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    border-radius: var(--border-radius-sm);
+    font-size: 0.9rem;
+    font-weight: 500;
+}
+
+.status-message.error {
+    background-color: var(--error-bg);
+    color: var(--error-text);
+}
+
+.status-message.success {
+    background-color: var(--table-success-bg);
+    color: var(--table-success-color);
+}
+
+.status-message.running {
+    background-color: var(--table-header-bg);
+    color: var(--primary-color);
+}
+
+/* Wi-Fi Connect Form */
+.card-connect {
+    border: none;
+    border-radius: var(--border-radius);
+    box-shadow: var(--box-shadow);
+    max-width: 400px;
+    margin: 0 auto;
+}
+
+.card-connect .card-header {
+    background-color: var(--card-background);
+    border-bottom: 1px solid rgba(0,0,0,0.05);
+    font-weight: 500;
+    font-size: 1.1rem;
+    color: var(--primary-color);
+}
+
+.btn-back {
+    font-size: 0.85rem;
+    padding: 0.25rem 0.75rem;
+    background-color: var(--secondary-color);
+    border-color: var(--secondary-color);
+}
+
+.btn-back:hover {
+    background-color: #5c636a;
+    border-color: #5c636a;
+} 
