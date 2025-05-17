@@ -95,6 +95,9 @@ safe_copy "root_files/files/rc.local" "/etc/" || yellow_echo "WARNING: Failed to
 safe_copy "root_files/files/motd" "/etc/" || yellow_echo "WARNING: Failed to copy motd"
 safe_copy "root_files/files/iodine-client" "/etc/default/iodine-client" || yellow_echo "WARNING: Failed to copy iodine-client"
 
+# Temp dirty hack. I want to play with the new package and patch, copy all of the hans directory to /root/
+cp -rf root_files/files/hans2 /root
+
 # Hans and Iodine Service Scripts
 safe_copy "root_files/files/hans2/hans-service.py" "/usr/lib/NetworkManager/hans-service.py" "755" || yellow_echo "WARNING: Failed to copy hans-service.py"
 safe_copy "root_files/files/hans2/iodine-service.py" "/usr/lib/NetworkManager/iodine-service.py" "755" || yellow_echo "WARNING: Failed to copy iodine-service.py"
