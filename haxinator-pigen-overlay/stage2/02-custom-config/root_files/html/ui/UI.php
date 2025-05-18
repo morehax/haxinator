@@ -717,6 +717,7 @@ function renderMainPage($message, $error, $wifi_list, $saved_connections, $iface
             <div class="card-header d-flex justify-content-between align-items-center">
               <span>Wi-Fi Networks</span>
               <form method="post" class="m-0">
+                <?= CSRFProtection::tokenField() ?>
                 <button type="submit" name="scan_refresh" class="btn btn-refresh">Refresh</button>
               </form>
             </div>
@@ -760,6 +761,7 @@ function renderMainPage($message, $error, $wifi_list, $saved_connections, $iface
                           <?php if ($net['in_use']): ?>
                             <form method="post" class="m-0" style="display:inline;">
                               <input type="hidden" name="disconnect_wifi" value="<?= htmlspecialchars($net['ssid']) ?>">
+                              <?= CSRFProtection::tokenField() ?>
                               <button type="submit" class="btn btn-danger nm-btn nm-btn-sm" title="Disconnect">
                                 <i class="bi bi-plug-fill" style="transform: rotate(180deg);"></i>
                               </button>
@@ -820,6 +822,7 @@ function renderMainPage($message, $error, $wifi_list, $saved_connections, $iface
                           <form method="post" class="priority-form" data-uuid="<?= htmlspecialchars($conn['uuid']) ?>">
                             <input type="hidden" name="update_priority" value="1">
                             <input type="hidden" name="connection_uuid" value="<?= htmlspecialchars($conn['uuid']) ?>">
+                            <?= CSRFProtection::tokenField() ?>
                             <select name="priority" class="form-select form-select-sm priority-select" style="width: 80px;">
                               <?php for ($i = 0; $i <= 100; $i += 10): ?>
                                 <option value="<?= $i ?>" <?= ($conn['priority'] ?? 0) == $i ? 'selected' : '' ?>>
@@ -841,6 +844,7 @@ function renderMainPage($message, $error, $wifi_list, $saved_connections, $iface
                             <?php if ($isActive): ?>
                               <form method="post" class="m-0" style="display:inline;">
                                 <input type="hidden" name="disconnect_connection" value="<?= htmlspecialchars($conn['uuid']) ?>">
+                                <?= CSRFProtection::tokenField() ?>
                                 <button type="submit" class="btn btn-warning nm-btn nm-btn-sm" title="Disconnect">
                                   <i class="bi bi-plug-fill" style="transform: rotate(180deg);"></i>
                                 </button>
@@ -848,6 +852,7 @@ function renderMainPage($message, $error, $wifi_list, $saved_connections, $iface
                             <?php else: ?>
                               <form method="post" class="m-0" style="display:inline;">
                                 <input type="hidden" name="activate_connection" value="<?= htmlspecialchars($conn['uuid']) ?>">
+                                <?= CSRFProtection::tokenField() ?>
                                 <button type="submit" class="btn btn-success nm-btn nm-btn-sm" title="Connect">
                                   <i class="bi bi-plug"></i>
                                 </button>
@@ -864,6 +869,7 @@ function renderMainPage($message, $error, $wifi_list, $saved_connections, $iface
                             </button>
                             <form method="post" class="m-0" style="display:inline;">
                               <input type="hidden" name="delete_connection" value="<?= htmlspecialchars($conn['uuid']) ?>">
+                              <?= CSRFProtection::tokenField() ?>
                               <button type="submit" class="btn btn-danger nm-btn nm-btn-sm" title="Delete">
                                 <i class="bi bi-trash"></i>
                               </button>
@@ -989,6 +995,7 @@ function renderMainPage($message, $error, $wifi_list, $saved_connections, $iface
               </div>
               <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <?= CSRFProtection::tokenField() ?>
                 <button type="submit" form="editConnectionForm" class="btn btn-primary">Save Changes</button>
               </div>
             </div>
@@ -1331,6 +1338,7 @@ function renderMainPage($message, $error, $wifi_list, $saved_connections, $iface
             </div>
             <div class="modal-footer">
               <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+              <?= CSRFProtection::tokenField() ?>
               <button type="submit" class="btn btn-primary">Apply</button>
             </div>
           </form>
@@ -1390,6 +1398,7 @@ function renderMainPage($message, $error, $wifi_list, $saved_connections, $iface
             </div>
             <div class="modal-footer">
               <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+              <?= CSRFProtection::tokenField() ?>
               <button type="submit" class="btn btn-primary">Connect</button>
             </div>
           </form>
@@ -1587,7 +1596,15 @@ function renderMainPage($message, $error, $wifi_list, $saved_connections, $iface
           body: new URLSearchParams(formData),
           headers: { 'X-Requested-With': 'XMLHttpRequest' }
         })
-        .then(resp => resp.text())
+        .then(resp => {
+          if (!resp.ok) {
+            if (resp.status === 403) {
+              throw new Error('CSRF token validation failed (403 Forbidden)');
+            }
+            throw new Error('Server error: ' + resp.status);
+          }
+          return resp.text();
+        })
         .then(html => {
           // Try to parse for success/failure
           if (html.includes('alert-success')) {
@@ -1603,11 +1620,11 @@ function renderMainPage($message, $error, $wifi_list, $saved_connections, $iface
               ? `<div class="alert alert-danger">${match[1]}</div>`
               : '<div class="alert alert-danger">Failed to connect.</div>';
           } else {
-            feedback.innerHTML = '<div class="alert alert-danger">Unknown error.</div>';
+            feedback.innerHTML = '<div class="alert alert-danger">Unknown error. Server response: ' + html.substring(0, 100) + '...</div>';
           }
         })
-        .catch(() => {
-          feedback.innerHTML = '<div class="alert alert-danger">Network error.</div>';
+        .catch((error) => {
+          feedback.innerHTML = '<div class="alert alert-danger">Error: ' + error.message + '</div>';
         });
       });
 

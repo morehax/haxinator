@@ -12,6 +12,7 @@ session_start();
 // Include config and authentication
 require_once __DIR__ . '/../config/config.php';
 require_once __DIR__ . '/../auth/Auth.php';
+require_once __DIR__ . '/../security/CSRFProtection.php';
 
 // Ensure user is authenticated
 $auth = new Auth($config['username'], $config['password']);
@@ -54,6 +55,7 @@ $needsPassword = stripos($security, 'WPA') !== false;
             <input type="password" class="form-control" id="wifi_password" name="wifi_password" placeholder="Enter password" required>
           </div>
         <?php endif; ?>
+        <?= CSRFProtection::tokenField() ?>
         <button type="submit" class="btn btn-primary w-100">Connect</button>
       </form>
     </div>
