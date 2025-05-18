@@ -92,3 +92,6 @@ git clone https://github.com/morehax/haxinator
 cd haxinator
 sudo ./01-build-script.sh
 ```
+
+
+[PHP Security Scan Results](php_scan_results.html)
