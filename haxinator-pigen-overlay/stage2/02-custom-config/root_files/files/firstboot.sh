@@ -144,9 +144,6 @@ openssl req -x509 -nodes -days 3650 -newkey rsa:4096 \
 chmod 600 "$KEY"
 echo "Regenerated SSL certificates" | tee -a "$LOG"
 
-echo "Generating SSH keys for the www-data user." | tee -a "$LOG"
-sudo -u www-data ssh-keygen -t rsa -b 4096 -C "www-data@yourserver" -f /var/www/.ssh/id_rsa -N ""
-
 # Clean up and disable firstboot
 systemctl disable firstboot
 rm /usr/local/bin/firstboot.sh
