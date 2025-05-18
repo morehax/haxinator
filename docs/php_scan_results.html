@@ -122,17 +122,17 @@
 <body>
     <div class="container">
         <h2 class="page-header">Haxinator 2000 - PHP Security Scan</h2>
-        <div class="report-date">Generated on Saturday, May 17, 2025 at 10:50 PM </div>
+        <div class="report-date">Generated on Sunday, May 18, 2025 at 08:37 AM </div>
 
         <div class="config-card">
             <!-- Statistics Section -->
             <div class="config-section">
                 <div class="config-title">Scan Statistics</div>
                 <div class="config-description">Overview of dangerous PHP function calls detected.</div>
-                <p><strong>Total dangerous function calls:</strong> 77</p>
+                <p><strong>Total dangerous function calls:</strong> 91</p>
                 <p><strong>Breakdown by function:</strong></p>
                 <ul>
-                    <li>copy: 1</li><li>curl_exec: 3</li><li>exec: 44</li><li>file_get_contents: 2</li><li>file_put_contents: 4</li><li>fopen: 1</li><li>getenv: 1</li><li>ini_get: 1</li><li>ini_set: 8</li><li>mkdir: 2</li><li>move_uploaded_file: 1</li><li>ob_start: 2</li><li>popen: 1</li><li>preg_replace: 2</li><li>proc_open: 1</li><li>shell_exec: 1</li><li>unlink: 2</li>
+                    <li>curl_exec: 2</li><li>exec: 57</li><li>file_get_contents: 5</li><li>file_put_contents: 3</li><li>getenv: 1</li><li>ini_get: 1</li><li>ini_set: 8</li><li>mkdir: 3</li><li>move_uploaded_file: 3</li><li>ob_start: 2</li><li>popen: 1</li><li>preg_replace: 1</li><li>proc_open: 1</li><li>shell_exec: 1</li><li>unlink: 2</li>
                 </ul>
             </div>
 
@@ -141,43 +141,15 @@
                 <div class="config-title">Details of Occurrences</div>
                 <div class="config-description">Specific instances of dangerous function calls with context.</div>
                 <div class="occurrence-item">
-    <p><strong>File:</strong> haxinator-pigen-overlay/stage2/02-custom-config/root_files/html/configure.php, <strong>Line:</strong> 22, <strong>Function:</strong> curl_exec</p>
-    <div class="context-code">    $ch = curl_init();<br>    curl_setopt($ch, CURLOPT_URL, &#x27;https://ifconfig.me&#x27;);<br>    curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);<br>    curl_setopt($ch, CURLOPT_TIMEOUT, 2);<br>    curl_setopt($ch, CURLOPT_USERAGENT, &#x27;curl&#x27;);<br>    $ip = trim(curl_exec($ch));<br>    $httpcode = curl_getinfo($ch, CURLINFO_HTTP_CODE);<br>    curl_close($ch);<br>    if (filter_var($ip, FILTER_VALIDATE_IP) &amp;&amp; $httpcode === 200) {<br>        return $ip;<br>    }</div>
+    <p><strong>File:</strong> haxinator-pigen-overlay/stage2/02-custom-config/root_files/html/configure.php, <strong>Line:</strong> 752, <strong>Function:</strong> file_get_contents</p>
+    <div class="context-code">                    &lt;button type=&quot;button&quot; class=&quot;btn-close&quot; data-bs-dismiss=&quot;modal&quot; aria-label=&quot;Close&quot;&gt;&lt;/button&gt;<br>                &lt;/div&gt;<br>                &lt;div class=&quot;modal-body&quot;&gt;<br>                    &lt;?php if (is_readable(&#x27;/var/www/env-secrets&#x27;)): ?&gt;<br>                        &lt;pre class=&quot;bg-light p-3 rounded&quot; style=&quot;max-height: 400px; overflow-y: auto;&quot;&gt;&lt;?php<br>                            echo htmlspecialchars(file_get_contents(&#x27;/var/www/env-secrets&#x27;));<br>                        ?&gt;&lt;/pre&gt;<br>                    &lt;?php else: ?&gt;<br>                        &lt;div class=&quot;alert alert-warning mb-0&quot;&gt;<br>                            &lt;i class=&quot;bi bi-exclamation-triangle me-2&quot;&gt;&lt;/i&gt;<br>                            No env-secrets file found.</div>
 </div>
 <div class="occurrence-item">
-    <p><strong>File:</strong> haxinator-pigen-overlay/stage2/02-custom-config/root_files/html/configure.php, <strong>Line:</strong> 37, <strong>Function:</strong> exec</p>
-    <div class="context-code"><br>// DNS resolution check for google.com (copied from UI.php)<br>function dns_resolves_google() {<br>    $output = null;<br>    $retval = null;<br>    exec(&#x27;dig +short google.com&#x27;, $output, $retval);<br>    foreach ($output as $line) {<br>        if (filter_var($line, FILTER_VALIDATE_IP)) {<br>            return true;<br>        }<br>    }</div>
+    <p><strong>File:</strong> haxinator-pigen-overlay/stage2/02-custom-config/root_files/html/ui/UI.php, <strong>Line:</strong> 18, <strong>Function:</strong> ob_start</p>
+    <div class="context-code">$dns_ok = Util::dnsResolvesGoogle();<br>$ping_ok = Util::pingGoogle();  // Store result<br><br>function renderLoginPage($login_error)<br>{<br>    ob_start();<br>    ?&gt;<br>    &lt;!DOCTYPE html&gt;<br>    &lt;html lang=&quot;en&quot;&gt;<br>    &lt;head&gt;<br>      &lt;meta charset=&quot;UTF-8&quot; /&gt;</div>
 </div>
 <div class="occurrence-item">
-    <p><strong>File:</strong> haxinator-pigen-overlay/stage2/02-custom-config/root_files/html/configure.php, <strong>Line:</strong> 51, <strong>Function:</strong> exec</p>
-    <div class="context-code"><br>// Ping check for google.com (copied from UI.php)<br>function ping_google() {<br>    $output = [];<br>    $retval = -1;<br>    exec(&#x27;ping -c 1 -W 1 8.8.8.8 2&gt;/dev/null&#x27;, $output, $retval);<br>    if ($retval === 0) {<br>        return true;<br>    }<br>    return false;<br>}</div>
-</div>
-<div class="occurrence-item">
-    <p><strong>File:</strong> haxinator-pigen-overlay/stage2/02-custom-config/root_files/html/pingtest.php, <strong>Line:</strong> 5, <strong>Function:</strong> exec</p>
-    <div class="context-code">&lt;?php<br>$output = [];<br>$retval = null;<br>echo &quot;Starting ping test...\n&quot;;<br>exec(&#x27;ping -c 1 -W 1 8.8.8.8 2&gt;/dev/null&#x27;, $output, $retval);<br>echo &quot;Return value: &quot; . $retval . &quot;\n&quot;;<br>echo &quot;Output: \n&quot; . implode(&quot;\n&quot;, $output) . &quot;\n&quot;;<br>echo &quot;Ping status: &quot; . ($retval === 0 ? &quot;SUCCESS&quot; : &quot;FAILED&quot;) . &quot;\n&quot;;<br>?&gt;</div>
-</div>
-<div class="occurrence-item">
-    <p><strong>File:</strong> haxinator-pigen-overlay/stage2/02-custom-config/root_files/html/pingvisual.php, <strong>Line:</strong> 5, <strong>Function:</strong> exec</p>
-    <div class="context-code">&lt;?php<br>function ping_google() {<br>    $output = [];<br>    $retval = -1;<br>    exec(&#x27;ping -c 1 -W 1 8.8.8.8 2&gt;/dev/null&#x27;, $output, $retval);<br>    $success = ($retval === 0);<br>    return $success;<br>}<br>$ping_ok = ping_google();<br></div>
-</div>
-<div class="occurrence-item">
-    <p><strong>File:</strong> haxinator-pigen-overlay/stage2/02-custom-config/root_files/html/ui/UI.php, <strong>Line:</strong> 15, <strong>Function:</strong> curl_exec</p>
-    <div class="context-code">    $ch = curl_init();<br>    curl_setopt($ch, CURLOPT_URL, &#x27;https://ifconfig.me&#x27;);<br>    curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);<br>    curl_setopt($ch, CURLOPT_TIMEOUT, 2);<br>    curl_setopt($ch, CURLOPT_USERAGENT, &#x27;curl&#x27;);<br>    $ip = trim(curl_exec($ch));<br>    $httpcode = curl_getinfo($ch, CURLINFO_HTTP_CODE);<br>    curl_close($ch);<br>    if (filter_var($ip, FILTER_VALIDATE_IP) &amp;&amp; $httpcode === 200) {<br>        return $ip;<br>    }</div>
-</div>
-<div class="occurrence-item">
-    <p><strong>File:</strong> haxinator-pigen-overlay/stage2/02-custom-config/root_files/html/ui/UI.php, <strong>Line:</strong> 30, <strong>Function:</strong> exec</p>
-    <div class="context-code"><br>// DNS resolution check for google.com<br>function dns_resolves_google() {<br>    $output = null;<br>    $retval = null;<br>    exec(&#x27;dig +short google.com&#x27;, $output, $retval);<br>    foreach ($output as $line) {<br>        if (filter_var($line, FILTER_VALIDATE_IP)) {<br>            return true;<br>        }<br>    }</div>
-</div>
-<div class="occurrence-item">
-    <p><strong>File:</strong> haxinator-pigen-overlay/stage2/02-custom-config/root_files/html/ui/UI.php, <strong>Line:</strong> 44, <strong>Function:</strong> exec</p>
-    <div class="context-code"><br>// Ping check for google.com<br>function ping_google() {<br>    $output = [];<br>    $retval = -1;<br>    exec(&#x27;ping -c 1 -W 1 8.8.8.8 2&gt;/dev/null&#x27;, $output, $retval);<br>    if ($retval === 0) {<br>        return true;<br>    }<br>    return false;<br>}</div>
-</div>
-<div class="occurrence-item">
-    <p><strong>File:</strong> haxinator-pigen-overlay/stage2/02-custom-config/root_files/html/ui/UI.php, <strong>Line:</strong> 54, <strong>Function:</strong> ob_start</p>
-    <div class="context-code">}<br>$ping_ok = ping_google();  // Store result<br><br>function renderLoginPage($login_error)<br>{<br>    ob_start();<br>    ?&gt;<br>    &lt;!DOCTYPE html&gt;<br>    &lt;html lang=&quot;en&quot;&gt;<br>    &lt;head&gt;<br>      &lt;meta charset=&quot;UTF-8&quot; /&gt;</div>
-</div>
-<div class="occurrence-item">
-    <p><strong>File:</strong> haxinator-pigen-overlay/stage2/02-custom-config/root_files/html/ui/UI.php, <strong>Line:</strong> 148, <strong>Function:</strong> ob_start</p>
+    <p><strong>File:</strong> haxinator-pigen-overlay/stage2/02-custom-config/root_files/html/ui/UI.php, <strong>Line:</strong> 112, <strong>Function:</strong> ob_start</p>
     <div class="context-code"><br>function renderMainPage($message, $error, $wifi_list, $saved_connections, $iface_status, $active_uuids, $unique_wifi_list, $public_ip, $dns_ok, $hostname, $tunnel_status = null)<br>{<br>    global $ping_ok;  // Add this line to make $ping_ok available inside the function<br>    global $data;<br>    ob_start();<br>    ?&gt;<br>    &lt;!DOCTYPE html&gt;<br>    &lt;html lang=&quot;en&quot;&gt;<br>    &lt;head&gt;<br>      &lt;meta charset=&quot;UTF-8&quot; /&gt;</div>
 </div>
 <div class="occurrence-item">
@@ -281,6 +253,18 @@
     <div class="context-code">        exec(&quot;sudo -H kill $pid 2&gt;&amp;1&quot;, $output, $return_var);<br>        $output_str = implode(&quot;\n&quot;, $output);<br>        $this-&gt;logMessage(&#x27;DEBUG&#x27;, &quot;kill command output: $output_str, return: $return_var&quot;);<br><br>        if ($return_var === 0) {<br>            unlink($this-&gt;pid_file);<br>            $this-&gt;logMessage(&#x27;INFO&#x27;, &quot;Tunnel stopped successfully, PID $pid&quot;);<br>            return &quot;Tunnel stopped successfully.&quot;;<br>        } else {<br>            $this-&gt;logMessage(&#x27;ERROR&#x27;, &quot;Failed to stop tunnel, PID $pid, error=$output_str&quot;);<br>            return &quot;Failed to stop tunnel.&quot;;</div>
 </div>
 <div class="occurrence-item">
+    <p><strong>File:</strong> haxinator-pigen-overlay/stage2/02-custom-config/root_files/html/network/Tunnel.php, <strong>Line:</strong> 351, <strong>Function:</strong> mkdir</p>
+    <div class="context-code">        }<br><br>        // Ensure .ssh directory exists<br>        $ssh_dir = dirname($this-&gt;ssh_key);<br>        if (!is_dir($ssh_dir)) {<br>            mkdir($ssh_dir, 0700, true);<br>            chown($ssh_dir, &#x27;www-data&#x27;);<br>            chgrp($ssh_dir, &#x27;www-data&#x27;);<br>        }<br><br>        // Generate new SSH key pair with no passphrase</div>
+</div>
+<div class="occurrence-item">
+    <p><strong>File:</strong> haxinator-pigen-overlay/stage2/02-custom-config/root_files/html/network/Tunnel.php, <strong>Line:</strong> 361, <strong>Function:</strong> exec</p>
+    <div class="context-code">        // Generate new SSH key pair with no passphrase<br>        $output = [];<br>        $return_var = 0;<br>        $command = &quot;sudo -u www-data ssh-keygen -t rsa -b 4096 -f {$this-&gt;ssh_key} -N &#x27;&#x27; -C &#x27;haxinator@&quot; . gethostname() . &quot;&#x27; -q&quot;;<br><br>        exec($command, $output, $return_var);<br>        $output_str = implode(&quot;\n&quot;, $output);<br><br>        if ($return_var !== 0) {<br>            $this-&gt;logMessage(&#x27;ERROR&#x27;, &quot;Failed to regenerate SSH keys: $output_str&quot;);<br>            return [</div>
+</div>
+<div class="occurrence-item">
+    <p><strong>File:</strong> haxinator-pigen-overlay/stage2/02-custom-config/root_files/html/network/Tunnel.php, <strong>Line:</strong> 400, <strong>Function:</strong> file_get_contents</p>
+    <div class="context-code">                &#x27;message&#x27; =&gt; &#x27;No public key found. Please generate SSH keys first.&#x27;,<br>                &#x27;key&#x27; =&gt; &#x27;&#x27;<br>            ];<br>        }<br><br>        $key_content = file_get_contents($pub_key_path);<br><br>        return [<br>            &#x27;status&#x27; =&gt; true,<br>            &#x27;message&#x27; =&gt; &#x27;Public key retrieved successfully&#x27;,<br>            &#x27;key&#x27; =&gt; $key_content</div>
+</div>
+<div class="occurrence-item">
     <p><strong>File:</strong> haxinator-pigen-overlay/stage2/02-custom-config/root_files/html/network/Network.php, <strong>Line:</strong> 199, <strong>Function:</strong> exec</p>
     <div class="context-code">    }<br><br>    public function configureInterface($iface, $mode, $postData)<br>    {<br>        $connectionName = &#x27;&#x27;;<br>        exec(&quot;nmcli -t -f NAME,DEVICE connection show&quot;, $connLines);<br>        foreach ($connLines as $line) {<br>            list($connName, $dev) = explode(&#x27;:&#x27;, $line);<br>            if ($dev === $iface) {<br>                $connectionName = $connName;<br>                break;</div>
 </div>
@@ -329,6 +313,74 @@
     <div class="context-code"><br>        if (empty($errors)) {<br>            // Restart the connection if it&#x27;s active<br>            exec(&quot;nmcli -t -f NAME,DEVICE connection show --active | grep -q \&quot;$escaped\&quot;&quot;, $out, $ret);<br>            if ($ret === 0) {<br>                exec(&quot;nmcli connection down uuid $escaped &amp;&amp; nmcli connection up uuid $escaped 2&gt;&amp;1&quot;, $out, $ret);<br>                if ($ret !== 0) {<br>                    $errors[] = &quot;Connection updated but failed to restart: &quot; . implode(&quot;\n&quot;, $out);<br>                }<br>            }<br>        }</div>
 </div>
 <div class="occurrence-item">
+    <p><strong>File:</strong> haxinator-pigen-overlay/stage2/02-custom-config/root_files/html/api/apply_config.php, <strong>Line:</strong> 7, <strong>Function:</strong> ini_set</p>
+    <div class="context-code">// Include security framework<br>require_once __DIR__ . &#x27;/../security/bootstrap.php&#x27;;<br><br>// Strict error reporting<br>error_reporting(E_ALL);<br>ini_set(&#x27;display_errors&#x27;, 0);<br><br>// Authentication check<br>if (!isset($_SESSION[&#x27;logged_in&#x27;]) || !$_SESSION[&#x27;logged_in&#x27;]) {<br>    http_response_code(403);<br>    die(json_encode([&#x27;error&#x27; =&gt; &#x27;Unauthorized&#x27;]));</div>
+</div>
+<div class="occurrence-item">
+    <p><strong>File:</strong> haxinator-pigen-overlay/stage2/02-custom-config/root_files/html/api/apply_config.php, <strong>Line:</strong> 44, <strong>Function:</strong> exec</p>
+    <div class="context-code">    if (isset($env[&#x27;VPN_USER&#x27;]) &amp;&amp; isset($env[&#x27;VPN_PASS&#x27;])) {<br>        if (!is_readable(&#x27;/var/www/openvpn-udp.ovpn&#x27;)) {<br>            $results[&#x27;warnings&#x27;][] = &#x27;OpenVPN credentials found but no configuration file present. Please upload the VPN configuration file.&#x27;;<br>        } else {<br>            // Delete existing connection if present<br>            exec(&#x27;nmcli connection delete openvpn-udp 2&gt;/dev/null&#x27;);<br><br>            // Import and configure VPN<br>            $output = [];<br>            $retval = 0;<br></div>
+</div>
+<div class="occurrence-item">
+    <p><strong>File:</strong> haxinator-pigen-overlay/stage2/02-custom-config/root_files/html/api/apply_config.php, <strong>Line:</strong> 50, <strong>Function:</strong> exec</p>
+    <div class="context-code"><br>            // Import and configure VPN<br>            $output = [];<br>            $retval = 0;<br><br>            exec(&#x27;nmcli connection import type openvpn file /var/www/openvpn-udp.ovpn&#x27;, $output, $retval);<br>            if ($retval !== 0) {<br>                throw new Exception(&#x27;Failed to import OpenVPN configuration&#x27;);<br>            }<br><br>            exec(&#x27;nmcli connection modify openvpn-udp +vpn.data username=&quot;&#x27; . escapeshellarg($env[&#x27;VPN_USER&#x27;]) . &#x27;&quot; +vpn.data password-flags=0&#x27;, $output, $retval);</div>
+</div>
+<div class="occurrence-item">
+    <p><strong>File:</strong> haxinator-pigen-overlay/stage2/02-custom-config/root_files/html/api/apply_config.php, <strong>Line:</strong> 55, <strong>Function:</strong> exec</p>
+    <div class="context-code">            exec(&#x27;nmcli connection import type openvpn file /var/www/openvpn-udp.ovpn&#x27;, $output, $retval);<br>            if ($retval !== 0) {<br>                throw new Exception(&#x27;Failed to import OpenVPN configuration&#x27;);<br>            }<br><br>            exec(&#x27;nmcli connection modify openvpn-udp +vpn.data username=&quot;&#x27; . escapeshellarg($env[&#x27;VPN_USER&#x27;]) . &#x27;&quot; +vpn.data password-flags=0&#x27;, $output, $retval);<br>            if ($retval !== 0) {<br>                throw new Exception(&#x27;Failed to set OpenVPN username&#x27;);<br>            }<br><br>            exec(&#x27;nmcli connection modify openvpn-udp vpn.secrets password=&quot;&#x27; . escapeshellarg($env[&#x27;VPN_PASS&#x27;]) . &#x27;&quot;&#x27;, $output, $retval);</div>
+</div>
+<div class="occurrence-item">
+    <p><strong>File:</strong> haxinator-pigen-overlay/stage2/02-custom-config/root_files/html/api/apply_config.php, <strong>Line:</strong> 60, <strong>Function:</strong> exec</p>
+    <div class="context-code">            exec(&#x27;nmcli connection modify openvpn-udp +vpn.data username=&quot;&#x27; . escapeshellarg($env[&#x27;VPN_USER&#x27;]) . &#x27;&quot; +vpn.data password-flags=0&#x27;, $output, $retval);<br>            if ($retval !== 0) {<br>                throw new Exception(&#x27;Failed to set OpenVPN username&#x27;);<br>            }<br><br>            exec(&#x27;nmcli connection modify openvpn-udp vpn.secrets password=&quot;&#x27; . escapeshellarg($env[&#x27;VPN_PASS&#x27;]) . &#x27;&quot;&#x27;, $output, $retval);<br>            if ($retval !== 0) {<br>                throw new Exception(&#x27;Failed to set OpenVPN password&#x27;);<br>            }<br><br>            $results[&#x27;connections&#x27;][] = &#x27;OpenVPN connection configured successfully&#x27;;</div>
+</div>
+<div class="occurrence-item">
+    <p><strong>File:</strong> haxinator-pigen-overlay/stage2/02-custom-config/root_files/html/api/apply_config.php, <strong>Line:</strong> 77, <strong>Function:</strong> exec</p>
+    <div class="context-code">        $mtu = $env[&#x27;IODINE_MTU&#x27;] ?? &#x27;1400&#x27;;<br>        $lazy = $env[&#x27;IODINE_LAZY&#x27;] ?? &#x27;true&#x27;;<br>        $interval = $env[&#x27;IODINE_INTERVAL&#x27;] ?? &#x27;4&#x27;;<br><br>        // Delete existing connection if present<br>        exec(&#x27;nmcli connection delete iodine-vpn 2&gt;/dev/null&#x27;);<br><br>        // Create new connection<br>        $output = [];<br>        $retval = 0;<br></div>
+</div>
+<div class="occurrence-item">
+    <p><strong>File:</strong> haxinator-pigen-overlay/stage2/02-custom-config/root_files/html/api/apply_config.php, <strong>Line:</strong> 83, <strong>Function:</strong> exec</p>
+    <div class="context-code"><br>        // Create new connection<br>        $output = [];<br>        $retval = 0;<br><br>        exec(&#x27;nmcli connection add type vpn ifname iodine0 con-name iodine-vpn vpn-type iodine&#x27;, $output, $retval);<br>        if ($retval !== 0) {<br>            throw new Exception(&#x27;Failed to create Iodine connection&#x27;);<br>        }<br><br>        $vpnData = sprintf(&#x27;topdomain=%s,nameserver=%s,password=%s,mtu=%s,lazy-mode=%s,interval=%s&#x27;,</div>
+</div>
+<div class="occurrence-item">
+    <p><strong>File:</strong> haxinator-pigen-overlay/stage2/02-custom-config/root_files/html/api/apply_config.php, <strong>Line:</strong> 97, <strong>Function:</strong> exec</p>
+    <div class="context-code">            escapeshellarg($mtu),<br>            escapeshellarg($lazy),<br>            escapeshellarg($interval)<br>        );<br><br>        exec(&#x27;nmcli connection modify iodine-vpn vpn.data &quot;&#x27; . $vpnData . &#x27;&quot;&#x27;, $output, $retval);<br>        if ($retval !== 0) {<br>            throw new Exception(&#x27;Failed to configure Iodine connection&#x27;);<br>        }<br><br>        exec(&#x27;nmcli connection modify iodine-vpn vpn.secrets password=&quot;&#x27; . escapeshellarg($env[&#x27;IODINE_PASS&#x27;]) . &#x27;&quot;&#x27;, $output, $retval);</div>
+</div>
+<div class="occurrence-item">
+    <p><strong>File:</strong> haxinator-pigen-overlay/stage2/02-custom-config/root_files/html/api/apply_config.php, <strong>Line:</strong> 102, <strong>Function:</strong> exec</p>
+    <div class="context-code">        exec(&#x27;nmcli connection modify iodine-vpn vpn.data &quot;&#x27; . $vpnData . &#x27;&quot;&#x27;, $output, $retval);<br>        if ($retval !== 0) {<br>            throw new Exception(&#x27;Failed to configure Iodine connection&#x27;);<br>        }<br><br>        exec(&#x27;nmcli connection modify iodine-vpn vpn.secrets password=&quot;&#x27; . escapeshellarg($env[&#x27;IODINE_PASS&#x27;]) . &#x27;&quot;&#x27;, $output, $retval);<br>        if ($retval !== 0) {<br>            throw new Exception(&#x27;Failed to set Iodine password&#x27;);<br>        }<br><br>        $results[&#x27;connections&#x27;][] = &#x27;Iodine DNS tunnel configured successfully&#x27;;</div>
+</div>
+<div class="occurrence-item">
+    <p><strong>File:</strong> haxinator-pigen-overlay/stage2/02-custom-config/root_files/html/api/apply_config.php, <strong>Line:</strong> 113, <strong>Function:</strong> exec</p>
+    <div class="context-code">    }<br><br>    // Process Hans configuration<br>    if (isset($env[&#x27;HANS_SERVER&#x27;]) &amp;&amp; isset($env[&#x27;HANS_PASSWORD&#x27;])) {<br>        // Delete existing connection if present<br>        exec(&#x27;nmcli connection delete hans-icmp-vpn 2&gt;/dev/null&#x27;);<br><br>        // Create new connection<br>        $output = [];<br>        $retval = 0;<br></div>
+</div>
+<div class="occurrence-item">
+    <p><strong>File:</strong> haxinator-pigen-overlay/stage2/02-custom-config/root_files/html/api/apply_config.php, <strong>Line:</strong> 119, <strong>Function:</strong> exec</p>
+    <div class="context-code"><br>        // Create new connection<br>        $output = [];<br>        $retval = 0;<br><br>        exec(&#x27;nmcli connection add type vpn con-name hans-icmp-vpn ifname tun0 vpn-type org.freedesktop.NetworkManager.hans&#x27;, $output, $retval);<br>        if ($retval !== 0) {<br>            throw new Exception(&#x27;Failed to create Hans connection&#x27;);<br>        }<br><br>        exec(&#x27;nmcli connection modify hans-icmp-vpn vpn.data &quot;server=&#x27; . escapeshellarg($env[&#x27;HANS_SERVER&#x27;]) . &#x27;,password=&#x27; . escapeshellarg($env[&#x27;HANS_PASSWORD&#x27;]) . &#x27;,password-flags=1&quot;&#x27;, $output, $retval);</div>
+</div>
+<div class="occurrence-item">
+    <p><strong>File:</strong> haxinator-pigen-overlay/stage2/02-custom-config/root_files/html/api/apply_config.php, <strong>Line:</strong> 124, <strong>Function:</strong> exec</p>
+    <div class="context-code">        exec(&#x27;nmcli connection add type vpn con-name hans-icmp-vpn ifname tun0 vpn-type org.freedesktop.NetworkManager.hans&#x27;, $output, $retval);<br>        if ($retval !== 0) {<br>            throw new Exception(&#x27;Failed to create Hans connection&#x27;);<br>        }<br><br>        exec(&#x27;nmcli connection modify hans-icmp-vpn vpn.data &quot;server=&#x27; . escapeshellarg($env[&#x27;HANS_SERVER&#x27;]) . &#x27;,password=&#x27; . escapeshellarg($env[&#x27;HANS_PASSWORD&#x27;]) . &#x27;,password-flags=1&quot;&#x27;, $output, $retval);<br>        if ($retval !== 0) {<br>            throw new Exception(&#x27;Failed to configure Hans connection&#x27;);<br>        }<br><br>        exec(&#x27;nmcli connection modify hans-icmp-vpn ipv4.method auto ipv4.never-default true&#x27;, $output, $retval);</div>
+</div>
+<div class="occurrence-item">
+    <p><strong>File:</strong> haxinator-pigen-overlay/stage2/02-custom-config/root_files/html/api/apply_config.php, <strong>Line:</strong> 129, <strong>Function:</strong> exec</p>
+    <div class="context-code">        exec(&#x27;nmcli connection modify hans-icmp-vpn vpn.data &quot;server=&#x27; . escapeshellarg($env[&#x27;HANS_SERVER&#x27;]) . &#x27;,password=&#x27; . escapeshellarg($env[&#x27;HANS_PASSWORD&#x27;]) . &#x27;,password-flags=1&quot;&#x27;, $output, $retval);<br>        if ($retval !== 0) {<br>            throw new Exception(&#x27;Failed to configure Hans connection&#x27;);<br>        }<br><br>        exec(&#x27;nmcli connection modify hans-icmp-vpn ipv4.method auto ipv4.never-default true&#x27;, $output, $retval);<br>        if ($retval !== 0) {<br>            throw new Exception(&#x27;Failed to configure Hans IPv4 settings&#x27;);<br>        }<br><br>        exec(&#x27;nmcli connection modify hans-icmp-vpn ipv6.method auto ipv6.addr-gen-mode default&#x27;, $output, $retval);</div>
+</div>
+<div class="occurrence-item">
+    <p><strong>File:</strong> haxinator-pigen-overlay/stage2/02-custom-config/root_files/html/api/apply_config.php, <strong>Line:</strong> 134, <strong>Function:</strong> exec</p>
+    <div class="context-code">        exec(&#x27;nmcli connection modify hans-icmp-vpn ipv4.method auto ipv4.never-default true&#x27;, $output, $retval);<br>        if ($retval !== 0) {<br>            throw new Exception(&#x27;Failed to configure Hans IPv4 settings&#x27;);<br>        }<br><br>        exec(&#x27;nmcli connection modify hans-icmp-vpn ipv6.method auto ipv6.addr-gen-mode default&#x27;, $output, $retval);<br>        if ($retval !== 0) {<br>            throw new Exception(&#x27;Failed to configure Hans IPv6 settings&#x27;);<br>        }<br><br>        $results[&#x27;connections&#x27;][] = &#x27;Hans ICMP VPN configured successfully&#x27;;</div>
+</div>
+<div class="occurrence-item">
+    <p><strong>File:</strong> haxinator-pigen-overlay/stage2/02-custom-config/root_files/html/api/apply_config.php, <strong>Line:</strong> 145, <strong>Function:</strong> exec</p>
+    <div class="context-code">    }<br><br>    // Process WiFi AP configuration<br>    if (isset($env[&#x27;WIFI_SSID&#x27;]) &amp;&amp; isset($env[&#x27;WIFI_PASSWORD&#x27;])) {<br>        // Delete existing connection if present<br>        exec(&#x27;nmcli connection delete pi_hotspot 2&gt;/dev/null&#x27;);<br><br>        // Create new connection<br>        $output = [];<br>        $retval = 0;<br></div>
+</div>
+<div class="occurrence-item">
+    <p><strong>File:</strong> haxinator-pigen-overlay/stage2/02-custom-config/root_files/html/api/apply_config.php, <strong>Line:</strong> 151, <strong>Function:</strong> exec</p>
+    <div class="context-code"><br>        // Create new connection<br>        $output = [];<br>        $retval = 0;<br><br>        exec(&#x27;nmcli con add type wifi ifname wlan0 con-name pi_hotspot autoconnect yes ssid &quot;&#x27; . escapeshellarg($env[&#x27;WIFI_SSID&#x27;]) . &#x27;&quot;&#x27;, $output, $retval);<br>        if ($retval !== 0) {<br>            throw new Exception(&#x27;Failed to create WiFi AP connection&#x27;);<br>        }<br><br>        $wifiCmd = &#x27;nmcli con mod pi_hotspot &#x27; .</div>
+</div>
+<div class="occurrence-item">
+    <p><strong>File:</strong> haxinator-pigen-overlay/stage2/02-custom-config/root_files/html/api/apply_config.php, <strong>Line:</strong> 166, <strong>Function:</strong> exec</p>
+    <div class="context-code">            &#x27;ipv4.addresses 192.168.4.1/24 &#x27; .<br>            &#x27;ipv4.method shared &#x27; .<br>            &#x27;ipv4.never-default yes &#x27; .<br>            &#x27;ipv6.method ignore&#x27;;<br><br>        exec($wifiCmd, $output, $retval);<br>        if ($retval !== 0) {<br>            throw new Exception(&#x27;Failed to configure WiFi AP settings&#x27;);<br>        }<br><br>        $results[&#x27;connections&#x27;][] = &#x27;WiFi Access Point configured successfully&#x27;;</div>
+</div>
+<div class="occurrence-item">
     <p><strong>File:</strong> haxinator-pigen-overlay/stage2/02-custom-config/root_files/html/api/shutdown.php, <strong>Line:</strong> 17, <strong>Function:</strong> exec</p>
     <div class="context-code">if ($_SERVER[&#x27;REQUEST_METHOD&#x27;] === &#x27;POST&#x27;) {<br>    // CSRF check is already handled by bootstrap.php<br>}<br><br>// Execute shutdown command<br>exec(&#x27;sudo /sbin/poweroff 2&gt;&amp;1&#x27;, $output, $return_var);<br><br>if ($return_var === 0) {<br>    echo json_encode([&#x27;success&#x27; =&gt; true, &#x27;message&#x27; =&gt; &#x27;System is shutting down...&#x27;]);<br>} else {<br>    error_log(&quot;Shutdown failed. Output: &quot; . implode(&quot;\n&quot;, $output));</div>
 </div>
@@ -345,32 +397,24 @@
     <div class="context-code">        // Sanitize parameters<br>        $domain = escapeshellarg($domain);<br>        $type = escapeshellarg($type);<br><br>        // Run dig command<br>        exec(&quot;dig $type $domain +short 2&gt;&amp;1&quot;, $output, $return_var);<br>        if ($return_var !== 0) {<br>            die(&#x27;Error: dig command failed with code &#x27; . $return_var);<br>        }<br>        break;<br>}</div>
 </div>
 <div class="occurrence-item">
-    <p><strong>File:</strong> haxinator-pigen-overlay/stage2/02-custom-config/root_files/html/api/upload.php, <strong>Line:</strong> 7, <strong>Function:</strong> ini_set</p>
-    <div class="context-code">// Include security framework<br>require_once __DIR__ . &#x27;/../security/bootstrap.php&#x27;;<br><br>// Strict error reporting<br>error_reporting(E_ALL);<br>ini_set(&#x27;display_errors&#x27;, 0);<br><br>// Authentication check<br>if (!isset($_SESSION[&#x27;logged_in&#x27;]) || !$_SESSION[&#x27;logged_in&#x27;]) {<br>    http_response_code(403);<br>    die(json_encode([&#x27;error&#x27; =&gt; &#x27;Unauthorized&#x27;]));</div>
+    <p><strong>File:</strong> haxinator-pigen-overlay/stage2/02-custom-config/root_files/html/api/upload.php, <strong>Line:</strong> 111, <strong>Function:</strong> file_get_contents</p>
+    <div class="context-code">    $isTextFile = false;<br>    if (strpos($mimeType, &#x27;text/&#x27;) === 0) {<br>        $isTextFile = true;<br>    } elseif ($mimeType === &#x27;application/octet-stream&#x27;) {<br>        // For .ovpn and other text files sometimes detected as octet-stream<br>        $content = file_get_contents($file[&#x27;tmp_name&#x27;]);<br>        if (mb_detect_encoding($content, &#x27;ASCII, UTF-8&#x27;, true)) {<br>            $isTextFile = true;<br>        }<br>    }<br></div>
 </div>
 <div class="occurrence-item">
-    <p><strong>File:</strong> haxinator-pigen-overlay/stage2/02-custom-config/root_files/html/api/upload.php, <strong>Line:</strong> 62, <strong>Function:</strong> preg_replace</p>
-    <div class="context-code"><br>    // Remove extension for sanitizing<br>    $name = pathinfo($filename, PATHINFO_FILENAME);<br><br>    // Replace any non-alphanumeric characters<br>    $name = preg_replace(&#x27;/[^a-zA-Z0-9]/&#x27;, &#x27;_&#x27;, $name);<br><br>    // Trim any leading/trailing underscores<br>    $name = trim($name, &#x27;_&#x27;);<br><br>    // Add timestamp and reconnect extension</div>
+    <p><strong>File:</strong> haxinator-pigen-overlay/stage2/02-custom-config/root_files/html/api/upload.php, <strong>Line:</strong> 133, <strong>Function:</strong> mkdir</p>
+    <div class="context-code">    switch ($type) {<br>        case &#x27;passwords&#x27;:<br>            // Save to wordlists directory<br>            $destination = $typeConfig[&#x27;dir&#x27;] . &#x27;/&#x27; . basename($file[&#x27;name&#x27;]);<br>            if (!is_dir($typeConfig[&#x27;dir&#x27;])) {<br>                mkdir($typeConfig[&#x27;dir&#x27;], 0755, true);<br>            }<br><br>            if (!move_uploaded_file($file[&#x27;tmp_name&#x27;], $destination)) {<br>                throw new Exception(&#x27;Failed to save file&#x27;);<br>            }</div>
 </div>
 <div class="occurrence-item">
-    <p><strong>File:</strong> haxinator-pigen-overlay/stage2/02-custom-config/root_files/html/api/upload.php, <strong>Line:</strong> 73, <strong>Function:</strong> mkdir</p>
-    <div class="context-code">    return time() . &#x27;-&#x27; . substr($name, 0, 50) . &#x27;.&#x27; . $ext;<br>}<br><br>function verifyUploadDirectory($dir) {<br>    if (!file_exists($dir)) {<br>        if (!mkdir($dir, 0750, true)) {<br>            throw new Exception(&#x27;Failed to create upload directory&#x27;);<br>        }<br>    }<br><br>    // Verify directory permissions</div>
+    <p><strong>File:</strong> haxinator-pigen-overlay/stage2/02-custom-config/root_files/html/api/upload.php, <strong>Line:</strong> 136, <strong>Function:</strong> move_uploaded_file</p>
+    <div class="context-code">            $destination = $typeConfig[&#x27;dir&#x27;] . &#x27;/&#x27; . basename($file[&#x27;name&#x27;]);<br>            if (!is_dir($typeConfig[&#x27;dir&#x27;])) {<br>                mkdir($typeConfig[&#x27;dir&#x27;], 0755, true);<br>            }<br><br>            if (!move_uploaded_file($file[&#x27;tmp_name&#x27;], $destination)) {<br>                throw new Exception(&#x27;Failed to save file&#x27;);<br>            }<br><br>            // Set permissions<br>            chmod($destination, 0644);</div>
 </div>
 <div class="occurrence-item">
-    <p><strong>File:</strong> haxinator-pigen-overlay/stage2/02-custom-config/root_files/html/api/upload.php, <strong>Line:</strong> 87, <strong>Function:</strong> file_put_contents</p>
-    <div class="context-code">    }<br><br>    // Create .htaccess to prevent direct access<br>    $htaccess = $dir . &#x27;/.htaccess&#x27;;<br>    if (!file_exists($htaccess)) {<br>        file_put_contents($htaccess, &quot;Deny from all\n&quot;);<br>        chmod($htaccess, 0640);<br>    }<br>}<br><br>try {</div>
+    <p><strong>File:</strong> haxinator-pigen-overlay/stage2/02-custom-config/root_files/html/api/upload.php, <strong>Line:</strong> 149, <strong>Function:</strong> move_uploaded_file</p>
+    <div class="context-code"><br>        case &#x27;env-secrets&#x27;:<br>            // Save to /var/www with specific name<br>            $destination = &#x27;/var/www/env-secrets&#x27;;<br><br>            if (!move_uploaded_file($file[&#x27;tmp_name&#x27;], $destination)) {<br>                throw new Exception(&#x27;Failed to save file&#x27;);<br>            }<br><br>            // Set restrictive permissions - only readable by www-data<br>            chmod($destination, 0600);</div>
 </div>
 <div class="occurrence-item">
-    <p><strong>File:</strong> haxinator-pigen-overlay/stage2/02-custom-config/root_files/html/api/upload.php, <strong>Line:</strong> 168, <strong>Function:</strong> fopen</p>
-    <div class="context-code"><br>    // For password files, accept any text-based mime type<br>    if ($type === &#x27;passwords&#x27;) {<br>        $isTextFile = false;<br>        // Check if it&#x27;s a text file by reading the first few bytes<br>        $handle = fopen($file[&#x27;tmp_name&#x27;], &#x27;r&#x27;);<br>        if ($handle === false) {<br>            throw new Exception(&#x27;Failed to read file&#x27;);<br>        }<br>        $firstBytes = fread($handle, 512);<br>        fclose($handle);</div>
-</div>
-<div class="occurrence-item">
-    <p><strong>File:</strong> haxinator-pigen-overlay/stage2/02-custom-config/root_files/html/api/upload.php, <strong>Line:</strong> 195, <strong>Function:</strong> copy</p>
-    <div class="context-code">    // Special handling for password files - save directly to passwords.txt<br>    if ($type === &#x27;passwords&#x27;) {<br>        $destination = &#x27;/var/www/html/passwords.txt&#x27;;<br>        error_log(&quot;Saving password file to: &quot; . $destination);<br><br>        if (!copy($file[&#x27;tmp_name&#x27;], $destination)) {<br>            throw new Exception(&#x27;Failed to save password file&#x27;);<br>        }<br><br>        // Set secure permissions<br>        chmod($destination, 0644);</div>
-</div>
-<div class="occurrence-item">
-    <p><strong>File:</strong> haxinator-pigen-overlay/stage2/02-custom-config/root_files/html/api/upload.php, <strong>Line:</strong> 212, <strong>Function:</strong> move_uploaded_file</p>
-    <div class="context-code">        $filename = sanitizeFilename($file[&#x27;name&#x27;]);<br>        $destination = $typeConfig[&#x27;dir&#x27;] . &#x27;/&#x27; . $filename;<br><br>        error_log(&quot;Saving to: &quot; . $destination);<br><br>        if (!move_uploaded_file($file[&#x27;tmp_name&#x27;], $destination)) {<br>            throw new Exception(&#x27;Failed to save file&#x27;);<br>        }<br><br>        // Set secure permissions<br>        chmod($destination, 0640);</div>
+    <p><strong>File:</strong> haxinator-pigen-overlay/stage2/02-custom-config/root_files/html/api/upload.php, <strong>Line:</strong> 162, <strong>Function:</strong> move_uploaded_file</p>
+    <div class="context-code"><br>        case &#x27;vpn&#x27;:<br>            // Save to /var/www with fixed name for OpenVPN<br>            $destination = &#x27;/var/www/openvpn-udp.ovpn&#x27;;<br><br>            if (!move_uploaded_file($file[&#x27;tmp_name&#x27;], $destination)) {<br>                throw new Exception(&#x27;Failed to save file&#x27;);<br>            }<br><br>            // Set restrictive permissions - only readable by www-data<br>            chmod($destination, 0600);</div>
 </div>
 <div class="occurrence-item">
     <p><strong>File:</strong> haxinator-pigen-overlay/stage2/02-custom-config/root_files/html/api/ping-stream.php, <strong>Line:</strong> 17, <strong>Function:</strong> ini_set</p>
@@ -448,6 +492,18 @@
     <p><strong>File:</strong> haxinator-pigen-overlay/stage2/02-custom-config/root_files/html/data/Data.php, <strong>Line:</strong> 231, <strong>Function:</strong> exec</p>
     <div class="context-code">    }<br><br>    public function getActiveConnectionUuids()<br>    {<br>        $active_uuids = [];<br>        exec(&quot;nmcli -t -f UUID connection show --active&quot;, $out);<br>        foreach ($out as $line) {<br>            $active_uuids[] = trim($line);<br>        }<br>        return $active_uuids;<br>    }</div>
 </div>
+<div class="occurrence-item">
+    <p><strong>File:</strong> haxinator-pigen-overlay/stage2/02-custom-config/root_files/html/data/Util.php, <strong>Line:</strong> 18, <strong>Function:</strong> curl_exec</p>
+    <div class="context-code">        $ch = curl_init();<br>        curl_setopt($ch, CURLOPT_URL, &#x27;https://ifconfig.me&#x27;);<br>        curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);<br>        curl_setopt($ch, CURLOPT_TIMEOUT, 2);<br>        curl_setopt($ch, CURLOPT_USERAGENT, &#x27;curl&#x27;);<br>        $ip = trim(curl_exec($ch));<br>        $httpcode = curl_getinfo($ch, CURLINFO_HTTP_CODE);<br>        curl_close($ch);<br>        if (filter_var($ip, FILTER_VALIDATE_IP) &amp;&amp; $httpcode === 200) {<br>            return $ip;<br>        }</div>
+</div>
+<div class="occurrence-item">
+    <p><strong>File:</strong> haxinator-pigen-overlay/stage2/02-custom-config/root_files/html/data/Util.php, <strong>Line:</strong> 35, <strong>Function:</strong> exec</p>
+    <div class="context-code">     * @return bool True if DNS works<br>     */<br>    public static function dnsResolvesGoogle() {<br>        $output = null;<br>        $retval = null;<br>        exec(&#x27;dig +short google.com&#x27;, $output, $retval);<br>        foreach ($output as $line) {<br>            if (filter_var($line, FILTER_VALIDATE_IP)) {<br>                return true;<br>            }<br>        }</div>
+</div>
+<div class="occurrence-item">
+    <p><strong>File:</strong> haxinator-pigen-overlay/stage2/02-custom-config/root_files/html/data/Util.php, <strong>Line:</strong> 52, <strong>Function:</strong> exec</p>
+    <div class="context-code">     * @return bool True if ping works<br>     */<br>    public static function pingGoogle() {<br>        $output = [];<br>        $retval = -1;<br>        exec(&#x27;ping -c 1 -W 1 8.8.8.8 2&gt;/dev/null&#x27;, $output, $retval);<br>        if ($retval === 0) {<br>            return true;<br>        }<br>        return false;<br>    }</div>
+</div>
 
             </div>
 
@@ -456,10 +512,10 @@
                 <div class="config-title">Summary</div>
                 <div class="config-description">Summary of scanned files and incidents.</div>
                 <p><strong>Total files scanned:</strong> 23</p>
-                <p><strong>Total incidents:</strong> 77</p>
+                <p><strong>Total incidents:</strong> 91</p>
                 <p><strong>Files with incidents:</strong></p>
                 <ul>
-                    <li>haxinator-pigen-overlay/stage2/02-custom-config/root_files/html/DEV/ping-stream.php: 4 incident(s)</li><li>haxinator-pigen-overlay/stage2/02-custom-config/root_files/html/api/ping-stream.php: 4 incident(s)</li><li>haxinator-pigen-overlay/stage2/02-custom-config/root_files/html/api/run-script.php: 3 incident(s)</li><li>haxinator-pigen-overlay/stage2/02-custom-config/root_files/html/api/shutdown.php: 1 incident(s)</li><li>haxinator-pigen-overlay/stage2/02-custom-config/root_files/html/api/upload.php: 7 incident(s)</li><li>haxinator-pigen-overlay/stage2/02-custom-config/root_files/html/configure.php: 3 incident(s)</li><li>haxinator-pigen-overlay/stage2/02-custom-config/root_files/html/data/Data.php: 11 incident(s)</li><li>haxinator-pigen-overlay/stage2/02-custom-config/root_files/html/network/Network.php: 12 incident(s)</li><li>haxinator-pigen-overlay/stage2/02-custom-config/root_files/html/network/Tunnel.php: 17 incident(s)</li><li>haxinator-pigen-overlay/stage2/02-custom-config/root_files/html/pingtest.php: 1 incident(s)</li><li>haxinator-pigen-overlay/stage2/02-custom-config/root_files/html/pingvisual.php: 1 incident(s)</li><li>haxinator-pigen-overlay/stage2/02-custom-config/root_files/html/security/SecureCommand.php: 1 incident(s)</li><li>haxinator-pigen-overlay/stage2/02-custom-config/root_files/html/security/bootstrap.php: 3 incident(s)</li><li>haxinator-pigen-overlay/stage2/02-custom-config/root_files/html/ui/UI.php: 5 incident(s)</li><li>haxinator-pigen-overlay/stage2/02-custom-config/root_files/html/ui/diagnostic-status.php: 4 incident(s)</li>
+                    <li>haxinator-pigen-overlay/stage2/02-custom-config/root_files/html/DEV/ping-stream.php: 4 incident(s)</li><li>haxinator-pigen-overlay/stage2/02-custom-config/root_files/html/api/apply_config.php: 17 incident(s)</li><li>haxinator-pigen-overlay/stage2/02-custom-config/root_files/html/api/ping-stream.php: 4 incident(s)</li><li>haxinator-pigen-overlay/stage2/02-custom-config/root_files/html/api/run-script.php: 3 incident(s)</li><li>haxinator-pigen-overlay/stage2/02-custom-config/root_files/html/api/shutdown.php: 1 incident(s)</li><li>haxinator-pigen-overlay/stage2/02-custom-config/root_files/html/api/upload.php: 5 incident(s)</li><li>haxinator-pigen-overlay/stage2/02-custom-config/root_files/html/configure.php: 1 incident(s)</li><li>haxinator-pigen-overlay/stage2/02-custom-config/root_files/html/data/Data.php: 11 incident(s)</li><li>haxinator-pigen-overlay/stage2/02-custom-config/root_files/html/data/Util.php: 3 incident(s)</li><li>haxinator-pigen-overlay/stage2/02-custom-config/root_files/html/network/Network.php: 12 incident(s)</li><li>haxinator-pigen-overlay/stage2/02-custom-config/root_files/html/network/Tunnel.php: 20 incident(s)</li><li>haxinator-pigen-overlay/stage2/02-custom-config/root_files/html/security/SecureCommand.php: 1 incident(s)</li><li>haxinator-pigen-overlay/stage2/02-custom-config/root_files/html/security/bootstrap.php: 3 incident(s)</li><li>haxinator-pigen-overlay/stage2/02-custom-config/root_files/html/ui/UI.php: 2 incident(s)</li><li>haxinator-pigen-overlay/stage2/02-custom-config/root_files/html/ui/diagnostic-status.php: 4 incident(s)</li>
                 </ul>
             </div>
 
@@ -472,76 +528,76 @@
                     <thead>
                         <tr>
                             <th scope="col" style="min-width: 200px; width: 30%;">File</th>
-                            <th scope="col" style="min-width: 80px; width: 5%;">copy</th><th scope="col" style="min-width: 80px; width: 5%;">curl_exec</th><th scope="col" style="min-width: 80px; width: 5%;">exec</th><th scope="col" style="min-width: 80px; width: 5%;">file_get_c...</th><th scope="col" style="min-width: 80px; width: 5%;">file_put_c...</th><th scope="col" style="min-width: 80px; width: 5%;">fopen</th><th scope="col" style="min-width: 80px; width: 5%;">getenv</th><th scope="col" style="min-width: 80px; width: 5%;">ini_get</th><th scope="col" style="min-width: 80px; width: 5%;">ini_set</th><th scope="col" style="min-width: 80px; width: 5%;">mkdir</th><th scope="col" style="min-width: 80px; width: 5%;">move_uploa...</th><th scope="col" style="min-width: 80px; width: 5%;">ob_start</th><th scope="col" style="min-width: 80px; width: 5%;">popen</th><th scope="col" style="min-width: 80px; width: 5%;">preg_repla...</th><th scope="col" style="min-width: 80px; width: 5%;">proc_open</th><th scope="col" style="min-width: 80px; width: 5%;">shell_exec</th><th scope="col" style="min-width: 80px; width: 5%;">unlink</th>
+                            <th scope="col" style="min-width: 80px; width: 5%;">curl_exec</th><th scope="col" style="min-width: 80px; width: 5%;">exec</th><th scope="col" style="min-width: 80px; width: 5%;">file_get_c...</th><th scope="col" style="min-width: 80px; width: 5%;">file_put_c...</th><th scope="col" style="min-width: 80px; width: 5%;">getenv</th><th scope="col" style="min-width: 80px; width: 5%;">ini_get</th><th scope="col" style="min-width: 80px; width: 5%;">ini_set</th><th scope="col" style="min-width: 80px; width: 5%;">mkdir</th><th scope="col" style="min-width: 80px; width: 5%;">move_uploa...</th><th scope="col" style="min-width: 80px; width: 5%;">ob_start</th><th scope="col" style="min-width: 80px; width: 5%;">popen</th><th scope="col" style="min-width: 80px; width: 5%;">preg_repla...</th><th scope="col" style="min-width: 80px; width: 5%;">proc_open</th><th scope="col" style="min-width: 80px; width: 5%;">shell_exec</th><th scope="col" style="min-width: 80px; width: 5%;">unlink</th>
                         </tr>
                     </thead>
                     <tbody>
                         <tr>
     <td>haxinator-pigen-overlay/stag</td>
-    <td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style='background: #ffcccc;'>2</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style='background: #ffcccc;'>1</td><td style='background: #ffcccc;'>1</td><td style=''>0</td>
+    <td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style='background: #ffcccc;'>2</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style='background: #ffcccc;'>1</td><td style='background: #ffcccc;'>1</td><td style=''>0</td>
 </tr>
 <tr>
     <td>haxinator-pigen-overlay/stag</td>
-    <td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style='background: #ffcccc;'>2</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style='background: #ffcccc;'>1</td><td style='background: #ffcccc;'>1</td><td style=''>0</td><td style=''>0</td><td style=''>0</td>
+    <td style=''>0</td><td style='background: #ff3333;'>16</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style='background: #ffcccc;'>1</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td>
 </tr>
 <tr>
     <td>haxinator-pigen-overlay/stag</td>
-    <td style=''>0</td><td style=''>0</td><td style='background: #ffcccc;'>3</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td>
+    <td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style='background: #ffcccc;'>2</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style='background: #ffcccc;'>1</td><td style='background: #ffcccc;'>1</td><td style=''>0</td><td style=''>0</td><td style=''>0</td>
 </tr>
 <tr>
     <td>haxinator-pigen-overlay/stag</td>
-    <td style=''>0</td><td style=''>0</td><td style='background: #ffcccc;'>1</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td>
+    <td style=''>0</td><td style='background: #ffcccc;'>3</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td>
 </tr>
 <tr>
     <td>haxinator-pigen-overlay/stag</td>
-    <td style='background: #ffcccc;'>1</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style='background: #ffcccc;'>1</td><td style='background: #ffcccc;'>1</td><td style=''>0</td><td style=''>0</td><td style='background: #ffcccc;'>1</td><td style='background: #ffcccc;'>1</td><td style='background: #ffcccc;'>1</td><td style=''>0</td><td style=''>0</td><td style='background: #ffcccc;'>1</td><td style=''>0</td><td style=''>0</td><td style=''>0</td>
+    <td style=''>0</td><td style='background: #ffcccc;'>1</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td>
 </tr>
 <tr>
     <td>haxinator-pigen-overlay/stag</td>
-    <td style=''>0</td><td style='background: #ffcccc;'>1</td><td style='background: #ffcccc;'>2</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td>
+    <td style=''>0</td><td style=''>0</td><td style='background: #ffcccc;'>1</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style='background: #ffcccc;'>1</td><td style='background: #ffcccc;'>3</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td>
 </tr>
 <tr>
     <td>haxinator-pigen-overlay/stag</td>
-    <td style=''>0</td><td style=''>0</td><td style='background: #ff6666;'>11</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td>
+    <td style=''>0</td><td style=''>0</td><td style='background: #ffcccc;'>1</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td>
 </tr>
 <tr>
     <td>haxinator-pigen-overlay/stag</td>
-    <td style=''>0</td><td style=''>0</td><td style='background: #ff6666;'>12</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td>
+    <td style=''>0</td><td style='background: #ff6666;'>11</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td>
 </tr>
 <tr>
     <td>haxinator-pigen-overlay/stag</td>
-    <td style=''>0</td><td style=''>0</td><td style='background: #ff9999;'>8</td><td style='background: #ffcccc;'>2</td><td style='background: #ffcccc;'>3</td><td style=''>0</td><td style='background: #ffcccc;'>1</td><td style=''>0</td><td style=''>0</td><td style='background: #ffcccc;'>1</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style='background: #ffcccc;'>2</td>
+    <td style='background: #ffcccc;'>1</td><td style='background: #ffcccc;'>2</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td>
 </tr>
 <tr>
     <td>haxinator-pigen-overlay/stag</td>
-    <td style=''>0</td><td style=''>0</td><td style='background: #ffcccc;'>1</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td>
+    <td style=''>0</td><td style='background: #ff6666;'>12</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td>
 </tr>
 <tr>
     <td>haxinator-pigen-overlay/stag</td>
-    <td style=''>0</td><td style=''>0</td><td style='background: #ffcccc;'>1</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td>
+    <td style=''>0</td><td style='background: #ff6666;'>9</td><td style='background: #ffcccc;'>3</td><td style='background: #ffcccc;'>3</td><td style='background: #ffcccc;'>1</td><td style=''>0</td><td style=''>0</td><td style='background: #ffcccc;'>2</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style='background: #ffcccc;'>2</td>
 </tr>
 <tr>
     <td>haxinator-pigen-overlay/stag</td>
-    <td style=''>0</td><td style=''>0</td><td style='background: #ffcccc;'>1</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td>
+    <td style=''>0</td><td style='background: #ffcccc;'>1</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td>
 </tr>
 <tr>
     <td>haxinator-pigen-overlay/stag</td>
-    <td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style='background: #ffcccc;'>3</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td>
+    <td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style='background: #ffcccc;'>3</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td>
 </tr>
 <tr>
     <td>haxinator-pigen-overlay/stag</td>
-    <td style=''>0</td><td style='background: #ffcccc;'>1</td><td style='background: #ffcccc;'>2</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style='background: #ffcccc;'>2</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td>
+    <td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style='background: #ffcccc;'>2</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td>
 </tr>
 <tr>
     <td>haxinator-pigen-overlay/stag</td>
-    <td style=''>0</td><td style='background: #ffcccc;'>1</td><td style='background: #ffcccc;'>2</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style='background: #ffcccc;'>1</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td>
+    <td style='background: #ffcccc;'>1</td><td style='background: #ffcccc;'>2</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style='background: #ffcccc;'>1</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td>
 </tr>
 
                     </tbody>
                 </table>
             </div>
         </div>
-        <div class="footer">Generated on 2025-05-17 22:50:01</div>
+        <div class="footer">Generated on 2025-05-18 08:37:01</div>
     </div>
 
     <script src="/js/bootstrap.bundle.min.js"></script>

@@ -329,4 +329,80 @@ class Tunnel
             'debug' => $debug
         ];
     }
+
+    /**
+     * Regenerate SSH keys for www-data user
+     * 
+     * @return array Success/error message and status
+     */
+    public function regenerateSshKeys()
+    {
+        // Check if tunnel is running
+        if ($this->isTunnelRunning()) {
+            return [
+                'status' => false,
+                'message' => 'Cannot regenerate keys while tunnel is running. Please stop the tunnel first.'
+            ];
+        }
+
+        // Ensure .ssh directory exists
+        $ssh_dir = dirname($this->ssh_key);
+        if (!is_dir($ssh_dir)) {
+            mkdir($ssh_dir, 0700, true);
+            chown($ssh_dir, 'www-data');
+            chgrp($ssh_dir, 'www-data');
+        }
+
+        // Generate new SSH key pair with no passphrase
+        $output = [];
+        $return_var = 0;
+        $command = "sudo -u www-data ssh-keygen -t rsa -b 4096 -f {$this->ssh_key} -N '' -C 'haxinator@" . gethostname() . "' -q";
+        
+        exec($command, $output, $return_var);
+        $output_str = implode("\n", $output);
+        
+        if ($return_var !== 0) {
+            $this->logMessage('ERROR', "Failed to regenerate SSH keys: $output_str");
+            return [
+                'status' => false,
+                'message' => "Failed to regenerate SSH keys: $output_str"
+            ];
+        }
+        
+        // Fix permissions
+        chmod($this->ssh_key, 0600);
+        chmod($this->ssh_key . '.pub', 0644);
+        
+        $this->logMessage('INFO', "SSH keys regenerated successfully");
+        return [
+            'status' => true,
+            'message' => 'SSH keys regenerated successfully'
+        ];
+    }
+
+    /**
+     * Get the public SSH key
+     * 
+     * @return array Key data and status
+     */
+    public function getPublicKey()
+    {
+        $pub_key_path = $this->ssh_key . '.pub';
+        
+        if (!file_exists($pub_key_path)) {
+            return [
+                'status' => false,
+                'message' => 'No public key found. Please generate SSH keys first.',
+                'key' => ''
+            ];
+        }
+        
+        $key_content = file_get_contents($pub_key_path);
+        
+        return [
+            'status' => true,
+            'message' => 'Public key retrieved successfully',
+            'key' => $key_content
+        ];
+    }
 } 

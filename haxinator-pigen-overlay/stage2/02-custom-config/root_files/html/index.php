@@ -17,6 +17,7 @@ require_once __DIR__ . '/auth/Auth.php';
 require_once __DIR__ . '/network/Network.php';
 require_once __DIR__ . '/network/Tunnel.php';
 require_once __DIR__ . '/data/Data.php';
+require_once __DIR__ . '/data/Util.php';
 require_once __DIR__ . '/ui/UI.php';
 
 // Handle authentication
@@ -67,6 +68,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['tunnel_action'])) {
                 $error = $result;
             }
             break;
+        case 'regenerate_ssh_keys':
+            $result = $tunnel->regenerateSshKeys();
+            if ($result['status']) {
+                $message = $result['message'];
+            } else {
+                $error = $result['message'];
+            }
+            break;
+    }
+}
+
+// Handle SSH public key download
+if (isset($_GET['download_ssh_key']) && $_GET['download_ssh_key'] === '1') {
+    $key_result = $tunnel->getPublicKey();
+    if ($key_result['status'] && !empty($key_result['key'])) {
+        header('Content-Type: text/plain');
+        header('Content-Disposition: attachment; filename="id_rsa.pub"');
+        header('Content-Length: ' . strlen($key_result['key']));
+        echo $key_result['key'];
+        exit;
+    } else {
+        $error = $key_result['message'];
     }
 }
 
@@ -89,6 +112,10 @@ if (isset($_POST['ssh_username']) && !empty($_POST['ssh_username'])) {
 
 // Get tunnel status with server details
 $tunnel_status = $tunnel->getServerDetails($ssh_username, $ssh_ip, $ssh_port);
+
+// Get SSH public key status
+$public_key_status = $tunnel->getPublicKey();
+$tunnel_status['public_key'] = $public_key_status;
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (isset($_POST['delete_connection'])) {
@@ -157,8 +184,8 @@ foreach ($wifi_list as $net) {
 $saved_connections = $data->getSavedConnections();
 $iface_status = $data->getInterfaceStatus();
 $active_uuids = $data->getActiveConnectionUuids();
-$public_ip = get_public_ip();
-$dns_ok = dns_resolves_google();
+$public_ip = Util::getPublicIp();
+$dns_ok = Util::dnsResolvesGoogle();
 $hostname = gethostname();
 
 // Render main UI

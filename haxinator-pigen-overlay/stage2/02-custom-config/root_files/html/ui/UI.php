@@ -5,49 +5,13 @@
  * Moved from /var/www/html/ui.php to /var/www/html/ui/UI.php
  */
 
-// Get public IP from ifconfig.me
-function get_public_ip() {
-    $ch = curl_init();
-    curl_setopt($ch, CURLOPT_URL, 'https://ifconfig.me');
-    curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
-    curl_setopt($ch, CURLOPT_TIMEOUT, 2);
-    curl_setopt($ch, CURLOPT_USERAGENT, 'curl');
-    $ip = trim(curl_exec($ch));
-    $httpcode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-    curl_close($ch);
-    if (filter_var($ip, FILTER_VALIDATE_IP) && $httpcode === 200) {
-        return $ip;
-    }
-    return false;
-}
-$public_ip = get_public_ip();
+require_once __DIR__ . '/../data/Util.php';
+
+// Get status information using the Util class
+$public_ip = Util::getPublicIp();
 $hostname = gethostname();
-
-// DNS resolution check for google.com
-function dns_resolves_google() {
-    $output = null;
-    $retval = null;
-    exec('dig +short google.com', $output, $retval);
-    foreach ($output as $line) {
-        if (filter_var($line, FILTER_VALIDATE_IP)) {
-            return true;
-        }
-    }
-    return false;
-}
-$dns_ok = dns_resolves_google();
-
-// Ping check for google.com
-function ping_google() {
-    $output = [];
-    $retval = -1;
-    exec('ping -c 1 -W 1 8.8.8.8 2>/dev/null', $output, $retval);
-    if ($retval === 0) {
-        return true;
-    }
-    return false;
-}
-$ping_ok = ping_google();  // Store result
+$dns_ok = Util::dnsResolvesGoogle();
+$ping_ok = Util::pingGoogle();  // Store result
 
 function renderLoginPage($login_error)
 {
@@ -158,9 +122,25 @@ function renderMainPage($message, $error, $wifi_list, $saved_connections, $iface
       <link rel="stylesheet" href="/css/bootstrap-icons/bootstrap-icons.min.css">
       <style>
         body {
-          background: linear-gradient(135deg, #65ddb7 0%, #3a7cbd 100%);
+          background-color: #3a7cbd;
           font-family: 'Segoe UI', Arial, sans-serif;
+          margin: 0;
+          padding: 0;
+          position: relative;
         }
+        
+        /* Add a pseudo-element for the gradient that covers the entire viewport */
+        body::before {
+          content: "";
+          position: fixed;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 100%;
+          background: linear-gradient(135deg, #65ddb7 0%, #3a7cbd 100%);
+          z-index: -1;
+        }
+        
         .topbar {
           display: flex;
           align-items: center;
@@ -209,7 +189,7 @@ function renderMainPage($message, $error, $wifi_list, $saved_connections, $iface
           justify-content: center;
         }
         .interface-bar {
-          background: rgba(255, 255, 255, 0.95);
+          background: #ffffff;
           padding: 0.7rem 1.2rem;
           border-bottom: 1px solid #e0e7ef;
           margin-bottom: 24px;
@@ -542,13 +522,33 @@ function renderMainPage($message, $error, $wifi_list, $saved_connections, $iface
           width: 80px;
         }
         .ssh-debug pre {
-          background-color: #f8f8f8;
-          padding: 10px;
-          border-radius: 5px;
-          max-height: 300px;
+          font-size: 0.8rem;
+          background: #f8f9fa;
+          border: 1px solid #dee2e6;
+          border-radius: 3px;
+          padding: 0.5rem;
+          max-height: 200px;
           overflow-y: auto;
           white-space: pre-wrap;
-          font-size: 12px;
+        }
+        
+        /* SSH Key Management Styles */
+        .ssh-key-management {
+          background-color: rgba(248, 249, 250, 0.5);
+          border-radius: 5px;
+          padding: 15px;
+          border: 1px solid #e0e7ef;
+        }
+        
+        .ssh-key-status {
+          display: flex;
+          align-items: center;
+        }
+        
+        .ssh-key-management h5 {
+          color: #1a365d;
+          font-size: 1rem;
+          margin-bottom: 12px;
         }
         .start-tunnel-btn {
           background-color: #28a745;
@@ -647,7 +647,7 @@ function renderMainPage($message, $error, $wifi_list, $saved_connections, $iface
       </div>
     </div>
 
-    <div class="nm-main-container mx-auto px-3 px-md-4" style="max-width:1100px;">
+    <div class="nm-main-container mx-auto px-3 px-md-4" style="max-width:1100px; margin-bottom: 40px;">
       <?php if ($message): ?>
         <div class="alert alert-success"><?= $message ?></div>
       <?php endif; ?>
@@ -1142,6 +1142,35 @@ function renderMainPage($message, $error, $wifi_list, $saved_connections, $iface
                 </div>
               </div>
               
+              <!-- SSH Key Management Section -->
+              <div class="ssh-key-management mb-4 mt-3">
+                <h5 class="mb-2">SSH Key Management</h5>
+                <div class="d-flex gap-2 align-items-center">
+                  <?php if (isset($tunnel_status['public_key']) && $tunnel_status['public_key']['status']): ?>
+                    <div class="ssh-key-status">
+                      <span class="badge bg-success"><i class="bi bi-check-circle me-1"></i> SSH keys present</span>
+                    </div>
+                    <a href="?download_ssh_key=1" class="btn btn-outline-primary btn-sm">
+                      <i class="bi bi-download me-1"></i> Download Public Key
+                    </a>
+                  <?php else: ?>
+                    <div class="ssh-key-status">
+                      <span class="badge bg-warning"><i class="bi bi-exclamation-triangle me-1"></i> No SSH keys found</span>
+                    </div>
+                  <?php endif; ?>
+                  <form method="post" class="d-inline">
+                    <input type="hidden" name="tunnel_action" value="regenerate_ssh_keys">
+                    <?= CSRFProtection::tokenField() ?>
+                    <button type="submit" class="btn btn-outline-secondary btn-sm" <?= isset($tunnel_status) && $tunnel_status['status'] == 'Running' ? 'disabled' : '' ?>>
+                      <i class="bi bi-key me-1"></i> Regenerate SSH Keys
+                    </button>
+                  </form>
+                </div>
+                <div class="mt-2 small text-muted">
+                  SSH keys are used to establish secure connections to remote servers. Regenerating keys will invalidate any existing connections.
+                </div>
+              </div>
+
               <!-- SSH Tunnel Configuration Form -->
               <form method="post" id="tunnel-form">
                 <div class="ssh-config">

@@ -2,9 +2,8 @@
 // Include security framework
 require_once __DIR__ . '/../security/bootstrap.php';
 
-// Strict error reporting
-error_reporting(E_ALL);
-ini_set('display_errors', 0);
+// Start a PHP session
+session_start();
 
 // Authentication check
 if (!isset($_SESSION['logged_in']) || !$_SESSION['logged_in']) {
@@ -12,220 +11,175 @@ if (!isset($_SESSION['logged_in']) || !$_SESSION['logged_in']) {
     die(json_encode(['error' => 'Unauthorized']));
 }
 
-// Method check
+// Check if it's a POST request with a file
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     http_response_code(405);
     die(json_encode(['error' => 'Method not allowed']));
 }
 
-header('Content-Type: application/json');
-header('X-Content-Type-Options: nosniff');
-header('X-Frame-Options: DENY');
-
-// Enable error logging
-error_log("Upload request received");
-
-// Configuration with strict types
-$config = [
+// Define allowed upload types and their configurations
+$allowed_types = [
     'passwords' => [
-        'dir' => __DIR__ . '/../uploads/passwords',
-        'allowed_types' => ['text/plain', 'text/x-generic', 'application/octet-stream'],
+        'dir' => '/var/www/html/wordlists',
+        'allowed_types' => ['text/plain'],
         'max_size' => 5 * 1024 * 1024, // 5MB
         'extensions' => ['txt', 'lst', 'dict'],
         'min_size' => 1, // Prevent empty files
     ],
+    'env-secrets' => [
+        'dir' => '/var/www',  // Not used since we save directly
+        'allowed_types' => ['text/plain', 'application/octet-stream'],
+        'max_size' => 1 * 1024 * 1024, // 1MB
+        'extensions' => ['txt', ''],  // Allow both .txt and no extension
+        'min_size' => 1, // Prevent empty files
+    ],
     'vpn' => [
-        'dir' => __DIR__ . '/../uploads/vpn',
-        'allowed_types' => ['application/x-openvpn-profile', 'application/octet-stream', 'text/plain'],
+        'dir' => '/var/www',  // Not used since we save directly
+        'allowed_types' => ['text/plain', 'application/octet-stream'],
         'max_size' => 1 * 1024 * 1024, // 1MB
         'extensions' => ['ovpn', 'conf'],
         'min_size' => 1, // Prevent empty files
-    ]
+    ],
 ];
 
-function sanitizeFilename($filename) {
-    // Remove any directory components
-    $filename = basename($filename);
-    
-    // Get extension before sanitizing
-    $ext = strtolower(pathinfo($filename, PATHINFO_EXTENSION));
-    
-    // Validate file extension using InputValidator
-    if (!InputValidator::filePath($filename, $config[$type]['extensions'])) {
-        throw new Exception('Invalid filename or extension');
-    }
-    
-    // Remove extension for sanitizing
-    $name = pathinfo($filename, PATHINFO_FILENAME);
-    
-    // Replace any non-alphanumeric characters
-    $name = preg_replace('/[^a-zA-Z0-9]/', '_', $name);
-    
-    // Trim any leading/trailing underscores
-    $name = trim($name, '_');
-    
-    // Add timestamp and reconnect extension
-    return time() . '-' . substr($name, 0, 50) . '.' . $ext;
+// Get upload type from POST or query string
+$type = $_POST['type'] ?? '';
+if (empty($type) || !array_key_exists($type, $allowed_types)) {
+    die(json_encode(['error' => 'Invalid upload type']));
 }
 
-function verifyUploadDirectory($dir) {
-    if (!file_exists($dir)) {
-        if (!mkdir($dir, 0750, true)) {
-            throw new Exception('Failed to create upload directory');
-        }
-    }
-    
-    // Verify directory permissions
-    $perms = fileperms($dir);
-    if (($perms & 0777) !== 0750) {
-        chmod($dir, 0750);
-    }
-    
-    // Create .htaccess to prevent direct access
-    $htaccess = $dir . '/.htaccess';
-    if (!file_exists($htaccess)) {
-        file_put_contents($htaccess, "Deny from all\n");
-        chmod($htaccess, 0640);
-    }
+// Get file from request
+if (empty($_FILES['file'])) {
+    die(json_encode(['error' => 'No file submitted']));
 }
 
+$file = $_FILES['file'];
+$typeConfig = $allowed_types[$type];
+
+// Basic validation
 try {
-    // Rate limiting (simple implementation)
-    $upload_count = $_SESSION['upload_count'] ?? 0;
-    $upload_time = $_SESSION['upload_time'] ?? 0;
-    
-    if (time() - $upload_time > 3600) {
-        $_SESSION['upload_count'] = 1;
-        $_SESSION['upload_time'] = time();
-    } elseif ($upload_count > 50) { // Max 50 uploads per hour
-        throw new Exception('Upload limit exceeded. Please try again later.');
-    } else {
-        $_SESSION['upload_count'] = $upload_count + 1;
-    }
-
-    if (!isset($_FILES['file']) || !isset($_POST['type'])) {
-        error_log("Missing parameters: files=" . print_r($_FILES, true) . ", post=" . print_r($_POST, true));
-        throw new Exception('Missing required parameters');
-    }
-
-    $type = $_POST['type'];
-    error_log("Upload type: " . $type);
-    
-    if (!isset($config[$type])) {
-        throw new Exception('Invalid upload type');
-    }
-
-    $file = $_FILES['file'];
-    $typeConfig = $config[$type];
-
-    // Check for upload errors
+    // Check if file uploaded successfully
     if ($file['error'] !== UPLOAD_ERR_OK) {
-        $errors = [
-            UPLOAD_ERR_INI_SIZE => 'File exceeds PHP maximum file size',
-            UPLOAD_ERR_FORM_SIZE => 'File exceeds form maximum file size',
-            UPLOAD_ERR_PARTIAL => 'File was only partially uploaded',
+        $errorMessages = [
+            UPLOAD_ERR_INI_SIZE => 'The uploaded file exceeds the upload_max_filesize directive in php.ini',
+            UPLOAD_ERR_FORM_SIZE => 'The uploaded file exceeds the MAX_FILE_SIZE directive in the HTML form',
+            UPLOAD_ERR_PARTIAL => 'The uploaded file was only partially uploaded',
             UPLOAD_ERR_NO_FILE => 'No file was uploaded',
-            UPLOAD_ERR_NO_TMP_DIR => 'Missing temporary folder',
+            UPLOAD_ERR_NO_TMP_DIR => 'Missing a temporary folder',
             UPLOAD_ERR_CANT_WRITE => 'Failed to write file to disk',
-            UPLOAD_ERR_EXTENSION => 'A PHP extension stopped the file upload'
+            UPLOAD_ERR_EXTENSION => 'A PHP extension stopped the file upload',
         ];
-        throw new Exception($errors[$file['error']] ?? 'Unknown upload error');
-    }
-
-    error_log("Original filename: " . $file['name']);
-    error_log("File size: " . $file['size']);
-
-    // Validate file size
-    if ($file['size'] < $typeConfig['min_size']) {
-        throw new Exception('File is empty');
-    }
-    if ($file['size'] > $typeConfig['max_size']) {
-        throw new Exception('File too large (max ' . ($typeConfig['max_size'] / 1024 / 1024) . 'MB)');
-    }
-
-    // Get file extension and mime type
-    $extension = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
-    error_log("File extension: " . $extension);
-    error_log("Allowed extensions: " . implode(', ', $typeConfig['extensions']));
-
-    if (!in_array($extension, $typeConfig['extensions'], true)) {
-        throw new Exception('Invalid file extension. Allowed: ' . implode(', ', $typeConfig['extensions']));
-    }
-
-    // Validate file type
-    $finfo = finfo_open(FILEINFO_MIME_TYPE);
-    if ($finfo === false) {
-        throw new Exception('Failed to initialize file info');
-    }
-    $mimeType = finfo_file($finfo, $file['tmp_name']);
-    finfo_close($finfo);
-    error_log("MIME type: " . $mimeType);
-
-    // For password files, accept any text-based mime type
-    if ($type === 'passwords') {
-        $isTextFile = false;
-        // Check if it's a text file by reading the first few bytes
-        $handle = fopen($file['tmp_name'], 'r');
-        if ($handle === false) {
-            throw new Exception('Failed to read file');
-        }
-        $firstBytes = fread($handle, 512);
-        fclose($handle);
         
-        // Check if the content appears to be text
-        if (mb_detect_encoding($firstBytes, 'UTF-8, ISO-8859-1', true) !== false) {
+        $errorMessage = $errorMessages[$file['error']] ?? 'Unknown upload error';
+        throw new Exception($errorMessage);
+    }
+    
+    // Check file size against configured limits
+    if ($file['size'] > $typeConfig['max_size']) {
+        throw new Exception('File too large. Maximum allowed size is ' . round($typeConfig['max_size'] / (1024*1024), 1) . 'MB');
+    }
+    
+    if ($file['size'] < $typeConfig['min_size']) {
+        throw new Exception('File is empty or too small');
+    }
+    
+    // Additional validation for env-secrets
+    if ($type === 'env-secrets') {
+        // Verify the file is named either "env-secrets" or "env-secrets.txt"
+        $basename = pathinfo($file['name'], PATHINFO_FILENAME);
+        if ($basename !== 'env-secrets') {
+            throw new Exception('File must be named "env-secrets" or "env-secrets.txt"');
+        }
+    }
+    
+    // Validate file extension
+    $extension = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
+    if (!empty($typeConfig['extensions']) && !in_array($extension, $typeConfig['extensions']) && !in_array('', $typeConfig['extensions'])) {
+        throw new Exception('Invalid file extension. Allowed extensions: ' . implode(', ', $typeConfig['extensions']));
+    }
+    
+    // Validate MIME type
+    $finfo = new finfo(FILEINFO_MIME_TYPE);
+    $mimeType = $finfo->file($file['tmp_name']);
+    
+    // More lenient MIME checking due to inconsistencies
+    $isTextFile = false;
+    if (strpos($mimeType, 'text/') === 0) {
+        $isTextFile = true;
+    } elseif ($mimeType === 'application/octet-stream') {
+        // For .ovpn and other text files sometimes detected as octet-stream
+        $content = file_get_contents($file['tmp_name']);
+        if (mb_detect_encoding($content, 'ASCII, UTF-8', true)) {
             $isTextFile = true;
         }
-
-        if (!$isTextFile && !in_array($mimeType, $typeConfig['allowed_types'], true)) {
-            throw new Exception('Invalid file type. File must be a text file.');
-        }
-    } else {
-        // For VPN files, strictly check mime type
-        if (!in_array($mimeType, $typeConfig['allowed_types'], true)) {
-            throw new Exception('Invalid file type. Got: ' . $mimeType . ', Expected: ' . implode(' or ', $typeConfig['allowed_types']));
-        }
     }
-
-    // Special handling for password files - save directly to passwords.txt
-    if ($type === 'passwords') {
-        $destination = '/var/www/html/passwords.txt';
-        error_log("Saving password file to: " . $destination);
-        
-        if (!copy($file['tmp_name'], $destination)) {
-            throw new Exception('Failed to save password file');
-        }
-        
-        // Set secure permissions
-        chmod($destination, 0644);
-    } else {
-        // Regular file upload handling for other file types
-        // Verify and secure upload directory
-        verifyUploadDirectory($typeConfig['dir']);
-
-        // Generate secure filename and move file
-        $filename = sanitizeFilename($file['name']);
-        $destination = $typeConfig['dir'] . '/' . $filename;
-
-        error_log("Saving to: " . $destination);
-
-        if (!move_uploaded_file($file['tmp_name'], $destination)) {
-            throw new Exception('Failed to save file');
-        }
-
-        // Set secure permissions
-        chmod($destination, 0640);
+    
+    // For env-secrets and VPN configs, ensure they're text files
+    if (($type === 'env-secrets' || $type === 'vpn') && !$isTextFile) {
+        throw new Exception('Invalid file type. Only text files are allowed.');
     }
-
+    
+    // For password lists, be more strict with MIME types
+    if ($type === 'passwords' && !in_array($mimeType, $typeConfig['allowed_types'])) {
+        throw new Exception('Invalid file type. Allowed types: ' . implode(', ', $typeConfig['allowed_types']));
+    }
+    
+    // Process file based on type
+    switch ($type) {
+        case 'passwords':
+            // Save to wordlists directory
+            $destination = $typeConfig['dir'] . '/' . basename($file['name']);
+            if (!is_dir($typeConfig['dir'])) {
+                mkdir($typeConfig['dir'], 0755, true);
+            }
+            
+            if (!move_uploaded_file($file['tmp_name'], $destination)) {
+                throw new Exception('Failed to save file');
+            }
+            
+            // Set permissions
+            chmod($destination, 0644);
+            chown($destination, 'www-data');
+            break;
+            
+        case 'env-secrets':
+            // Save to /var/www with specific name
+            $destination = '/var/www/env-secrets';
+            
+            if (!move_uploaded_file($file['tmp_name'], $destination)) {
+                throw new Exception('Failed to save file');
+            }
+            
+            // Set restrictive permissions - only readable by www-data
+            chmod($destination, 0600);
+            chown($destination, 'www-data');
+            break;
+            
+        case 'vpn':
+            // Save to /var/www with fixed name for OpenVPN
+            $destination = '/var/www/openvpn-udp.ovpn';
+            
+            if (!move_uploaded_file($file['tmp_name'], $destination)) {
+                throw new Exception('Failed to save file');
+            }
+            
+            // Set restrictive permissions - only readable by www-data
+            chmod($destination, 0600);
+            chown($destination, 'www-data');
+            break;
+            
+        default:
+            throw new Exception('Unsupported file type');
+    }
+    
     // Return success response
     echo json_encode([
         'success' => true,
-        'filename' => $type === 'passwords' ? 'passwords.txt' : $filename,
-        'message' => $type === 'passwords' ? 'Password file updated successfully' : 'File uploaded successfully'
+        'file' => basename($destination),
+        'type' => $type
     ]);
-
+    
 } catch (Exception $e) {
-    error_log("Upload error: " . $e->getMessage());
     http_response_code(400);
     echo json_encode([
         'error' => $e->getMessage()
