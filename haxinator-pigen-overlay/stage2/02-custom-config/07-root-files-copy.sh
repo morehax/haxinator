@@ -141,6 +141,10 @@ if [[ -d "root_files/html" ]]; then
         red_echo "ERROR: Failed to copy HTML files"
         exit 1
     fi
+    
+    # Set proper ownership for all web files
+    green_echo "==> Setting correct ownership for web files"
+    chown -R www-data:www-data /var/www
 else
     yellow_echo "WARNING: root_files/html directory not found"
 fi

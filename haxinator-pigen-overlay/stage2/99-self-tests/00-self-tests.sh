@@ -99,6 +99,19 @@ verify_image() {
     [ -f /var/www/html/passwords.txt ] && echo "$(green_check) passwords.txt exists" || echo "$(red_x) passwords.txt missing"
     [ -f /var/www/html/check.py ] && echo "$(green_check) check.py exists" || echo "$(red_x) check.py missing"
     grep -q "Haxinator" /var/www/html/index.php && echo "$(green_check) index.php contains Haxinator" || echo "$(red_x) index.php missing Haxinator"
+    
+    # Check file ownership for /var/www
+    if [ -d /var/www ]; then
+        if find /var/www -not -user www-data -o -not -group www-data | grep -q .; then
+            echo "$(red_x) Some files in /var/www are not owned by www-data:www-data"
+            # Optional: Uncomment to show which files have incorrect ownership
+            # find /var/www -not -user www-data -o -not -group www-data | head -n 5
+        else
+            echo "$(green_check) All files in /var/www are owned by www-data:www-data"
+        fi
+    else
+        echo "$(red_x) /var/www directory missing"
+    fi
 
     # Root – hans
     [ -f /usr/local/bin/hans ] && echo "$(green_check) hans binary exists" || echo "$(red_x) hans binary missing"
