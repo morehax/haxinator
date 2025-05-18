@@ -56,12 +56,12 @@ function getNetworkConnections() {
             // Only try to get MAC hardware details if the device is connected/active
             if ($device !== '--' && !empty($device)) {
                 // Get current MAC from ip link
-                $currentMacOutput = SecureCommand::executeWithOutput("ip link show %s | grep 'link/ether' | cut -d' ' -f6", [$device]);
+                $currentMacOutput = SecureCommand::executeWithOutput("ip link show %s | grep -o -E '([[:xdigit:]]{2}:){5}[[:xdigit:]]{2}' | head -n1", [$device]);
                 $macDetails['current_mac'] = !empty($currentMacOutput[0]) ? $currentMacOutput[0] : '';
                 
                 // Get permanent MAC from sysfs
                 $permMacOutput = SecureCommand::executeWithOutput("cat /sys/class/net/%s/address 2>/dev/null || echo ''", [$device]);
-                $macDetails['permanent_mac'] = !empty($permMacOutput[0]) ? $permMacOutput[0] : $macDetails['current_mac'];
+                $macDetails['permanent_mac'] = !empty($permMacOutput[0]) ? $permMacOutput[0] : '';
             } else {
                 // For inactive connections, try to get the MAC from sysfs if device exists
                 if ($type === '802-3-ethernet') {
@@ -508,6 +508,7 @@ unset($_SESSION['error']);
                                             <div class="mac-addresses">
                                                 <div class="mac-line">
                                                     <i class="bi bi-fingerprint"></i>
+                                                    <span class="mac-label">Permanent:</span>
                                                     <span class="mac-value"><?= htmlspecialchars($conn['mac_details']['permanent_mac']) ?></span>
                                                     <?php if ($conn['mac_details']['randomization'] !== 'always'): ?>
                                                     <button type="button" class="btn btn-link btn-sm p-0 mac-edit" data-bs-toggle="modal" data-bs-target="#macModal<?= htmlspecialchars($conn['uuid']) ?>">
@@ -517,6 +518,7 @@ unset($_SESSION['error']);
                                                 </div>
                                                 <div class="mac-line">
                                                     <i class="bi bi-incognito"></i>
+                                                    <span class="mac-label">Current:</span>
                                                     <span class="mac-value <?= $conn['mac_details']['randomization'] === 'default' ? 'text-muted' : '' ?>">
                                                         <?php if ($conn['mac_details']['randomization'] === 'always'): ?>
                                                             <?= htmlspecialchars($conn['mac_details']['current_mac']) ?>

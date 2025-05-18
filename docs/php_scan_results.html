@@ -122,7 +122,7 @@
 <body>
     <div class="container">
         <h2 class="page-header">Haxinator 2000 - PHP Security Scan</h2>
-        <div class="report-date">Generated on Sunday, May 18, 2025 at 08:37 AM </div>
+        <div class="report-date">Generated on Sunday, May 18, 2025 at 11:11 AM </div>
 
         <div class="config-card">
             <!-- Statistics Section -->
@@ -132,7 +132,7 @@
                 <p><strong>Total dangerous function calls:</strong> 91</p>
                 <p><strong>Breakdown by function:</strong></p>
                 <ul>
-                    <li>curl_exec: 2</li><li>exec: 57</li><li>file_get_contents: 5</li><li>file_put_contents: 3</li><li>getenv: 1</li><li>ini_get: 1</li><li>ini_set: 8</li><li>mkdir: 3</li><li>move_uploaded_file: 3</li><li>ob_start: 2</li><li>popen: 1</li><li>preg_replace: 1</li><li>proc_open: 1</li><li>shell_exec: 1</li><li>unlink: 2</li>
+                    <li>curl_exec: 2</li><li>exec: 50</li><li>file_get_contents: 6</li><li>file_put_contents: 2</li><li>fsockopen: 3</li><li>getenv: 2</li><li>ini_get: 1</li><li>ini_set: 8</li><li>mkdir: 3</li><li>move_uploaded_file: 3</li><li>ob_start: 2</li><li>popen: 1</li><li>preg_replace: 1</li><li>proc_open: 3</li><li>shell_exec: 1</li><li>unlink: 3</li>
                 </ul>
             </div>
 
@@ -141,7 +141,7 @@
                 <div class="config-title">Details of Occurrences</div>
                 <div class="config-description">Specific instances of dangerous function calls with context.</div>
                 <div class="occurrence-item">
-    <p><strong>File:</strong> haxinator-pigen-overlay/stage2/02-custom-config/root_files/html/configure.php, <strong>Line:</strong> 752, <strong>Function:</strong> file_get_contents</p>
+    <p><strong>File:</strong> haxinator-pigen-overlay/stage2/02-custom-config/root_files/html/configure.php, <strong>Line:</strong> 754, <strong>Function:</strong> file_get_contents</p>
     <div class="context-code">                    &lt;button type=&quot;button&quot; class=&quot;btn-close&quot; data-bs-dismiss=&quot;modal&quot; aria-label=&quot;Close&quot;&gt;&lt;/button&gt;<br>                &lt;/div&gt;<br>                &lt;div class=&quot;modal-body&quot;&gt;<br>                    &lt;?php if (is_readable(&#x27;/var/www/env-secrets&#x27;)): ?&gt;<br>                        &lt;pre class=&quot;bg-light p-3 rounded&quot; style=&quot;max-height: 400px; overflow-y: auto;&quot;&gt;&lt;?php<br>                            echo htmlspecialchars(file_get_contents(&#x27;/var/www/env-secrets&#x27;));<br>                        ?&gt;&lt;/pre&gt;<br>                    &lt;?php else: ?&gt;<br>                        &lt;div class=&quot;alert alert-warning mb-0&quot;&gt;<br>                            &lt;i class=&quot;bi bi-exclamation-triangle me-2&quot;&gt;&lt;/i&gt;<br>                            No env-secrets file found.</div>
 </div>
 <div class="occurrence-item">
@@ -193,75 +193,75 @@
     <div class="context-code">    public function logMessage($level, $message)<br>    {<br>        $timestamp = date(&#x27;Y-m-d H:i:s&#x27;);<br>        $pid = getmypid();<br>        $log_entry = &quot;[$timestamp] [PID:$pid] [$level] $message&quot;;<br>        file_put_contents($this-&gt;log_file, &quot;$log_entry\n&quot;, FILE_APPEND);<br>        error_log($log_entry, 3, $this-&gt;log_file);<br>    }<br><br>    /**<br>     * Check if tunnel is running</div>
 </div>
 <div class="occurrence-item">
-    <p><strong>File:</strong> haxinator-pigen-overlay/stage2/02-custom-config/root_files/html/network/Tunnel.php, <strong>Line:</strong> 89, <strong>Function:</strong> file_get_contents</p>
-    <div class="context-code">    {<br>        if (!file_exists($this-&gt;pid_file)) {<br>            $this-&gt;logMessage(&#x27;DEBUG&#x27;, &quot;PID file {$this-&gt;pid_file} does not exist&quot;);<br>            return false;<br>        }<br>        $pid = trim(file_get_contents($this-&gt;pid_file));<br>        if (empty($pid)) {<br>            $this-&gt;logMessage(&#x27;DEBUG&#x27;, &quot;PID file {$this-&gt;pid_file} is empty&quot;);<br>            return false;<br>        }<br></div>
+    <p><strong>File:</strong> haxinator-pigen-overlay/stage2/02-custom-config/root_files/html/network/Tunnel.php, <strong>Line:</strong> 90, <strong>Function:</strong> file_get_contents</p>
+    <div class="context-code">        if (!file_exists($this-&gt;pid_file)) {<br>            $this-&gt;logMessage(&#x27;DEBUG&#x27;, &quot;PID file {$this-&gt;pid_file} does not exist&quot;);<br>            return false;<br>        }<br><br>        $pid = trim(file_get_contents($this-&gt;pid_file));<br>        if (empty($pid)) {<br>            $this-&gt;logMessage(&#x27;DEBUG&#x27;, &quot;PID file {$this-&gt;pid_file} is empty&quot;);<br>            return false;<br>        }<br></div>
 </div>
 <div class="occurrence-item">
-    <p><strong>File:</strong> haxinator-pigen-overlay/stage2/02-custom-config/root_files/html/network/Tunnel.php, <strong>Line:</strong> 98, <strong>Function:</strong> exec</p>
-    <div class="context-code">        }<br><br>        // First, simply check if port 8080 is listening, which is the most important indicator<br>        $output = [];<br>        $return_var = 0;<br>        exec(&quot;netstat -tuln | grep &#x27;:8080&#x27; 2&gt;&amp;1&quot;, $output, $return_var);<br>        if ($return_var === 0 &amp;&amp; !empty($output)) {<br>            $this-&gt;logMessage(&#x27;DEBUG&#x27;, &quot;Port 8080 is listening - tunnel is active&quot;);<br><br>            // Port is listening, now verify the process exists<br>            exec(&quot;ps -p $pid 2&gt;&amp;1&quot;, $output, $return_var);</div>
+    <p><strong>File:</strong> haxinator-pigen-overlay/stage2/02-custom-config/root_files/html/network/Tunnel.php, <strong>Line:</strong> 103, <strong>Function:</strong> fsockopen</p>
+    <div class="context-code">            $this-&gt;logMessage(&#x27;DEBUG&#x27;, &quot;Process $pid is not running&quot;);<br>            return false;<br>        }<br><br>        // Check if port 8080 is in use using native PHP socket functions<br>        $socket = @fsockopen(&#x27;127.0.0.1&#x27;, 8080, $errno, $errstr, 1);<br>        if ($socket) {<br>            fclose($socket);<br>            $this-&gt;logMessage(&#x27;DEBUG&#x27;, &quot;Port 8080 is listening - tunnel is active&quot;);<br>            return true;<br>        }</div>
 </div>
 <div class="occurrence-item">
-    <p><strong>File:</strong> haxinator-pigen-overlay/stage2/02-custom-config/root_files/html/network/Tunnel.php, <strong>Line:</strong> 103, <strong>Function:</strong> exec</p>
-    <div class="context-code">        exec(&quot;netstat -tuln | grep &#x27;:8080&#x27; 2&gt;&amp;1&quot;, $output, $return_var);<br>        if ($return_var === 0 &amp;&amp; !empty($output)) {<br>            $this-&gt;logMessage(&#x27;DEBUG&#x27;, &quot;Port 8080 is listening - tunnel is active&quot;);<br><br>            // Port is listening, now verify the process exists<br>            exec(&quot;ps -p $pid 2&gt;&amp;1&quot;, $output, $return_var);<br>            if ($return_var === 0) {<br>                // Process exists, success!<br>                return true;<br>            }<br></div>
+    <p><strong>File:</strong> haxinator-pigen-overlay/stage2/02-custom-config/root_files/html/network/Tunnel.php, <strong>Line:</strong> 148, <strong>Function:</strong> file_get_contents</p>
+    <div class="context-code">            $perms = substr(sprintf(&#x27;%o&#x27;, fileperms($this-&gt;ssh_key)), -4);<br>            $debug_info[] = &quot;SSH key permissions: $perms&quot;;<br>            $this-&gt;logMessage(&#x27;DEBUG&#x27;, $debug_info[count($debug_info)-1]);<br><br>            // Validate key format<br>            $key_content = file_get_contents($this-&gt;ssh_key);<br>            if (strpos($key_content, &#x27;-----BEGIN&#x27;) === false || strpos($key_content, &#x27;-----END&#x27;) === false) {<br>                $debug_info[] = &quot;Warning: SSH key appears to be invalid or corrupted&quot;;<br>                $this-&gt;logMessage(&#x27;WARNING&#x27;, $debug_info[count($debug_info)-1]);<br>            }<br>        }</div>
 </div>
 <div class="occurrence-item">
-    <p><strong>File:</strong> haxinator-pigen-overlay/stage2/02-custom-config/root_files/html/network/Tunnel.php, <strong>Line:</strong> 111, <strong>Function:</strong> exec</p>
-    <div class="context-code">                return true;<br>            }<br><br>            // If the original PID doesn&#x27;t exist, try to find the SSH tunnel process<br>            $output = [];<br>            exec(&quot;ps aux | grep &#x27;ssh.*-D.*:8080&#x27; | grep -v grep&quot;, $output);<br>            if (!empty($output)) {<br>                // Found SSH tunnel process, let&#x27;s update the PID file<br>                $this-&gt;logMessage(&#x27;DEBUG&#x27;, &quot;Found SSH tunnel but PID mismatch. Updating PID file.&quot;);<br><br>                // Extract the PID of the SSH or sudo process</div>
-</div>
-<div class="occurrence-item">
-    <p><strong>File:</strong> haxinator-pigen-overlay/stage2/02-custom-config/root_files/html/network/Tunnel.php, <strong>Line:</strong> 119, <strong>Function:</strong> file_put_contents</p>
-    <div class="context-code">                $this-&gt;logMessage(&#x27;DEBUG&#x27;, &quot;Found SSH tunnel but PID mismatch. Updating PID file.&quot;);<br><br>                // Extract the PID of the SSH or sudo process<br>                if (preg_match(&#x27;/^\S+\s+(\d+)/&#x27;, $output[0], $matches)) {<br>                    $new_pid = $matches[1];<br>                    file_put_contents($this-&gt;pid_file, $new_pid);<br>                    $this-&gt;logMessage(&#x27;DEBUG&#x27;, &quot;Updated PID file with $new_pid&quot;);<br>                    return true;<br>                }<br>            }<br>        }</div>
+    <p><strong>File:</strong> haxinator-pigen-overlay/stage2/02-custom-config/root_files/html/network/Tunnel.php, <strong>Line:</strong> 168, <strong>Function:</strong> getenv</p>
+    <div class="context-code">            $this-&gt;logMessage(&#x27;DEBUG&#x27;, $debug_info[count($debug_info)-1]);<br>        }<br><br>        // Check environment<br>        $env_info = [<br>            &#x27;HOME&#x27; =&gt; getenv(&#x27;HOME&#x27;) ?: &#x27;not set&#x27;,<br>            &#x27;USER&#x27; =&gt; posix_getpwuid(posix_geteuid())[&#x27;name&#x27;],<br>            &#x27;SSH_AUTH_SOCK&#x27; =&gt; getenv(&#x27;SSH_AUTH_SOCK&#x27;) ?: &#x27;not set&#x27;<br>        ];<br>        foreach ($env_info as $key =&gt; $value) {<br>            $debug_info[] = &quot;$key environment: $value&quot;;</div>
 </div>
 <div class="occurrence-item">
     <p><strong>File:</strong> haxinator-pigen-overlay/stage2/02-custom-config/root_files/html/network/Tunnel.php, <strong>Line:</strong> 170, <strong>Function:</strong> getenv</p>
-    <div class="context-code">        $known_hosts_exists = file_exists($this-&gt;known_hosts);<br>        $debug_info[] = &quot;Known hosts ({$this-&gt;known_hosts}) exists: &quot; . ($known_hosts_exists ? &#x27;Yes&#x27; : &#x27;No&#x27;);<br>        $this-&gt;logMessage(&#x27;DEBUG&#x27;, $debug_info[count($debug_info)-1]);<br><br>        // Log HOME environment<br>        $home = getenv(&#x27;HOME&#x27;);<br>        $debug_info[] = &quot;HOME environment: &quot; . ($home ?: &#x27;not set&#x27;);<br>        $this-&gt;logMessage(&#x27;DEBUG&#x27;, $debug_info[count($debug_info)-1]);<br><br>        // Test SSH connectivity with verbose output<br>        $output = [];</div>
+    <div class="context-code"><br>        // Check environment<br>        $env_info = [<br>            &#x27;HOME&#x27; =&gt; getenv(&#x27;HOME&#x27;) ?: &#x27;not set&#x27;,<br>            &#x27;USER&#x27; =&gt; posix_getpwuid(posix_geteuid())[&#x27;name&#x27;],<br>            &#x27;SSH_AUTH_SOCK&#x27; =&gt; getenv(&#x27;SSH_AUTH_SOCK&#x27;) ?: &#x27;not set&#x27;<br>        ];<br>        foreach ($env_info as $key =&gt; $value) {<br>            $debug_info[] = &quot;$key environment: $value&quot;;<br>            $this-&gt;logMessage(&#x27;DEBUG&#x27;, &quot;$key = $value&quot;);<br>        }</div>
 </div>
 <div class="occurrence-item">
-    <p><strong>File:</strong> haxinator-pigen-overlay/stage2/02-custom-config/root_files/html/network/Tunnel.php, <strong>Line:</strong> 177, <strong>Function:</strong> exec</p>
-    <div class="context-code">        $this-&gt;logMessage(&#x27;DEBUG&#x27;, $debug_info[count($debug_info)-1]);<br><br>        // Test SSH connectivity with verbose output<br>        $output = [];<br>        $return_var = 0;<br>        exec(&quot;sudo -H ssh -v -i {$this-&gt;ssh_key} -o BatchMode=yes -o ConnectTimeout=5 -o UserKnownHostsFile={$this-&gt;known_hosts} $remote_host true 2&gt;&amp;1&quot;, $output, $return_var);<br>        $output_str = implode(&quot;\n&quot;, $output);<br>        $debug_info[] = &quot;SSH connectivity test return: $return_var&quot;;<br>        $debug_info[] = &quot;SSH connectivity test output: $output_str&quot;;<br>        $this-&gt;logMessage(&#x27;DEBUG&#x27;, &quot;SSH connectivity test: return=$return_var, output=$output_str&quot;);<br></div>
+    <p><strong>File:</strong> haxinator-pigen-overlay/stage2/02-custom-config/root_files/html/network/Tunnel.php, <strong>Line:</strong> 191, <strong>Function:</strong> proc_open</p>
+    <div class="context-code">               &quot; -o ConnectTimeout=5&quot; .<br>               &quot; -o StrictHostKeyChecking=no&quot; .<br>               &quot; -o UserKnownHostsFile=&quot; . escapeshellarg($this-&gt;known_hosts) .<br>               &quot; &quot; . $remote_host . &quot; true&quot;;<br><br>        $process = proc_open($cmd, $descriptorspec, $pipes);<br>        $return_var = -1;<br>        $output_str = &#x27;&#x27;;<br><br>        if (is_resource($process)) {<br>            // Close stdin as we don&#x27;t need it</div>
 </div>
 <div class="occurrence-item">
-    <p><strong>File:</strong> haxinator-pigen-overlay/stage2/02-custom-config/root_files/html/network/Tunnel.php, <strong>Line:</strong> 221, <strong>Function:</strong> exec</p>
-    <div class="context-code">        }<br><br>        // Check sudo permissions<br>        $output = [];<br>        $return_var = 0;<br>        exec(&quot;sudo -H -l -U www-data 2&gt;&amp;1&quot;, $output, $return_var);<br>        $sudo_output = implode(&quot;\n&quot;, $output);<br>        $this-&gt;logMessage(&#x27;DEBUG&#x27;, &quot;sudo permissions check: return=$return_var, output=$sudo_output&quot;);<br><br>        // Start SSH tunnel<br>        $command = &quot;sudo -H ssh -i {$this-&gt;ssh_key} -o UserKnownHostsFile={$this-&gt;known_hosts} -N -D {$this-&gt;local_bind} $remote_host &gt;/dev/null 2&gt;&amp;1 &amp; echo $!&quot;;</div>
+    <p><strong>File:</strong> haxinator-pigen-overlay/stage2/02-custom-config/root_files/html/network/Tunnel.php, <strong>Line:</strong> 314, <strong>Function:</strong> proc_open</p>
+    <div class="context-code">        $cmd = &quot;ssh -i &quot; . escapeshellarg($this-&gt;ssh_key) .<br>               &quot; -o UserKnownHostsFile=&quot; . escapeshellarg($this-&gt;known_hosts) .<br>               &quot; -o StrictHostKeyChecking=no&quot; .<br>               &quot; -N -D &quot; . escapeshellarg($this-&gt;local_bind) .<br>               &quot; &quot; . $remote_host;<br>        $process = proc_open($cmd, $descriptorspec, $pipes);<br><br>        if (is_resource($process)) {<br>            // Get process ID<br>            $status = proc_get_status($process);<br>            $pid = $status[&#x27;pid&#x27;];</div>
 </div>
 <div class="occurrence-item">
-    <p><strong>File:</strong> haxinator-pigen-overlay/stage2/02-custom-config/root_files/html/network/Tunnel.php, <strong>Line:</strong> 230, <strong>Function:</strong> exec</p>
-    <div class="context-code">        // Start SSH tunnel<br>        $command = &quot;sudo -H ssh -i {$this-&gt;ssh_key} -o UserKnownHostsFile={$this-&gt;known_hosts} -N -D {$this-&gt;local_bind} $remote_host &gt;/dev/null 2&gt;&amp;1 &amp; echo $!&quot;;<br>        $this-&gt;logMessage(&#x27;DEBUG&#x27;, &quot;Executing command: $command&quot;);<br>        $output = [];<br>        $return_var = 0;<br>        exec($command, $output, $return_var);<br>        $output_str = implode(&quot;\n&quot;, $output);<br>        $this-&gt;logMessage(&#x27;DEBUG&#x27;, &quot;Command output: $output_str, return: $return_var&quot;);<br><br>        if ($return_var !== 0 || empty($output)) {<br>            $this-&gt;logMessage(&#x27;ERROR&#x27;, &quot;Failed to start tunnel: exec returned $return_var, output=$output_str&quot;);</div>
+    <p><strong>File:</strong> haxinator-pigen-overlay/stage2/02-custom-config/root_files/html/network/Tunnel.php, <strong>Line:</strong> 331, <strong>Function:</strong> file_put_contents</p>
+    <div class="context-code">            usleep(500000); // 0.5 seconds<br><br>            // Check if process is still running<br>            $status = proc_get_status($process);<br>            if ($status[&#x27;running&#x27;]) {<br>                file_put_contents($this-&gt;pid_file, $pid);<br>                $this-&gt;logMessage(&#x27;DEBUG&#x27;, &quot;Wrote PID $pid to {$this-&gt;pid_file}&quot;);<br><br>                // Close pipes but keep process running<br>                fclose($pipes[0]);<br>                fclose($pipes[1]);</div>
 </div>
 <div class="occurrence-item">
-    <p><strong>File:</strong> haxinator-pigen-overlay/stage2/02-custom-config/root_files/html/network/Tunnel.php, <strong>Line:</strong> 240, <strong>Function:</strong> file_put_contents</p>
-    <div class="context-code">            $this-&gt;logMessage(&#x27;ERROR&#x27;, &quot;Failed to start tunnel: exec returned $return_var, output=$output_str&quot;);<br>            return &quot;Failed to start tunnel: exec error.&quot;;<br>        }<br><br>        $pid = trim($output[0]);<br>        file_put_contents($this-&gt;pid_file, $pid);<br>        $this-&gt;logMessage(&#x27;DEBUG&#x27;, &quot;Wrote PID $pid to {$this-&gt;pid_file}&quot;);<br><br>        // Verify tunnel started<br>        sleep(5);<br>        if ($this-&gt;isTunnelRunning()) {</div>
+    <p><strong>File:</strong> haxinator-pigen-overlay/stage2/02-custom-config/root_files/html/network/Tunnel.php, <strong>Line:</strong> 378, <strong>Function:</strong> file_get_contents</p>
+    <div class="context-code">            $this-&gt;logMessage(&#x27;WARNING&#x27;, &quot;Tunnel not running&quot;);<br>            return &quot;Tunnel is not running.&quot;;<br>        }<br><br>        // First try to kill the process in the PID file<br>        $pid = trim(file_get_contents($this-&gt;pid_file));<br>        $this-&gt;logMessage(&#x27;DEBUG&#x27;, &quot;Stopping process with PID $pid&quot;);<br><br>        // Try SIGTERM first (signal 15)<br>        if (posix_kill($pid, 15)) {<br>            // Wait briefly to see if the process terminates</div>
 </div>
 <div class="occurrence-item">
-    <p><strong>File:</strong> haxinator-pigen-overlay/stage2/02-custom-config/root_files/html/network/Tunnel.php, <strong>Line:</strong> 251, <strong>Function:</strong> exec</p>
-    <div class="context-code">            $this-&gt;logMessage(&#x27;INFO&#x27;, &quot;Tunnel started successfully with PID $pid&quot;);<br>            return &quot;Tunnel started successfully.&quot;;<br>        } else {<br>            $this-&gt;logMessage(&#x27;ERROR&#x27;, &quot;Tunnel failed to start, PID $pid not running&quot;);<br>            // Only unlink PID file if process is confirmed dead<br>            exec(&quot;ps -p $pid &gt;/dev/null 2&gt;&amp;1&quot;, $output, $return_var);<br>            if ($return_var !== 0) {<br>                unlink($this-&gt;pid_file);<br>                $this-&gt;logMessage(&#x27;DEBUG&#x27;, &quot;Removed PID file {$this-&gt;pid_file} as process is not running&quot;);<br>            }<br>            return &quot;Tunnel failed to start: process not running.&quot;;</div>
+    <p><strong>File:</strong> haxinator-pigen-overlay/stage2/02-custom-config/root_files/html/network/Tunnel.php, <strong>Line:</strong> 396, <strong>Function:</strong> exec</p>
+    <div class="context-code">        }<br><br>        // Kill any remaining SSH tunnel processes<br>        $output = [];<br>        $return_var = 0;<br>        exec(&quot;pkill -f &#x27;ssh.*-D 0.0.0.0:8080&#x27;&quot;, $output, $return_var);<br><br>        // Clean up PID file<br>        if (file_exists($this-&gt;pid_file)) {<br>            unlink($this-&gt;pid_file);<br>        }</div>
 </div>
 <div class="occurrence-item">
-    <p><strong>File:</strong> haxinator-pigen-overlay/stage2/02-custom-config/root_files/html/network/Tunnel.php, <strong>Line:</strong> 253, <strong>Function:</strong> unlink</p>
-    <div class="context-code">        } else {<br>            $this-&gt;logMessage(&#x27;ERROR&#x27;, &quot;Tunnel failed to start, PID $pid not running&quot;);<br>            // Only unlink PID file if process is confirmed dead<br>            exec(&quot;ps -p $pid &gt;/dev/null 2&gt;&amp;1&quot;, $output, $return_var);<br>            if ($return_var !== 0) {<br>                unlink($this-&gt;pid_file);<br>                $this-&gt;logMessage(&#x27;DEBUG&#x27;, &quot;Removed PID file {$this-&gt;pid_file} as process is not running&quot;);<br>            }<br>            return &quot;Tunnel failed to start: process not running.&quot;;<br>        }<br>    }</div>
+    <p><strong>File:</strong> haxinator-pigen-overlay/stage2/02-custom-config/root_files/html/network/Tunnel.php, <strong>Line:</strong> 400, <strong>Function:</strong> unlink</p>
+    <div class="context-code">        $return_var = 0;<br>        exec(&quot;pkill -f &#x27;ssh.*-D 0.0.0.0:8080&#x27;&quot;, $output, $return_var);<br><br>        // Clean up PID file<br>        if (file_exists($this-&gt;pid_file)) {<br>            unlink($this-&gt;pid_file);<br>        }<br><br>        // Verify port 8080 is no longer in use<br>        $socket = @fsockopen(&#x27;127.0.0.1&#x27;, 8080, $errno, $errstr, 1);<br>        if ($socket) {</div>
 </div>
 <div class="occurrence-item">
-    <p><strong>File:</strong> haxinator-pigen-overlay/stage2/02-custom-config/root_files/html/network/Tunnel.php, <strong>Line:</strong> 274, <strong>Function:</strong> file_get_contents</p>
-    <div class="context-code">        if (!$this-&gt;isTunnelRunning()) {<br>            $this-&gt;logMessage(&#x27;WARNING&#x27;, &quot;Tunnel not running&quot;);<br>            return &quot;Tunnel is not running.&quot;;<br>        }<br><br>        $pid = trim(file_get_contents($this-&gt;pid_file));<br>        $this-&gt;logMessage(&#x27;DEBUG&#x27;, &quot;Stopping process with PID $pid&quot;);<br>        $output = [];<br>        $return_var = 0;<br>        exec(&quot;sudo -H kill $pid 2&gt;&amp;1&quot;, $output, $return_var);<br>        $output_str = implode(&quot;\n&quot;, $output);</div>
+    <p><strong>File:</strong> haxinator-pigen-overlay/stage2/02-custom-config/root_files/html/network/Tunnel.php, <strong>Line:</strong> 404, <strong>Function:</strong> fsockopen</p>
+    <div class="context-code">        if (file_exists($this-&gt;pid_file)) {<br>            unlink($this-&gt;pid_file);<br>        }<br><br>        // Verify port 8080 is no longer in use<br>        $socket = @fsockopen(&#x27;127.0.0.1&#x27;, 8080, $errno, $errstr, 1);<br>        if ($socket) {<br>            fclose($socket);<br>            $error = &quot;Failed to stop tunnel completely - port 8080 is still in use&quot;;<br>            $this-&gt;logMessage(&#x27;ERROR&#x27;, $error);<br>            return $error;</div>
 </div>
 <div class="occurrence-item">
-    <p><strong>File:</strong> haxinator-pigen-overlay/stage2/02-custom-config/root_files/html/network/Tunnel.php, <strong>Line:</strong> 278, <strong>Function:</strong> exec</p>
-    <div class="context-code"><br>        $pid = trim(file_get_contents($this-&gt;pid_file));<br>        $this-&gt;logMessage(&#x27;DEBUG&#x27;, &quot;Stopping process with PID $pid&quot;);<br>        $output = [];<br>        $return_var = 0;<br>        exec(&quot;sudo -H kill $pid 2&gt;&amp;1&quot;, $output, $return_var);<br>        $output_str = implode(&quot;\n&quot;, $output);<br>        $this-&gt;logMessage(&#x27;DEBUG&#x27;, &quot;kill command output: $output_str, return: $return_var&quot;);<br><br>        if ($return_var === 0) {<br>            unlink($this-&gt;pid_file);</div>
+    <p><strong>File:</strong> haxinator-pigen-overlay/stage2/02-custom-config/root_files/html/network/Tunnel.php, <strong>Line:</strong> 446, <strong>Function:</strong> fsockopen</p>
+    <div class="context-code">    {<br>        $status = $this-&gt;getTunnelStatus();<br>        $debug = &#x27;&#x27;;<br><br>        // Check if port 8080 is listening<br>        $socket = @fsockopen(&#x27;127.0.0.1&#x27;, 8080, $errno, $errstr, 1);<br>        $port_listening = false;<br>        if ($socket) {<br>            fclose($socket);<br>            $port_listening = true;<br>        }</div>
 </div>
 <div class="occurrence-item">
-    <p><strong>File:</strong> haxinator-pigen-overlay/stage2/02-custom-config/root_files/html/network/Tunnel.php, <strong>Line:</strong> 283, <strong>Function:</strong> unlink</p>
-    <div class="context-code">        exec(&quot;sudo -H kill $pid 2&gt;&amp;1&quot;, $output, $return_var);<br>        $output_str = implode(&quot;\n&quot;, $output);<br>        $this-&gt;logMessage(&#x27;DEBUG&#x27;, &quot;kill command output: $output_str, return: $return_var&quot;);<br><br>        if ($return_var === 0) {<br>            unlink($this-&gt;pid_file);<br>            $this-&gt;logMessage(&#x27;INFO&#x27;, &quot;Tunnel stopped successfully, PID $pid&quot;);<br>            return &quot;Tunnel stopped successfully.&quot;;<br>        } else {<br>            $this-&gt;logMessage(&#x27;ERROR&#x27;, &quot;Failed to stop tunnel, PID $pid, error=$output_str&quot;);<br>            return &quot;Failed to stop tunnel.&quot;;</div>
+    <p><strong>File:</strong> haxinator-pigen-overlay/stage2/02-custom-config/root_files/html/network/Tunnel.php, <strong>Line:</strong> 485, <strong>Function:</strong> mkdir</p>
+    <div class="context-code"><br>        // Ensure .ssh directory exists with proper permissions<br>        $ssh_dir = dirname($this-&gt;ssh_key);<br>        if (!is_dir($ssh_dir)) {<br>            $this-&gt;logMessage(&#x27;DEBUG&#x27;, &quot;Creating SSH directory: $ssh_dir&quot;);<br>            if (!mkdir($ssh_dir, 0700, true)) {<br>                $error = &quot;Failed to create SSH directory: &quot; . error_get_last()[&#x27;message&#x27;];<br>                $this-&gt;logMessage(&#x27;ERROR&#x27;, $error);<br>                return [&#x27;status&#x27; =&gt; false, &#x27;message&#x27; =&gt; $error];<br>            }<br>        } else {</div>
 </div>
 <div class="occurrence-item">
-    <p><strong>File:</strong> haxinator-pigen-overlay/stage2/02-custom-config/root_files/html/network/Tunnel.php, <strong>Line:</strong> 351, <strong>Function:</strong> mkdir</p>
-    <div class="context-code">        }<br><br>        // Ensure .ssh directory exists<br>        $ssh_dir = dirname($this-&gt;ssh_key);<br>        if (!is_dir($ssh_dir)) {<br>            mkdir($ssh_dir, 0700, true);<br>            chown($ssh_dir, &#x27;www-data&#x27;);<br>            chgrp($ssh_dir, &#x27;www-data&#x27;);<br>        }<br><br>        // Generate new SSH key pair with no passphrase</div>
+    <p><strong>File:</strong> haxinator-pigen-overlay/stage2/02-custom-config/root_files/html/network/Tunnel.php, <strong>Line:</strong> 507, <strong>Function:</strong> unlink</p>
+    <div class="context-code">        $dir_group = posix_getgrgid(filegroup($ssh_dir))[&#x27;name&#x27;];<br>        $this-&gt;logMessage(&#x27;DEBUG&#x27;, &quot;SSH directory permissions: $dir_perms, owner: $dir_owner, group: $dir_group&quot;);<br><br>        // Remove existing keys if they exist<br>        if (file_exists($this-&gt;ssh_key)) {<br>            unlink($this-&gt;ssh_key);<br>        }<br>        if (file_exists($this-&gt;ssh_key . &#x27;.pub&#x27;)) {<br>            unlink($this-&gt;ssh_key . &#x27;.pub&#x27;);<br>        }<br></div>
 </div>
 <div class="occurrence-item">
-    <p><strong>File:</strong> haxinator-pigen-overlay/stage2/02-custom-config/root_files/html/network/Tunnel.php, <strong>Line:</strong> 361, <strong>Function:</strong> exec</p>
-    <div class="context-code">        // Generate new SSH key pair with no passphrase<br>        $output = [];<br>        $return_var = 0;<br>        $command = &quot;sudo -u www-data ssh-keygen -t rsa -b 4096 -f {$this-&gt;ssh_key} -N &#x27;&#x27; -C &#x27;haxinator@&quot; . gethostname() . &quot;&#x27; -q&quot;;<br><br>        exec($command, $output, $return_var);<br>        $output_str = implode(&quot;\n&quot;, $output);<br><br>        if ($return_var !== 0) {<br>            $this-&gt;logMessage(&#x27;ERROR&#x27;, &quot;Failed to regenerate SSH keys: $output_str&quot;);<br>            return [</div>
+    <p><strong>File:</strong> haxinator-pigen-overlay/stage2/02-custom-config/root_files/html/network/Tunnel.php, <strong>Line:</strong> 510, <strong>Function:</strong> unlink</p>
+    <div class="context-code">        // Remove existing keys if they exist<br>        if (file_exists($this-&gt;ssh_key)) {<br>            unlink($this-&gt;ssh_key);<br>        }<br>        if (file_exists($this-&gt;ssh_key . &#x27;.pub&#x27;)) {<br>            unlink($this-&gt;ssh_key . &#x27;.pub&#x27;);<br>        }<br><br>        // Generate new SSH key pair with no passphrase<br>        $output = [];<br>        $return_var = 0;</div>
 </div>
 <div class="occurrence-item">
-    <p><strong>File:</strong> haxinator-pigen-overlay/stage2/02-custom-config/root_files/html/network/Tunnel.php, <strong>Line:</strong> 400, <strong>Function:</strong> file_get_contents</p>
+    <p><strong>File:</strong> haxinator-pigen-overlay/stage2/02-custom-config/root_files/html/network/Tunnel.php, <strong>Line:</strong> 519, <strong>Function:</strong> exec</p>
+    <div class="context-code">        $output = [];<br>        $return_var = 0;<br>        $command = &quot;ssh-keygen -t rsa -b 4096 -f &quot; . escapeshellarg($this-&gt;ssh_key) . &quot; -N &#x27;&#x27; -C &#x27;haxinator@&quot; . gethostname() . &quot;&#x27; 2&gt;&amp;1&quot;;<br><br>        $this-&gt;logMessage(&#x27;DEBUG&#x27;, &quot;Executing command: $command&quot;);<br>        exec($command, $output, $return_var);<br>        $output_str = implode(&quot;\n&quot;, $output);<br><br>        if ($return_var !== 0) {<br>            $error = &quot;Failed to regenerate SSH keys (return code $return_var): $output_str&quot;;<br>            $this-&gt;logMessage(&#x27;ERROR&#x27;, $error);</div>
+</div>
+<div class="occurrence-item">
+    <p><strong>File:</strong> haxinator-pigen-overlay/stage2/02-custom-config/root_files/html/network/Tunnel.php, <strong>Line:</strong> 573, <strong>Function:</strong> file_get_contents</p>
     <div class="context-code">                &#x27;message&#x27; =&gt; &#x27;No public key found. Please generate SSH keys first.&#x27;,<br>                &#x27;key&#x27; =&gt; &#x27;&#x27;<br>            ];<br>        }<br><br>        $key_content = file_get_contents($pub_key_path);<br><br>        return [<br>            &#x27;status&#x27; =&gt; true,<br>            &#x27;message&#x27; =&gt; &#x27;Public key retrieved successfully&#x27;,<br>            &#x27;key&#x27; =&gt; $key_content</div>
 </div>
 <div class="occurrence-item">
@@ -528,76 +528,76 @@
                     <thead>
                         <tr>
                             <th scope="col" style="min-width: 200px; width: 30%;">File</th>
-                            <th scope="col" style="min-width: 80px; width: 5%;">curl_exec</th><th scope="col" style="min-width: 80px; width: 5%;">exec</th><th scope="col" style="min-width: 80px; width: 5%;">file_get_c...</th><th scope="col" style="min-width: 80px; width: 5%;">file_put_c...</th><th scope="col" style="min-width: 80px; width: 5%;">getenv</th><th scope="col" style="min-width: 80px; width: 5%;">ini_get</th><th scope="col" style="min-width: 80px; width: 5%;">ini_set</th><th scope="col" style="min-width: 80px; width: 5%;">mkdir</th><th scope="col" style="min-width: 80px; width: 5%;">move_uploa...</th><th scope="col" style="min-width: 80px; width: 5%;">ob_start</th><th scope="col" style="min-width: 80px; width: 5%;">popen</th><th scope="col" style="min-width: 80px; width: 5%;">preg_repla...</th><th scope="col" style="min-width: 80px; width: 5%;">proc_open</th><th scope="col" style="min-width: 80px; width: 5%;">shell_exec</th><th scope="col" style="min-width: 80px; width: 5%;">unlink</th>
+                            <th scope="col" style="min-width: 80px; width: 5%;">curl_exec</th><th scope="col" style="min-width: 80px; width: 5%;">exec</th><th scope="col" style="min-width: 80px; width: 5%;">file_get_c...</th><th scope="col" style="min-width: 80px; width: 5%;">file_put_c...</th><th scope="col" style="min-width: 80px; width: 5%;">fsockopen</th><th scope="col" style="min-width: 80px; width: 5%;">getenv</th><th scope="col" style="min-width: 80px; width: 5%;">ini_get</th><th scope="col" style="min-width: 80px; width: 5%;">ini_set</th><th scope="col" style="min-width: 80px; width: 5%;">mkdir</th><th scope="col" style="min-width: 80px; width: 5%;">move_uploa...</th><th scope="col" style="min-width: 80px; width: 5%;">ob_start</th><th scope="col" style="min-width: 80px; width: 5%;">popen</th><th scope="col" style="min-width: 80px; width: 5%;">preg_repla...</th><th scope="col" style="min-width: 80px; width: 5%;">proc_open</th><th scope="col" style="min-width: 80px; width: 5%;">shell_exec</th><th scope="col" style="min-width: 80px; width: 5%;">unlink</th>
                         </tr>
                     </thead>
                     <tbody>
                         <tr>
     <td>haxinator-pigen-overlay/stag</td>
-    <td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style='background: #ffcccc;'>2</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style='background: #ffcccc;'>1</td><td style='background: #ffcccc;'>1</td><td style=''>0</td>
+    <td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style='background: #ffcccc;'>2</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style='background: #ffcccc;'>1</td><td style='background: #ffcccc;'>1</td><td style=''>0</td>
 </tr>
 <tr>
     <td>haxinator-pigen-overlay/stag</td>
-    <td style=''>0</td><td style='background: #ff3333;'>16</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style='background: #ffcccc;'>1</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td>
+    <td style=''>0</td><td style='background: #ff3333;'>16</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style='background: #ffcccc;'>1</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td>
 </tr>
 <tr>
     <td>haxinator-pigen-overlay/stag</td>
-    <td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style='background: #ffcccc;'>2</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style='background: #ffcccc;'>1</td><td style='background: #ffcccc;'>1</td><td style=''>0</td><td style=''>0</td><td style=''>0</td>
+    <td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style='background: #ffcccc;'>2</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style='background: #ffcccc;'>1</td><td style='background: #ffcccc;'>1</td><td style=''>0</td><td style=''>0</td><td style=''>0</td>
 </tr>
 <tr>
     <td>haxinator-pigen-overlay/stag</td>
-    <td style=''>0</td><td style='background: #ffcccc;'>3</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td>
+    <td style=''>0</td><td style='background: #ffcccc;'>3</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td>
 </tr>
 <tr>
     <td>haxinator-pigen-overlay/stag</td>
-    <td style=''>0</td><td style='background: #ffcccc;'>1</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td>
+    <td style=''>0</td><td style='background: #ffcccc;'>1</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td>
 </tr>
 <tr>
     <td>haxinator-pigen-overlay/stag</td>
-    <td style=''>0</td><td style=''>0</td><td style='background: #ffcccc;'>1</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style='background: #ffcccc;'>1</td><td style='background: #ffcccc;'>3</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td>
+    <td style=''>0</td><td style=''>0</td><td style='background: #ffcccc;'>1</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style='background: #ffcccc;'>1</td><td style='background: #ffcccc;'>3</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td>
 </tr>
 <tr>
     <td>haxinator-pigen-overlay/stag</td>
-    <td style=''>0</td><td style=''>0</td><td style='background: #ffcccc;'>1</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td>
+    <td style=''>0</td><td style=''>0</td><td style='background: #ffcccc;'>1</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td>
 </tr>
 <tr>
     <td>haxinator-pigen-overlay/stag</td>
-    <td style=''>0</td><td style='background: #ff6666;'>11</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td>
+    <td style=''>0</td><td style='background: #ff6666;'>11</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td>
 </tr>
 <tr>
     <td>haxinator-pigen-overlay/stag</td>
-    <td style='background: #ffcccc;'>1</td><td style='background: #ffcccc;'>2</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td>
+    <td style='background: #ffcccc;'>1</td><td style='background: #ffcccc;'>2</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td>
 </tr>
 <tr>
     <td>haxinator-pigen-overlay/stag</td>
-    <td style=''>0</td><td style='background: #ff6666;'>12</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td>
+    <td style=''>0</td><td style='background: #ff6666;'>12</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td>
 </tr>
 <tr>
     <td>haxinator-pigen-overlay/stag</td>
-    <td style=''>0</td><td style='background: #ff6666;'>9</td><td style='background: #ffcccc;'>3</td><td style='background: #ffcccc;'>3</td><td style='background: #ffcccc;'>1</td><td style=''>0</td><td style=''>0</td><td style='background: #ffcccc;'>2</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style='background: #ffcccc;'>2</td>
+    <td style=''>0</td><td style='background: #ffcccc;'>2</td><td style='background: #ffcccc;'>4</td><td style='background: #ffcccc;'>2</td><td style='background: #ffcccc;'>3</td><td style='background: #ffcccc;'>2</td><td style=''>0</td><td style=''>0</td><td style='background: #ffcccc;'>2</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style='background: #ffcccc;'>2</td><td style=''>0</td><td style='background: #ffcccc;'>3</td>
 </tr>
 <tr>
     <td>haxinator-pigen-overlay/stag</td>
-    <td style=''>0</td><td style='background: #ffcccc;'>1</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td>
+    <td style=''>0</td><td style='background: #ffcccc;'>1</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td>
 </tr>
 <tr>
     <td>haxinator-pigen-overlay/stag</td>
-    <td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style='background: #ffcccc;'>3</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td>
+    <td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style='background: #ffcccc;'>3</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td>
 </tr>
 <tr>
     <td>haxinator-pigen-overlay/stag</td>
-    <td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style='background: #ffcccc;'>2</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td>
+    <td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style='background: #ffcccc;'>2</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td>
 </tr>
 <tr>
     <td>haxinator-pigen-overlay/stag</td>
-    <td style='background: #ffcccc;'>1</td><td style='background: #ffcccc;'>2</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style='background: #ffcccc;'>1</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td>
+    <td style='background: #ffcccc;'>1</td><td style='background: #ffcccc;'>2</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style='background: #ffcccc;'>1</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td>
 </tr>
 
                     </tbody>
                 </table>
             </div>
         </div>
-        <div class="footer">Generated on 2025-05-18 08:37:01</div>
+        <div class="footer">Generated on 2025-05-18 11:11:38</div>
     </div>
 
     <script src="/js/bootstrap.bundle.min.js"></script>

@@ -86,44 +86,28 @@ class Tunnel
             $this->logMessage('DEBUG', "PID file {$this->pid_file} does not exist");
             return false;
         }
+        
         $pid = trim(file_get_contents($this->pid_file));
         if (empty($pid)) {
             $this->logMessage('DEBUG', "PID file {$this->pid_file} is empty");
             return false;
         }
-        
-        // First, simply check if port 8080 is listening, which is the most important indicator
-        $output = [];
-        $return_var = 0;
-        exec("netstat -tuln | grep ':8080' 2>&1", $output, $return_var);
-        if ($return_var === 0 && !empty($output)) {
-            $this->logMessage('DEBUG', "Port 8080 is listening - tunnel is active");
-            
-            // Port is listening, now verify the process exists
-            exec("ps -p $pid 2>&1", $output, $return_var);
-            if ($return_var === 0) {
-                // Process exists, success!
-                return true;
-            }
-            
-            // If the original PID doesn't exist, try to find the SSH tunnel process
-            $output = [];
-            exec("ps aux | grep 'ssh.*-D.*:8080' | grep -v grep", $output);
-            if (!empty($output)) {
-                // Found SSH tunnel process, let's update the PID file
-                $this->logMessage('DEBUG', "Found SSH tunnel but PID mismatch. Updating PID file.");
-                
-                // Extract the PID of the SSH or sudo process
-                if (preg_match('/^\S+\s+(\d+)/', $output[0], $matches)) {
-                    $new_pid = $matches[1];
-                    file_put_contents($this->pid_file, $new_pid);
-                    $this->logMessage('DEBUG', "Updated PID file with $new_pid");
-                    return true;
-                }
-            }
+
+        // Check if the process is running using native PHP
+        if (!posix_kill($pid, 0)) {
+            $this->logMessage('DEBUG', "Process $pid is not running");
+            return false;
         }
-        
-        $this->logMessage('DEBUG', "Port 8080 is not listening or tunnel process not found");
+
+        // Check if port 8080 is in use using native PHP socket functions
+        $socket = @fsockopen('127.0.0.1', 8080, $errno, $errstr, 1);
+        if ($socket) {
+            fclose($socket);
+            $this->logMessage('DEBUG', "Port 8080 is listening - tunnel is active");
+            return true;
+        }
+
+        $this->logMessage('DEBUG', "Port 8080 is not listening");
         return false;
     }
 
@@ -149,38 +133,138 @@ class Tunnel
     {
         $debug_info = [];
         
-        // Check SSH key existence
+        // Check SSH key existence and validate
         $key_exists = file_exists($this->ssh_key);
         $debug_info[] = "SSH key ({$this->ssh_key}) exists: " . ($key_exists ? 'Yes' : 'No');
         $this->logMessage('DEBUG', $debug_info[count($debug_info)-1]);
         
-        // Check SSH key permissions
         if ($key_exists) {
+            // Check SSH key permissions
             $perms = substr(sprintf('%o', fileperms($this->ssh_key)), -4);
             $debug_info[] = "SSH key permissions: $perms";
             $this->logMessage('DEBUG', $debug_info[count($debug_info)-1]);
+            
+            // Validate key format
+            $key_content = file_get_contents($this->ssh_key);
+            if (strpos($key_content, '-----BEGIN') === false || strpos($key_content, '-----END') === false) {
+                $debug_info[] = "Warning: SSH key appears to be invalid or corrupted";
+                $this->logMessage('WARNING', $debug_info[count($debug_info)-1]);
+            }
         }
         
-        // Check known_hosts existence
+        // Check known_hosts existence and permissions
         $known_hosts_exists = file_exists($this->known_hosts);
         $debug_info[] = "Known hosts ({$this->known_hosts}) exists: " . ($known_hosts_exists ? 'Yes' : 'No');
         $this->logMessage('DEBUG', $debug_info[count($debug_info)-1]);
         
-        // Log HOME environment
-        $home = getenv('HOME');
-        $debug_info[] = "HOME environment: " . ($home ?: 'not set');
-        $this->logMessage('DEBUG', $debug_info[count($debug_info)-1]);
+        if ($known_hosts_exists) {
+            $known_hosts_perms = substr(sprintf('%o', fileperms($this->known_hosts)), -4);
+            $debug_info[] = "Known hosts permissions: $known_hosts_perms";
+            $this->logMessage('DEBUG', $debug_info[count($debug_info)-1]);
+        }
         
-        // Test SSH connectivity with verbose output
-        $output = [];
-        $return_var = 0;
-        exec("sudo -H ssh -v -i {$this->ssh_key} -o BatchMode=yes -o ConnectTimeout=5 -o UserKnownHostsFile={$this->known_hosts} $remote_host true 2>&1", $output, $return_var);
-        $output_str = implode("\n", $output);
+        // Check environment
+        $env_info = [
+            'HOME' => getenv('HOME') ?: 'not set',
+            'USER' => posix_getpwuid(posix_geteuid())['name'],
+            'SSH_AUTH_SOCK' => getenv('SSH_AUTH_SOCK') ?: 'not set'
+        ];
+        foreach ($env_info as $key => $value) {
+            $debug_info[] = "$key environment: $value";
+            $this->logMessage('DEBUG', "$key = $value");
+        }
+        
+        // Test SSH connectivity using proc_open for better control
+        $descriptorspec = [
+            0 => ["pipe", "r"],  // stdin
+            1 => ["pipe", "w"],  // stdout
+            2 => ["pipe", "w"]   // stderr
+        ];
+        
+        $cmd = "ssh -v -i " . escapeshellarg($this->ssh_key) . 
+               " -o BatchMode=yes" .
+               " -o ConnectTimeout=5" .
+               " -o StrictHostKeyChecking=no" .
+               " -o UserKnownHostsFile=" . escapeshellarg($this->known_hosts) .
+               " " . $remote_host . " true";
+        
+        $process = proc_open($cmd, $descriptorspec, $pipes);
+        $return_var = -1;
+        $output_str = '';
+        
+        if (is_resource($process)) {
+            // Close stdin as we don't need it
+            fclose($pipes[0]);
+            
+            // Read stdout and stderr
+            stream_set_blocking($pipes[1], 0);
+            stream_set_blocking($pipes[2], 0);
+            
+            $output = ['stdout' => '', 'stderr' => ''];
+            $start = microtime(true);
+            
+            // Read output with timeout
+            while (microtime(true) - $start < 10) { // 10 second timeout
+                $stdout = stream_get_contents($pipes[1]);
+                $stderr = stream_get_contents($pipes[2]);
+                
+                if ($stdout) {
+                    $output['stdout'] .= $stdout;
+                }
+                if ($stderr) {
+                    $output['stderr'] .= $stderr;
+                }
+                
+                $status = proc_get_status($process);
+                if (!$status['running']) {
+                    $return_var = $status['exitcode'];
+                    break;
+                }
+                
+                usleep(100000); // 0.1 second
+            }
+            
+            // Clean up
+            fclose($pipes[1]);
+            fclose($pipes[2]);
+            
+            // If process is still running after timeout, terminate it
+            $status = proc_get_status($process);
+            if ($status['running']) {
+                proc_terminate($process, SIGTERM);
+                $debug_info[] = "Warning: SSH connection test timed out after 10 seconds";
+                $this->logMessage('WARNING', "SSH connection test timed out");
+            }
+            
+            proc_close($process);
+            
+            $output_str = trim($output['stdout'] . "\n" . $output['stderr']);
+        }
+        
+        // Parse SSH output for common issues
+        $issues = [];
+        if (strpos($output_str, 'Permission denied') !== false) {
+            $issues[] = "Permission denied - check key permissions and authorization";
+        }
+        if (strpos($output_str, 'Connection refused') !== false) {
+            $issues[] = "Connection refused - check if SSH service is running on remote host";
+        }
+        if (strpos($output_str, 'Connection timed out') !== false) {
+            $issues[] = "Connection timed out - check network connectivity and firewall rules";
+        }
+        if (!empty($issues)) {
+            $debug_info[] = "Detected issues:\n- " . implode("\n- ", $issues);
+        }
+        
         $debug_info[] = "SSH connectivity test return: $return_var";
-        $debug_info[] = "SSH connectivity test output: $output_str";
+        $debug_info[] = "SSH connectivity test output:\n$output_str";
         $this->logMessage('DEBUG', "SSH connectivity test: return=$return_var, output=$output_str");
         
-        return ['return' => $return_var, 'output' => implode("\n", $debug_info)];
+        return [
+            'return' => $return_var,
+            'output' => implode("\n", $debug_info),
+            'issues' => $issues
+        ];
     }
 
     /**
@@ -215,46 +299,65 @@ class Tunnel
             return "Cannot start tunnel: SSH server unreachable.";
         }
         
-        // Check sudo permissions
-        $output = [];
-        $return_var = 0;
-        exec("sudo -H -l -U www-data 2>&1", $output, $return_var);
-        $sudo_output = implode("\n", $output);
-        $this->logMessage('DEBUG', "sudo permissions check: return=$return_var, output=$sudo_output");
+        // Start SSH tunnel using proc_open for better process control
+        $descriptorspec = [
+            0 => ["pipe", "r"],  // stdin
+            1 => ["pipe", "w"],  // stdout
+            2 => ["pipe", "w"]   // stderr
+        ];
         
-        // Start SSH tunnel
-        $command = "sudo -H ssh -i {$this->ssh_key} -o UserKnownHostsFile={$this->known_hosts} -N -D {$this->local_bind} $remote_host >/dev/null 2>&1 & echo $!";
-        $this->logMessage('DEBUG', "Executing command: $command");
-        $output = [];
-        $return_var = 0;
-        exec($command, $output, $return_var);
-        $output_str = implode("\n", $output);
-        $this->logMessage('DEBUG', "Command output: $output_str, return: $return_var");
+        $cmd = "ssh -i " . escapeshellarg($this->ssh_key) . 
+               " -o UserKnownHostsFile=" . escapeshellarg($this->known_hosts) .
+               " -o StrictHostKeyChecking=no" .
+               " -N -D " . escapeshellarg($this->local_bind) . 
+               " " . $remote_host;
+        $process = proc_open($cmd, $descriptorspec, $pipes);
         
-        if ($return_var !== 0 || empty($output)) {
-            $this->logMessage('ERROR', "Failed to start tunnel: exec returned $return_var, output=$output_str");
-            return "Failed to start tunnel: exec error.";
-        }
-        
-        $pid = trim($output[0]);
-        file_put_contents($this->pid_file, $pid);
-        $this->logMessage('DEBUG', "Wrote PID $pid to {$this->pid_file}");
-        
-        // Verify tunnel started
-        sleep(5);
-        if ($this->isTunnelRunning()) {
-            $this->logMessage('INFO', "Tunnel started successfully with PID $pid");
-            return "Tunnel started successfully.";
-        } else {
-            $this->logMessage('ERROR', "Tunnel failed to start, PID $pid not running");
-            // Only unlink PID file if process is confirmed dead
-            exec("ps -p $pid >/dev/null 2>&1", $output, $return_var);
-            if ($return_var !== 0) {
-                unlink($this->pid_file);
-                $this->logMessage('DEBUG', "Removed PID file {$this->pid_file} as process is not running");
+        if (is_resource($process)) {
+            // Get process ID
+            $status = proc_get_status($process);
+            $pid = $status['pid'];
+            
+            // Make pipes non-blocking
+            stream_set_blocking($pipes[1], 0);
+            stream_set_blocking($pipes[2], 0);
+            
+            // Wait briefly to check if process dies immediately
+            usleep(500000); // 0.5 seconds
+            
+            // Check if process is still running
+            $status = proc_get_status($process);
+            if ($status['running']) {
+                file_put_contents($this->pid_file, $pid);
+                $this->logMessage('DEBUG', "Wrote PID $pid to {$this->pid_file}");
+                
+                // Close pipes but keep process running
+                fclose($pipes[0]);
+                fclose($pipes[1]);
+                fclose($pipes[2]);
+                
+                // Wait a bit longer to verify tunnel is working
+                sleep(2);
+                if ($this->isTunnelRunning()) {
+                    $this->logMessage('INFO', "Tunnel started successfully with PID $pid");
+                    return "Tunnel started successfully.";
+                }
             }
-            return "Tunnel failed to start: process not running.";
+            
+            // If we get here, something went wrong
+            proc_terminate($process);
+            proc_close($process);
+            
+            // Clean up pipes
+            foreach ($pipes as $pipe) {
+                if (is_resource($pipe)) {
+                    fclose($pipe);
+                }
+            }
         }
+        
+        $this->logMessage('ERROR', "Failed to start tunnel process");
+        return "Failed to start tunnel: process creation failed.";
     }
 
     /**
@@ -271,22 +374,43 @@ class Tunnel
             return "Tunnel is not running.";
         }
         
+        // First try to kill the process in the PID file
         $pid = trim(file_get_contents($this->pid_file));
         $this->logMessage('DEBUG', "Stopping process with PID $pid");
+
+        // Try SIGTERM first (signal 15)
+        if (posix_kill($pid, 15)) {
+            // Wait briefly to see if the process terminates
+            usleep(500000); // 0.5 seconds
+        }
+
+        // If SIGTERM didn't work, try SIGKILL (signal 9)
+        if (posix_kill($pid, 0)) {
+            posix_kill($pid, 9);
+            usleep(500000); // Wait another 0.5 seconds
+        }
+
+        // Kill any remaining SSH tunnel processes
         $output = [];
         $return_var = 0;
-        exec("sudo -H kill $pid 2>&1", $output, $return_var);
-        $output_str = implode("\n", $output);
-        $this->logMessage('DEBUG', "kill command output: $output_str, return: $return_var");
+        exec("pkill -f 'ssh.*-D 0.0.0.0:8080'", $output, $return_var);
         
-        if ($return_var === 0) {
+        // Clean up PID file
+        if (file_exists($this->pid_file)) {
             unlink($this->pid_file);
-            $this->logMessage('INFO', "Tunnel stopped successfully, PID $pid");
-            return "Tunnel stopped successfully.";
-        } else {
-            $this->logMessage('ERROR', "Failed to stop tunnel, PID $pid, error=$output_str");
-            return "Failed to stop tunnel.";
         }
+
+        // Verify port 8080 is no longer in use
+        $socket = @fsockopen('127.0.0.1', 8080, $errno, $errstr, 1);
+        if ($socket) {
+            fclose($socket);
+            $error = "Failed to stop tunnel completely - port 8080 is still in use";
+            $this->logMessage('ERROR', $error);
+            return $error;
+        }
+
+        $this->logMessage('INFO', "Tunnel stopped successfully");
+        return "Tunnel stopped successfully.";
     }
 
     /**
@@ -318,6 +442,14 @@ class Tunnel
         $status = $this->getTunnelStatus();
         $debug = '';
         
+        // Check if port 8080 is listening
+        $socket = @fsockopen('127.0.0.1', 8080, $errno, $errstr, 1);
+        $port_listening = false;
+        if ($socket) {
+            fclose($socket);
+            $port_listening = true;
+        }
+        
         if (!empty($username) && !empty($ip)) {
             $remote_host = $this->getRemoteHost($username, $ip, $port);
             $debug = $this->debugSshConfig($remote_host)['output'] . "\n\nRecent Logs:\n" . $this->getRecentLogs();
@@ -326,7 +458,8 @@ class Tunnel
         return [
             'status' => $status,
             'server' => !empty($username) && !empty($ip) ? "$username@$ip" . ($port != '22' ? ":$port" : "") : '',
-            'debug' => $debug
+            'debug' => $debug,
+            'port_listening' => $port_listening
         ];
     }
 
@@ -345,35 +478,19 @@ class Tunnel
             ];
         }
 
-        // Ensure .ssh directory exists
+        // Ensure .ssh directory exists with proper permissions
         $ssh_dir = dirname($this->ssh_key);
         if (!is_dir($ssh_dir)) {
             $this->logMessage('DEBUG', "Creating SSH directory: $ssh_dir");
-            $mkdir_output = [];
-            $mkdir_return = 0;
-            exec("mkdir -p " . escapeshellarg($ssh_dir) . " 2>&1", $mkdir_output, $mkdir_return);
-            if ($mkdir_return !== 0) {
-                $error = "Failed to create SSH directory: " . implode("\n", $mkdir_output);
+            if (!mkdir($ssh_dir, 0700, true)) {
+                $error = "Failed to create SSH directory: " . error_get_last()['message'];
                 $this->logMessage('ERROR', $error);
                 return ['status' => false, 'message' => $error];
             }
-            
-            // Set directory permissions
-            $chmod_output = [];
-            $chmod_return = 0;
-            exec("chmod 700 " . escapeshellarg($ssh_dir) . " 2>&1", $chmod_output, $chmod_return);
-            if ($chmod_return !== 0) {
-                $error = "Failed to set SSH directory permissions: " . implode("\n", $chmod_output);
-                $this->logMessage('ERROR', $error);
-                return ['status' => false, 'message' => $error];
-            }
-            
-            // Set ownership
-            $chown_output = [];
-            $chown_return = 0;
-            exec("chown www-data:www-data " . escapeshellarg($ssh_dir) . " 2>&1", $chown_output, $chown_return);
-            if ($chown_return !== 0) {
-                $error = "Failed to set SSH directory ownership: " . implode("\n", $chown_output);
+        } else {
+            // Ensure correct permissions on existing directory
+            if (!chmod($ssh_dir, 0700)) {
+                $error = "Failed to set SSH directory permissions";
                 $this->logMessage('ERROR', $error);
                 return ['status' => false, 'message' => $error];
             }
@@ -385,10 +502,18 @@ class Tunnel
         $dir_group = posix_getgrgid(filegroup($ssh_dir))['name'];
         $this->logMessage('DEBUG', "SSH directory permissions: $dir_perms, owner: $dir_owner, group: $dir_group");
 
+        // Remove existing keys if they exist
+        if (file_exists($this->ssh_key)) {
+            unlink($this->ssh_key);
+        }
+        if (file_exists($this->ssh_key . '.pub')) {
+            unlink($this->ssh_key . '.pub');
+        }
+
         // Generate new SSH key pair with no passphrase
         $output = [];
         $return_var = 0;
-        $command = "sudo -u www-data ssh-keygen -t rsa -b 4096 -f " . escapeshellarg($this->ssh_key) . " -N '' -C 'haxinator@" . gethostname() . "' 2>&1";
+        $command = "ssh-keygen -t rsa -b 4096 -f " . escapeshellarg($this->ssh_key) . " -N '' -C 'haxinator@" . gethostname() . "' 2>&1";
         
         $this->logMessage('DEBUG', "Executing command: $command");
         exec($command, $output, $return_var);
@@ -403,16 +528,19 @@ class Tunnel
             ];
         }
         
-        // Verify the keys were created and check their permissions
+        // Verify the keys were created
         if (!file_exists($this->ssh_key) || !file_exists($this->ssh_key . '.pub')) {
             $error = "SSH keys were not created despite successful command execution";
             $this->logMessage('ERROR', $error);
             return ['status' => false, 'message' => $error];
         }
         
-        // Fix permissions
-        chmod($this->ssh_key, 0600);
-        chmod($this->ssh_key . '.pub', 0644);
+        // Set proper permissions on the keys
+        if (!chmod($this->ssh_key, 0600) || !chmod($this->ssh_key . '.pub', 0644)) {
+            $error = "Failed to set proper permissions on SSH keys";
+            $this->logMessage('ERROR', $error);
+            return ['status' => false, 'message' => $error];
+        }
         
         // Verify final permissions
         $key_perms = substr(sprintf('%o', fileperms($this->ssh_key)), -4);

@@ -551,12 +551,50 @@ function renderMainPage($message, $error, $wifi_list, $saved_connections, $iface
           margin-bottom: 12px;
         }
         .start-tunnel-btn {
-          background-color: #28a745;
+          background: #22c55e;
           color: white;
+          border: none;
+          border-radius: calc(var(--border-radius) * 0.6) !important;
+          font-weight: 500;
+          letter-spacing: 0.5px;
+          min-width: 92px;
+          padding: 0.38em 1.1em;
+          font-size: 1rem;
+          box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+          transition: background 0.13s, color 0.13s, box-shadow 0.13s;
+        }
+        .start-tunnel-btn:hover {
+          background: #15803d;
+          color: white;
+          box-shadow: 0 2px 8px rgba(34,197,94,0.13);
         }
         .stop-tunnel-btn {
-          background-color: #dc3545;
+          background: #ef4444;
           color: white;
+          border: none;
+          border-radius: calc(var(--border-radius) * 0.6) !important;
+          font-weight: 500;
+          letter-spacing: 0.5px;
+          min-width: 92px;
+          padding: 0.38em 1.1em;
+          font-size: 1rem;
+          box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+          transition: background 0.13s, color 0.13s, box-shadow 0.13s;
+        }
+        .stop-tunnel-btn:hover {
+          background: #b91c1c;
+          color: white;
+          box-shadow: 0 2px 8px rgba(239,68,68,0.13);
+        }
+        .start-tunnel-btn:disabled, .stop-tunnel-btn:disabled {
+          background: #d1d5db;
+          color: #9ca3af;
+          box-shadow: none;
+          cursor: not-allowed;
+        }
+        .tunnel-heading {
+          font-size: 1rem;
+          margin-bottom: 12px;
         }
       </style>
     </head>
@@ -1138,7 +1176,14 @@ function renderMainPage($message, $error, $wifi_list, $saved_connections, $iface
                   <?php endif; ?>
                 </div>
                 <div class="d-flex gap-2">
-                  <span class="badge bg-info">SOCKS Proxy: 0.0.0.0:8080</span>
+                  <span class="badge <?= isset($tunnel_status) && $tunnel_status['port_listening'] ? 'bg-success' : 'bg-secondary' ?>">
+                    SOCKS Proxy: 0.0.0.0:8080
+                    <?php if (isset($tunnel_status) && $tunnel_status['port_listening']): ?>
+                      <i class="bi bi-check-circle-fill ms-1"></i>
+                    <?php else: ?>
+                      <i class="bi bi-x-circle-fill ms-1"></i>
+                    <?php endif; ?>
+                  </span>
                 </div>
               </div>
               
@@ -1348,6 +1393,22 @@ function renderMainPage($message, $error, $wifi_list, $saved_connections, $iface
               <button type="submit" class="btn btn-primary">Connect</button>
             </div>
           </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- Keep all modals outside the tab content -->
+    <!-- Tunnel Connection Modal -->
+    <div class="modal fade" id="tunnelConnectModal" tabindex="-1" aria-labelledby="tunnelConnectModalLabel" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
+      <div class="modal-dialog modal-sm modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-body text-center p-4">
+            <div class="spinner-border text-primary mb-3" role="status">
+              <span class="visually-hidden">Loading...</span>
+            </div>
+            <p class="mb-0">Establishing SSH tunnel connection...</p>
+            <small class="text-muted">This may take a few moments</small>
+          </div>
         </div>
       </div>
     </div>
@@ -1746,10 +1807,18 @@ function renderMainPage($message, $error, $wifi_list, $saved_connections, $iface
       const tunnelAction = document.getElementById('tunnel_action');
       const tunnelStatusBar = document.querySelector('.ssh-tunnel-status');
       const tunnelStatusText = document.getElementById('tunnel-status');
+      let tunnelConnectModal;
 
       if (startTunnelBtn && stopTunnelBtn && tunnelForm) {
+        // Initialize the modal
+        tunnelConnectModal = new bootstrap.Modal(document.getElementById('tunnelConnectModal'), {
+          backdrop: 'static',
+          keyboard: false
+        });
+
         startTunnelBtn.addEventListener('click', function() {
           tunnelAction.value = 'start_tunnel';
+          tunnelConnectModal.show();
           tunnelForm.submit();
         });
 
@@ -1764,6 +1833,10 @@ function renderMainPage($message, $error, $wifi_list, $saved_connections, $iface
           if (status === 'Running') {
             tunnelStatusBar.classList.add('running');
             tunnelStatusBar.classList.remove('stopped');
+            // Hide the modal if it's showing and tunnel is running
+            if (tunnelConnectModal) {
+              tunnelConnectModal.hide();
+            }
           } else {
             tunnelStatusBar.classList.add('stopped');
             tunnelStatusBar.classList.remove('running');
