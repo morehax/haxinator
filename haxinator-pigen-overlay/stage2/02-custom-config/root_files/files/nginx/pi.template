@@ -25,6 +25,11 @@ server {
         fastcgi_pass unix:${PHP_SOCK};
     }
 
+    location ^~ /data/ {
+        deny all;
+        return 403;
+    }
+
     location ~ /\.ht {
         deny all;
     }

@@ -4,6 +4,7 @@ pi-gen
 haxinator-pigen-overlay/stage2/02-custom-config/root_files/files/env-secrets
 env-secrets
 output/
+haxinator-pigen-overlay/stage2/02-custom-config/root_files/html/data/ssh-tunnel.log
 
 # Jekyll generated files
 docs/_site/

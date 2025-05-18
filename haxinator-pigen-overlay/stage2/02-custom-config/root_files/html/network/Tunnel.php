@@ -10,7 +10,7 @@ require_once __DIR__ . '/../security/bootstrap.php';
 class Tunnel
 {
     private $pid_file = '/var/www/html/data/tunnel.pid';
-    private $log_file = '/var/log/ssh-tunnel.log';
+    private $log_file = '/var/www/html/data/ssh-tunnel.log';
     private $local_bind = '0.0.0.0:8080';
     private $ssh_key = '/var/www/.ssh/id_rsa';
     private $known_hosts = '/var/www/.ssh/known_hosts';
@@ -348,32 +348,77 @@ class Tunnel
         // Ensure .ssh directory exists
         $ssh_dir = dirname($this->ssh_key);
         if (!is_dir($ssh_dir)) {
-            mkdir($ssh_dir, 0700, true);
-            chown($ssh_dir, 'www-data');
-            chgrp($ssh_dir, 'www-data');
+            $this->logMessage('DEBUG', "Creating SSH directory: $ssh_dir");
+            $mkdir_output = [];
+            $mkdir_return = 0;
+            exec("mkdir -p " . escapeshellarg($ssh_dir) . " 2>&1", $mkdir_output, $mkdir_return);
+            if ($mkdir_return !== 0) {
+                $error = "Failed to create SSH directory: " . implode("\n", $mkdir_output);
+                $this->logMessage('ERROR', $error);
+                return ['status' => false, 'message' => $error];
+            }
+            
+            // Set directory permissions
+            $chmod_output = [];
+            $chmod_return = 0;
+            exec("chmod 700 " . escapeshellarg($ssh_dir) . " 2>&1", $chmod_output, $chmod_return);
+            if ($chmod_return !== 0) {
+                $error = "Failed to set SSH directory permissions: " . implode("\n", $chmod_output);
+                $this->logMessage('ERROR', $error);
+                return ['status' => false, 'message' => $error];
+            }
+            
+            // Set ownership
+            $chown_output = [];
+            $chown_return = 0;
+            exec("chown www-data:www-data " . escapeshellarg($ssh_dir) . " 2>&1", $chown_output, $chown_return);
+            if ($chown_return !== 0) {
+                $error = "Failed to set SSH directory ownership: " . implode("\n", $chown_output);
+                $this->logMessage('ERROR', $error);
+                return ['status' => false, 'message' => $error];
+            }
         }
+
+        // Check directory permissions and ownership
+        $dir_perms = substr(sprintf('%o', fileperms($ssh_dir)), -4);
+        $dir_owner = posix_getpwuid(fileowner($ssh_dir))['name'];
+        $dir_group = posix_getgrgid(filegroup($ssh_dir))['name'];
+        $this->logMessage('DEBUG', "SSH directory permissions: $dir_perms, owner: $dir_owner, group: $dir_group");
 
         // Generate new SSH key pair with no passphrase
         $output = [];
         $return_var = 0;
-        $command = "sudo -u www-data ssh-keygen -t rsa -b 4096 -f {$this->ssh_key} -N '' -C 'haxinator@" . gethostname() . "' -q";
+        $command = "sudo -u www-data ssh-keygen -t rsa -b 4096 -f " . escapeshellarg($this->ssh_key) . " -N '' -C 'haxinator@" . gethostname() . "' 2>&1";
         
+        $this->logMessage('DEBUG', "Executing command: $command");
         exec($command, $output, $return_var);
         $output_str = implode("\n", $output);
         
         if ($return_var !== 0) {
-            $this->logMessage('ERROR', "Failed to regenerate SSH keys: $output_str");
+            $error = "Failed to regenerate SSH keys (return code $return_var): $output_str";
+            $this->logMessage('ERROR', $error);
             return [
                 'status' => false,
-                'message' => "Failed to regenerate SSH keys: $output_str"
+                'message' => $error
             ];
+        }
+        
+        // Verify the keys were created and check their permissions
+        if (!file_exists($this->ssh_key) || !file_exists($this->ssh_key . '.pub')) {
+            $error = "SSH keys were not created despite successful command execution";
+            $this->logMessage('ERROR', $error);
+            return ['status' => false, 'message' => $error];
         }
         
         // Fix permissions
         chmod($this->ssh_key, 0600);
         chmod($this->ssh_key . '.pub', 0644);
         
-        $this->logMessage('INFO', "SSH keys regenerated successfully");
+        // Verify final permissions
+        $key_perms = substr(sprintf('%o', fileperms($this->ssh_key)), -4);
+        $pub_perms = substr(sprintf('%o', fileperms($this->ssh_key . '.pub')), -4);
+        $this->logMessage('INFO', "SSH keys regenerated successfully. Private key perms: $key_perms, Public key perms: $pub_perms");
+        
         return [
             'status' => true,
             'message' => 'SSH keys regenerated successfully'
