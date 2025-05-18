@@ -120,33 +120,56 @@ body {
 }
 
 /* Buttons */
-.nm-btn, .btn-primary {
-    height: 40px;
-    padding: 0.5rem 1.1rem;
-    font-size: 1rem;
-    min-width: 92px;
-    border-radius: var(--border-radius-sm);
+.btn {
+    border-radius: 0.5em;
     font-weight: 500;
     letter-spacing: 0.5px;
-    margin-right: 0.3em;
-    margin-bottom: 0.2em;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.04);
     transition: all var(--transition-speed);
 }
 
-.nm-btn:last-child {
-    margin-right: 0;
+.btn-sm {
+    padding: 0.25rem 0.7rem;
+    font-size: 0.875rem;
 }
 
-.nm-btn:active {
-    transform: scale(0.97);
+.btn-icon {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
 }
 
-.nm-btn-sm {
-    min-width: 60px;
-    padding: 0.22em 0.7em;
-    font-size: 0.93rem;
-    border-radius: var(--border-radius-sm);
+.btn-icon i {
+    font-size: 1.1em;
+}
+
+/* Button variants - keeping colors but standardizing shape */
+.btn-outline-secondary {
+    border-color: #6c757d;
+    color: #6c757d;
+}
+
+.btn-outline-secondary:hover {
+    background: #e0e7ef;
+    color: #1a365d;
+    border-color: #1a365d;
+}
+
+.btn-outline-danger {
+    border-color: var(--danger-color);
+    color: var(--danger-color);
+}
+
+.btn-outline-danger:hover {
+    background: #fde8e8;
+    color: #dc2626;
+    border-color: #dc2626;
+}
+
+/* Remove the larger button styles */
+.nm-btn, .btn-primary {
+    border-radius: 0.5em;
+    font-weight: 500;
+    letter-spacing: 0.5px;
 }
 
 /* Navigation */
@@ -273,10 +296,6 @@ body {
     font-weight: 400;
     margin-top: 0.1em;
     word-break: break-all;
-}
-
-.btn-icon {
-    min-width: 40px;
 }
 
 .script-output {
