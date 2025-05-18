@@ -6,7 +6,7 @@ if [ -z "$1" ]; then
 fi
 
 SSID="$1"
-PASSWORD_FILE="/var/www/html/passwords.txt"
+PASSWORD_FILE="/var/www/html/wordlists/passwords.txt"
 LOG_FILE="/tmp/wifi_attempts.log"
 TIMEOUT=3
 RETRIES=2

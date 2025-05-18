@@ -56,7 +56,7 @@ $needsPassword = stripos($security, 'WPA') !== false;
           </div>
         <?php endif; ?>
         <?= CSRFProtection::tokenField() ?>
-        <button type="submit" class="btn btn-primary w-100">Connect</button>
+        <button type="submit" class="btn btn-success w-100">Connect</button>
       </form>
     </div>
   </div>

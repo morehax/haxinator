@@ -129,7 +129,7 @@ function getNetworkConnections() {
                 'details' => $details,
                 'full_details' => $fullDetails,
                 'mac_details' => $macDetails,
-                'status' => $device !== '--' ? 'active' : 'inactive'
+                'status' => (!empty($device) && $device !== '--') ? 'active' : 'inactive'
             ];
         }
     }

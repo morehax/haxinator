@@ -612,6 +612,17 @@ function renderMainPage($message, $error, $wifi_list, $saved_connections, $iface
       </div>
       <div class="topbar-right">
         <div class="status-group">
+          <?php if (isset($tunnel_status) && $tunnel_status['port_listening']): ?>
+            <span title="SOCKS Proxy Active (0.0.0.0:8080)" class="status-indicator">
+              <i class="bi bi-funnel" style="color:#22c55e;"></i>
+              <span class="status-label">proxy</span>
+            </span>
+          <?php else: ?>
+            <span title="SOCKS Proxy Inactive" class="status-indicator">
+              <i class="bi bi-router" style="color:#f59e42;"></i>
+              <span class="status-label">proxy</span>
+            </span>
+          <?php endif; ?>
           <?php if ($ping_ok): ?>
             <span title="Ping to 8.8.8.8 successful" class="status-indicator">
               <i class="bi bi-door-open" style="color:#22c55e;"></i>
@@ -763,15 +774,15 @@ function renderMainPage($message, $error, $wifi_list, $saved_connections, $iface
                               <input type="hidden" name="disconnect_wifi" value="<?= htmlspecialchars($net['ssid']) ?>">
                               <?= CSRFProtection::tokenField() ?>
                               <button type="submit" class="btn btn-danger nm-btn nm-btn-sm" title="Disconnect">
-                                <i class="bi bi-plug-fill" style="transform: rotate(180deg);"></i>
+                                <i class="bi bi-plug-fill" style="color: #22c55e; transform: rotate(180deg);"></i>
                               </button>
                             </form>
                           <?php else: ?>
-                            <button type="button" class="btn btn-primary nm-btn btn-connect-wifi" title="Connect"
+                            <button type="button" class="btn btn-success nm-btn btn-connect-wifi" title="Connect"
                                     data-ssid="<?= htmlspecialchars($net['ssid']) ?>"
                                     data-security="<?= htmlspecialchars($net['security']) ?>"
                                     data-bssid="<?= htmlspecialchars($net['bssid']) ?>">
-                              <i class="bi bi-plug"></i>
+                              <i class="bi bi-plug" style="color:white;"></i>
                             </button>
                           <?php endif; ?>
                         </td>
@@ -846,7 +857,7 @@ function renderMainPage($message, $error, $wifi_list, $saved_connections, $iface
                                 <input type="hidden" name="disconnect_connection" value="<?= htmlspecialchars($conn['uuid']) ?>">
                                 <?= CSRFProtection::tokenField() ?>
                                 <button type="submit" class="btn btn-warning nm-btn nm-btn-sm" title="Disconnect">
-                                  <i class="bi bi-plug-fill" style="transform: rotate(180deg);"></i>
+                                  <i class="bi bi-plug-fill" style="color: #22c55e; transform: rotate(180deg);"></i>
                                 </button>
                               </form>
                             <?php else: ?>
@@ -854,7 +865,7 @@ function renderMainPage($message, $error, $wifi_list, $saved_connections, $iface
                                 <input type="hidden" name="activate_connection" value="<?= htmlspecialchars($conn['uuid']) ?>">
                                 <?= CSRFProtection::tokenField() ?>
                                 <button type="submit" class="btn btn-success nm-btn nm-btn-sm" title="Connect">
-                                  <i class="bi bi-plug"></i>
+                                  <i class="bi bi-plug" style="color:white;"></i>
                                 </button>
                               </form>
                             <?php endif; ?>
@@ -1399,7 +1410,7 @@ function renderMainPage($message, $error, $wifi_list, $saved_connections, $iface
             <div class="modal-footer">
               <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
               <?= CSRFProtection::tokenField() ?>
-              <button type="submit" class="btn btn-primary">Connect</button>
+                              <button type="submit" class="btn btn-success">Connect</button>
             </div>
           </form>
         </div>
