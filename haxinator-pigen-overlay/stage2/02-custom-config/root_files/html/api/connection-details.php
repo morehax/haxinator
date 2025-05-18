@@ -6,7 +6,8 @@
  * but now references the refactored config, auth, and network class locations.
  */
 
-session_start();
+// Include security framework
+require_once __DIR__ . '/../security/bootstrap.php';
 
 require_once __DIR__ . '/../config/config.php';
 require_once __DIR__ . '/../auth/Auth.php';

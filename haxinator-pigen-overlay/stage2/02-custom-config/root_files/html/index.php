@@ -8,12 +8,14 @@
  */
 
 mb_internal_encoding('UTF-8');
-session_start();
+// Include security framework instead of using basic session_start()
+require_once __DIR__ . '/security/bootstrap.php';
 
 // Include configuration and modules (updated paths)
 require_once __DIR__ . '/config/config.php';
 require_once __DIR__ . '/auth/Auth.php';
 require_once __DIR__ . '/network/Network.php';
+require_once __DIR__ . '/network/Tunnel.php';
 require_once __DIR__ . '/data/Data.php';
 require_once __DIR__ . '/ui/UI.php';
 
@@ -28,6 +30,65 @@ if (!$auth->isLoggedIn()) {
 $network = new Network();
 $message = '';
 $error = '';
+
+// Create tunnel instance to handle SSH tunnel operations
+$tunnel = new Tunnel();
+$tunnel_status = null;
+
+// Handle SSH tunnel operations
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['tunnel_action'])) {
+    $ssh_username = isset($_POST['ssh_username']) ? trim($_POST['ssh_username']) : '';
+    $ssh_ip = isset($_POST['ssh_ip']) ? trim($_POST['ssh_ip']) : '';
+    $ssh_port = isset($_POST['ssh_port']) ? trim($_POST['ssh_port']) : '22';
+    
+    // Store SSH server details in session when provided
+    if (!empty($ssh_username) && !empty($ssh_ip)) {
+        $_SESSION['ssh_tunnel'] = [
+            'username' => $ssh_username,
+            'ip' => $ssh_ip,
+            'port' => $ssh_port
+        ];
+    }
+    
+    switch ($_POST['tunnel_action']) {
+        case 'start_tunnel':
+            $result = $tunnel->startTunnel($ssh_username, $ssh_ip, $ssh_port);
+            if (strpos($result, 'successfully') !== false) {
+                $message = $result;
+            } else {
+                $error = $result;
+            }
+            break;
+        case 'stop_tunnel':
+            $result = $tunnel->stopTunnel();
+            if (strpos($result, 'successfully') !== false) {
+                $message = $result;
+            } else {
+                $error = $result;
+            }
+            break;
+    }
+}
+
+// Retrieve stored SSH server details from session
+$ssh_username = '';
+$ssh_ip = '';
+$ssh_port = '22';
+
+if (isset($_POST['ssh_username']) && !empty($_POST['ssh_username'])) {
+    // Use form values if present
+    $ssh_username = trim($_POST['ssh_username']);
+    $ssh_ip = isset($_POST['ssh_ip']) ? trim($_POST['ssh_ip']) : '';
+    $ssh_port = isset($_POST['ssh_port']) ? trim($_POST['ssh_port']) : '22';
+} elseif (isset($_SESSION['ssh_tunnel'])) {
+    // Use session values otherwise
+    $ssh_username = $_SESSION['ssh_tunnel']['username'];
+    $ssh_ip = $_SESSION['ssh_tunnel']['ip'];
+    $ssh_port = $_SESSION['ssh_tunnel']['port'];
+}
+
+// Get tunnel status with server details
+$tunnel_status = $tunnel->getServerDetails($ssh_username, $ssh_ip, $ssh_port);
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (isset($_POST['delete_connection'])) {
@@ -101,5 +162,5 @@ $dns_ok = dns_resolves_google();
 $hostname = gethostname();
 
 // Render main UI
-echo renderMainPage($message, $error, $wifi_list, $saved_connections, $iface_status, $active_uuids, $unique_wifi_list, $public_ip, $dns_ok, $hostname);
+echo renderMainPage($message, $error, $wifi_list, $saved_connections, $iface_status, $active_uuids, $unique_wifi_list, $public_ip, $dns_ok, $hostname, $tunnel_status);
 ?>

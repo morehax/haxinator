@@ -1,24 +1,21 @@
 <?php
+// Include security framework
+require_once __DIR__ . '/../security/bootstrap.php';
+
 // Strict error reporting
 error_reporting(E_ALL);
 ini_set('display_errors', 0);
-
-// Start session securely
-ini_set('session.cookie_httponly', 1);
-ini_set('session.cookie_secure', 1);
-ini_set('session.use_strict_mode', 1);
-session_start();
-
-// CSRF Protection
-if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-    http_response_code(405);
-    die(json_encode(['error' => 'Method not allowed']));
-}
 
 // Authentication check
 if (!isset($_SESSION['logged_in']) || !$_SESSION['logged_in']) {
     http_response_code(403);
     die(json_encode(['error' => 'Unauthorized']));
+}
+
+// Method check
+if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+    http_response_code(405);
+    die(json_encode(['error' => 'Method not allowed']));
 }
 
 header('Content-Type: application/json');
@@ -52,6 +49,11 @@ function sanitizeFilename($filename) {
     
     // Get extension before sanitizing
     $ext = strtolower(pathinfo($filename, PATHINFO_EXTENSION));
+    
+    // Validate file extension using InputValidator
+    if (!InputValidator::filePath($filename, $config[$type]['extensions'])) {
+        throw new Exception('Invalid filename or extension');
+    }
     
     // Remove extension for sanitizing
     $name = pathinfo($filename, PATHINFO_FILENAME);

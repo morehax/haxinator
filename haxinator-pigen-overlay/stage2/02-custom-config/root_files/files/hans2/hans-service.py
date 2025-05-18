@@ -1,4 +1,10 @@
 #!/usr/bin/env python3
+# NetworkManager HANS VPN Service
+# Author: MoreHax (haxinatorgalore@gmail.com)
+# A Python-based NetworkManager VPN plugin for HANS, providing reliable VPN connectivity through DBus integration.
+# Manages HANS tunnel setup, IP configuration, and clean disconnection with detailed logging to /tmp/hans-plugin.log.
+# Features: host-order IP handling, dynamic tun0 configuration, route-metric support, and robust tunnel monitoring via ping.
+# Ensures proper process termination and supports address-data for NetworkManager compatibility.
 
 import os
 import subprocess

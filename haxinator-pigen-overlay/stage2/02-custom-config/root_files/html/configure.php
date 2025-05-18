@@ -1,16 +1,68 @@
 <?php
+// Include security framework
+require_once __DIR__ . '/security/bootstrap.php';
+
 session_start();
 if (!isset($_SESSION['logged_in']) || !$_SESSION['logged_in']) {
     header('Location: /index.php');
     exit;
 }
 
+// Include data class for interface status
+require_once __DIR__ . '/data/Data.php';
+$data = new Data();
+
+// Function to get public IP (copied from UI.php)
+function get_public_ip() {
+    $ch = curl_init();
+    curl_setopt($ch, CURLOPT_URL, 'https://ifconfig.me');
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+    curl_setopt($ch, CURLOPT_TIMEOUT, 2);
+    curl_setopt($ch, CURLOPT_USERAGENT, 'curl');
+    $ip = trim(curl_exec($ch));
+    $httpcode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    curl_close($ch);
+    if (filter_var($ip, FILTER_VALIDATE_IP) && $httpcode === 200) {
+        return $ip;
+    }
+    return false;
+}
+$public_ip = get_public_ip();
+$hostname = gethostname();
+
+// DNS resolution check for google.com (copied from UI.php)
+function dns_resolves_google() {
+    $output = null;
+    $retval = null;
+    exec('dig +short google.com', $output, $retval);
+    foreach ($output as $line) {
+        if (filter_var($line, FILTER_VALIDATE_IP)) {
+            return true;
+        }
+    }
+    return false;
+}
+$dns_ok = dns_resolves_google();
+
+// Ping check for google.com (copied from UI.php)
+function ping_google() {
+    $output = [];
+    $retval = -1;
+    exec('ping -c 1 -W 1 8.8.8.8 2>/dev/null', $output, $retval);
+    if ($retval === 0) {
+        return true;
+    }
+    return false;
+}
+$ping_ok = ping_google();
+
 // Function to get NetworkManager connections with full details
 function getNetworkConnections() {
     $connections = [];
     $output = [];
     
-    exec('nmcli -t -f NAME,UUID,TYPE,DEVICE con show', $output);
+    // Use secure command execution
+    $output = SecureCommand::executeWithOutput('nmcli -t -f NAME,UUID,TYPE,DEVICE con show');
     
     foreach ($output as $line) {
         $parts = explode(':', $line);
@@ -29,11 +81,11 @@ function getNetworkConnections() {
             
             // Always get the configuration
             if ($type === '802-11-wireless') {
-                exec("nmcli -g 802-11-wireless.mac-address-randomization connection show '$uuid'", $macOutput);
+                $macOutput = SecureCommand::executeWithOutput('nmcli -g 802-11-wireless.mac-address-randomization connection show %s', [$uuid]);
                 $macDetails['type'] = 'wifi';
                 $macDetails['randomization'] = !empty($macOutput[0]) ? $macOutput[0] : 'default';
             } elseif ($type === '802-3-ethernet') {
-                exec("nmcli -g 802-3-ethernet.cloned-mac-address connection show '$uuid'", $macOutput);
+                $macOutput = SecureCommand::executeWithOutput('nmcli -g 802-3-ethernet.cloned-mac-address connection show %s', [$uuid]);
                 $macDetails['type'] = 'ethernet';
                 $macDetails['randomization'] = !empty($macOutput[0]) && $macOutput[0] === 'random' ? 'always' : 'default';
             }
@@ -41,19 +93,16 @@ function getNetworkConnections() {
             // Only try to get MAC hardware details if the device is connected/active
             if ($device !== '--' && !empty($device)) {
                 // Get current MAC from ip link
-                $currentMacOutput = [];
-                exec("ip link show $device | grep 'link/ether' | cut -d' ' -f6", $currentMacOutput);
+                $currentMacOutput = SecureCommand::executeWithOutput("ip link show %s | grep 'link/ether' | cut -d' ' -f6", [$device]);
                 $macDetails['current_mac'] = !empty($currentMacOutput[0]) ? $currentMacOutput[0] : '';
                 
                 // Get permanent MAC from sysfs
-                $permMacOutput = [];
-                exec("cat /sys/class/net/$device/address 2>/dev/null || echo ''", $permMacOutput);
+                $permMacOutput = SecureCommand::executeWithOutput("cat /sys/class/net/%s/address 2>/dev/null || echo ''", [$device]);
                 $macDetails['permanent_mac'] = !empty($permMacOutput[0]) ? $permMacOutput[0] : $macDetails['current_mac'];
             } else {
                 // For inactive connections, try to get the MAC from sysfs if device exists
                 if ($type === '802-3-ethernet') {
-                    $fallbackMac = [];
-                    exec("cat /sys/class/net/eth0/address 2>/dev/null || echo '00:00:00:00:00:00'", $fallbackMac);
+                    $fallbackMac = SecureCommand::executeWithOutput("cat /sys/class/net/eth0/address 2>/dev/null || echo '00:00:00:00:00:00'");
                     $macDetails['current_mac'] = !empty($fallbackMac[0]) ? $fallbackMac[0] : '00:00:00:00:00:00';
                     $macDetails['permanent_mac'] = $macDetails['current_mac'];
                 }
@@ -61,8 +110,7 @@ function getNetworkConnections() {
             
             // Get basic connection details
             $details = [];
-            $detailOutput = [];
-            exec("nmcli -f ipv4.addresses,802-11-wireless.ssid,connection.timestamp con show '$uuid' | grep -v '^$'", $detailOutput);
+            $detailOutput = SecureCommand::executeWithOutput("nmcli -f ipv4.addresses,802-11-wireless.ssid,connection.timestamp con show %s | grep -v '^$'", [$uuid]);
             
             foreach ($detailOutput as $detail) {
                 if (strpos($detail, 'ipv4.addresses:') !== false) {
@@ -79,8 +127,7 @@ function getNetworkConnections() {
 
             // If no IP from NetworkManager, try ip addr command
             if (empty($details['ip']) && !empty($device) && $device !== '--') {
-                $ipOutput = [];
-                exec("ip addr show $device | grep 'inet ' | awk '{print \$2}'", $ipOutput);
+                $ipOutput = SecureCommand::executeWithOutput("ip addr show %s | grep 'inet ' | awk '{print \$2}'", [$device]);
                 if (!empty($ipOutput[0])) {
                     $details['ip'] = $ipOutput[0];
                 }
@@ -88,8 +135,7 @@ function getNetworkConnections() {
 
             // Get full connection details
             $fullDetails = [];
-            $fullOutput = [];
-            exec("nmcli -f all con show '$uuid'", $fullOutput);
+            $fullOutput = SecureCommand::executeWithOutput("nmcli -f all con show %s", [$uuid]);
             
             $currentSection = '';
             foreach ($fullOutput as $line) {
@@ -131,97 +177,117 @@ function getNetworkConnections() {
 
 // Handle MAC randomization toggle
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'toggle_mac') {
+    // Validate CSRF token
+    CSRFProtection::enforceCheck();
+    
     $uuid = $_POST['uuid'] ?? '';
     $type = $_POST['type'] ?? '';
     $current = $_POST['current'] ?? 'default';
     
+    // Validate input
+    if (!InputValidator::uuid($uuid)) {
+        $_SESSION['error'] = "Invalid UUID format";
+        header('Location: ' . $_SERVER['PHP_SELF']);
+        exit;
+    }
+    
+    if (!in_array($type, ['wifi', 'ethernet'])) {
+        $_SESSION['error'] = "Invalid connection type";
+        header('Location: ' . $_SERVER['PHP_SELF']);
+        exit;
+    }
+    
+    if (!in_array($current, ['default', 'always'])) {
+        $_SESSION['error'] = "Invalid randomization setting";
+        header('Location: ' . $_SERVER['PHP_SELF']);
+        exit;
+    }
+    
     if ($uuid && $type) {
         if ($type === 'wifi') {
             if ($current === 'default') {
-                exec("nmcli connection modify '$uuid' 802-11-wireless.mac-address-randomization always 802-11-wireless.cloned-mac-address random");
+                SecureCommand::nmcli("connection modify %s 802-11-wireless.mac-address-randomization always 802-11-wireless.cloned-mac-address random", [$uuid]);
             } else {
-                exec("nmcli connection modify '$uuid' 802-11-wireless.mac-address-randomization default 802-11-wireless.cloned-mac-address ''");
+                SecureCommand::nmcli("connection modify %s 802-11-wireless.mac-address-randomization default 802-11-wireless.cloned-mac-address ''", [$uuid]);
             }
-            exec("nmcli connection down '$uuid' && sleep 2 && nmcli connection up '$uuid'");
         } elseif ($type === 'ethernet') {
             $newValue = $current === 'default' ? 'random' : '--';
-            exec("nmcli connection modify '$uuid' 802-3-ethernet.cloned-mac-address '$newValue'");
-            exec("nmcli connection down '$uuid' && sleep 2 && nmcli connection up '$uuid'");
+            SecureCommand::nmcli("connection modify %s 802-3-ethernet.cloned-mac-address %s", [$uuid, $newValue]);
         }
+        
+        // Restart connection to apply changes
+        SecureCommand::restartConnection($uuid);
+        
         header('Location: ' . $_SERVER['PHP_SELF']);
         exit;
     }
 }
 
-// Add MAC validation function
-function isValidMac($mac) {
-    // Check basic format (XX:XX:XX:XX:XX:XX or XX-XX-XX-XX-XX-XX)
-    if (!preg_match('/^([0-9A-Fa-f]{2}[:-]){5}([0-9A-Fa-f]{2})$/', $mac)) {
-        return false;
-    }
-    
-    // Convert to standardized format
-    $mac = str_replace('-', ':', strtoupper($mac));
-    
-    // Check first byte for unicast (least significant bit must be 0)
-    // This is important because NetworkManager won't accept multicast addresses
-    $firstByte = hexdec(substr($mac, 0, 2));
-    if ($firstByte & 0x01) {
-        return false; // Reject multicast addresses
-    }
-    
-    // Check for invalid addresses
-    $invalidMacs = [
-        '00:00:00:00:00:00', // Null MAC
-        'FF:FF:FF:FF:FF:FF'  // Broadcast MAC
-    ];
-    
-    return !in_array($mac, $invalidMacs);
-}
-
 // Handle MAC address changes
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'set_mac') {
+    // Validate CSRF token
+    CSRFProtection::enforceCheck();
+    
     $uuid = $_POST['uuid'] ?? '';
     $type = $_POST['type'] ?? '';
     $mode = $_POST['mac_mode'] ?? '';
     $customMac = $_POST['custom_mac'] ?? '';
     
+    // Validate input
+    if (!InputValidator::uuid($uuid)) {
+        $_SESSION['error'] = "Invalid UUID format";
+        header('Location: ' . $_SERVER['PHP_SELF']);
+        exit;
+    }
+    
+    if (!in_array($type, ['wifi', 'ethernet'])) {
+        $_SESSION['error'] = "Invalid connection type";
+        header('Location: ' . $_SERVER['PHP_SELF']);
+        exit;
+    }
+    
+    if (!in_array($mode, ['permanent', 'random', 'custom'])) {
+        $_SESSION['error'] = "Invalid MAC address mode";
+        header('Location: ' . $_SERVER['PHP_SELF']);
+        exit;
+    }
+    
     if ($uuid && $type) {
         $error = '';
         
-        if ($mode === 'custom' && !isValidMac($customMac)) {
+        if ($mode === 'custom' && !InputValidator::mac($customMac)) {
             $error = 'Invalid MAC address format or value';
         } else {
             // Process based on mode
             switch($mode) {
                 case 'permanent':
                     if ($type === 'wifi') {
-                        exec("nmcli connection modify '$uuid' 802-11-wireless.mac-address-randomization default 802-11-wireless.cloned-mac-address ''");
+                        SecureCommand::nmcli("connection modify %s 802-11-wireless.mac-address-randomization default 802-11-wireless.cloned-mac-address ''", [$uuid]);
                     } else {
-                        exec("nmcli connection modify '$uuid' 802-3-ethernet.cloned-mac-address ''");
+                        SecureCommand::nmcli("connection modify %s 802-3-ethernet.cloned-mac-address ''", [$uuid]);
                     }
                     break;
                     
                 case 'random':
                     if ($type === 'wifi') {
-                        exec("nmcli connection modify '$uuid' 802-11-wireless.mac-address-randomization always 802-11-wireless.cloned-mac-address random");
+                        SecureCommand::nmcli("connection modify %s 802-11-wireless.mac-address-randomization always 802-11-wireless.cloned-mac-address random", [$uuid]);
                     } else {
-                        exec("nmcli connection modify '$uuid' 802-3-ethernet.cloned-mac-address random");
+                        SecureCommand::nmcli("connection modify %s 802-3-ethernet.cloned-mac-address random", [$uuid]);
                     }
                     break;
                     
                 case 'custom':
                     $mac = strtoupper($customMac);
                     if ($type === 'wifi') {
-                        exec("nmcli connection modify '$uuid' 802-11-wireless.mac-address-randomization default 802-11-wireless.cloned-mac-address '$mac'");
+                        SecureCommand::nmcli("connection modify %s 802-11-wireless.mac-address-randomization default 802-11-wireless.cloned-mac-address %s", [$uuid, $mac]);
                     } else {
-                        exec("nmcli connection modify '$uuid' 802-3-ethernet.cloned-mac-address '$mac'");
+                        SecureCommand::nmcli("connection modify %s 802-3-ethernet.cloned-mac-address %s", [$uuid, $mac]);
                     }
                     break;
             }
             
             // Restart connection to apply changes
-            exec("nmcli connection down '$uuid' && sleep 2 && nmcli connection up '$uuid'");
+            SecureCommand::restartConnection($uuid);
         }
         
         if ($error) {
@@ -238,11 +304,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
 // Get network connections
 $connections = getNetworkConnections();
 
-// Placeholder for actual configuration logic
-$message = '';
-$error = '';
-
+// Handle system configuration logic
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    // Validate CSRF token
+    CSRFProtection::enforceCheck();
+    
     if (isset($_POST['action'])) {
         switch ($_POST['action']) {
             case 'toggle_readonly':
@@ -254,6 +320,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
 }
+
+// Set up message handling
+$message = $_SESSION['message'] ?? '';
+$error = $_SESSION['error'] ?? '';
+
+// Clear message from session
+unset($_SESSION['message']);
+unset($_SESSION['error']);
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -268,7 +342,146 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         body {
             background: linear-gradient(135deg, #65ddb7 0%, #3a7cbd 100%);
             font-family: 'Segoe UI', Arial, sans-serif;
-            min-height: 100vh;
+        }
+        .topbar {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          padding: 0.7rem 1.2rem;
+          background: #f6f8fa;
+          border-bottom: 2px solid #e0e7ef;
+          min-height: 56px;
+        }
+        .topbar-left {
+          display: flex;
+          align-items: center;
+          gap: 0.7rem;
+          flex-shrink: 0;
+        }
+        .topbar-logo {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          width: 40px;
+          height: 40px;
+          background: #2563eb;
+          color: #fff;
+          font-size: 1.5rem;
+          font-weight: 900;
+          border-radius: 50%;
+          margin-bottom: 0;
+          box-shadow: 0 2px 8px rgba(37,99,235,0.10);
+          flex-shrink: 0;
+        }
+        .topbar-title {
+          font-size: 1.25rem;
+          font-weight: 700;
+          color: #1a365d;
+          letter-spacing: 1px;
+          margin-bottom: 0;
+          line-height: 1;
+          white-space: nowrap;
+        }
+        .topbar-center {
+          display: flex;
+          align-items: center;
+          gap: 0.8rem;
+          margin: 0 1rem;
+          flex-grow: 1;
+          justify-content: center;
+        }
+        .topbar-right {
+          display: flex;
+          align-items: center;
+          gap: 0.7rem;
+        }
+        .status-group {
+          display: flex;
+          align-items: center;
+          gap: 1.2rem;
+        }
+        .status-indicator {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          line-height: 1;
+        }
+        .status-indicator i {
+          font-size: 1.35em;
+          margin-bottom: 2px;
+          width: 1.4em;
+          height: 1.4em;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+        .status-indicator .status-label {
+          font-size: 0.65em;
+          color: #666;
+          margin-top: 1px;
+        }
+        .interface-bar {
+          background: rgba(255, 255, 255, 0.95);
+          padding: 0.7rem 1.2rem;
+          border-bottom: 1px solid #e0e7ef;
+          margin-bottom: 24px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          flex-wrap: wrap;
+          gap: 0.8rem;
+          box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+        }
+        .interface-status {
+          display: flex;
+          align-items: center;
+          gap: 0.8rem;
+          flex-wrap: wrap;
+          justify-content: center;
+        }
+        .interface-item {
+          display: flex;
+          align-items: center;
+          gap: 0.4rem;
+          font-size: 0.91rem;
+          color: #1a365d;
+          padding: 0.3rem 0.7rem;
+          border-radius: 6px;
+          background: #fff;
+          border: 1px solid #e0e7ef;
+          min-width: 140px;
+          height: 36px;
+          transition: all 0.2s ease;
+          box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
+        }
+        .interface-item:hover {
+          border-color: #2563eb;
+          box-shadow: 0 2px 4px rgba(37, 99, 235, 0.08);
+        }
+        .interface-item i {
+          font-size: 0.91em;
+          opacity: 0.85;
+          flex-shrink: 0;
+        }
+        .interface-item.connected {
+          border-color: #22c55e;
+          background: rgba(34,197,94,0.05);
+        }
+        .interface-item.disconnected {
+          border-color: #f59e42;
+          background: rgba(245,158,66,0.05);
+        }
+        .interface-name {
+          font-weight: 600;
+          margin-right: 0.3rem;
+          flex-shrink: 0;
+        }
+        .interface-ip {
+          color: #4a5568;
+          font-family: monospace;
+          font-size: 0.88em;
+          overflow: hidden;
+          text-overflow: ellipsis;
         }
         .config-card {
             background: rgba(255, 255, 255, 0.97);
@@ -688,12 +901,93 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         </div>
     </div>
 
-    <div class="container py-4">
-        <div class="d-flex justify-content-between align-items-center mb-4">
-            <h2 class="mb-0 text-white">Haxinator Configuration</h2>
-            <a href="/index.php" class="btn btn-outline-light"><i class="bi bi-arrow-left"></i> Back to Dashboard</a>
+    <div class="topbar sticky-top">
+      <div class="topbar-left">
+        <div class="topbar-logo">X</div>
+        <h1 class="topbar-title">Haxinator 2000</h1>
+      </div>
+      <div class="topbar-center">
+        <div class="d-flex align-items-center gap-2">
+          <i class="bi bi-hdd-network"></i>
+          <span><?= htmlspecialchars($hostname) ?></span>
         </div>
+      </div>
+      <div class="topbar-right">
+        <div class="status-group">
+          <?php if ($ping_ok): ?>
+            <span title="Ping to 8.8.8.8 successful" class="status-indicator">
+              <i class="bi bi-door-open" style="color:#22c55e;"></i>
+              <span class="status-label">ping</span>
+            </span>
+          <?php else: ?>
+            <span title="Ping to 8.8.8.8 failed" class="status-indicator">
+              <i class="bi bi-door-closed" style="color:#f4427d;"></i>
+              <span class="status-label">ping</span>
+            </span>
+          <?php endif; ?>
+          <?php if ($public_ip): ?>
+            <span title="Internet Connected" class="status-indicator">
+              <i class="bi bi-globe2" style="color:#22c55e;"></i>
+              <span class="status-label">web</span>
+            </span>
+          <?php else: ?>
+            <span title="No Internet" class="status-indicator">
+              <i class="bi bi-globe2" style="color:#f59e42;"></i>
+              <span class="status-label">web</span>
+            </span>
+          <?php endif; ?>
+          <?php if ($dns_ok): ?>
+            <span title="DNS resolves google.com" class="status-indicator">
+              <i class="bi bi-plugin" style="color:#22c55e;"></i>
+              <span class="status-label">dns</span>
+            </span>
+          <?php else: ?>
+            <span title="DNS does not resolve google.com" class="status-indicator">
+              <i class="bi bi-plug" style="color:#f4427d;"></i>
+              <span class="status-label">dns</span>
+            </span>
+          <?php endif; ?>
+        </div>
+        <a href="https://<?php echo $_SERVER['SERVER_ADDR']; ?>:4200" target="_blank" class="btn btn-outline-secondary btn-sm ms-3 btn-icon"><i class="bi bi-terminal"></i> <span class="d-none d-md-inline">Terminal</span></a>
+        <a href="/index.php" class="btn btn-outline-secondary btn-sm ms-2 btn-icon"><i class="bi bi-house"></i> <span class="d-none d-md-inline">Dashboard</span></a>
+        <button onclick="shutdownSystem()" class="btn btn-outline-danger btn-sm ms-2 btn-icon"><i class="bi bi-power"></i> <span class="d-none d-md-inline">Shutdown</span></button>
+        <form method="get" action="/index.php" class="d-inline ms-2">
+          <button type="submit" name="logout" class="btn btn-outline-secondary btn-sm btn-icon"><i class="bi bi-box-arrow-right"></i> <span class="d-none d-md-inline">Logout</span></button>
+        </form>
+      </div>
+    </div>
 
+    <div class="interface-bar">
+      <div class="interface-status">
+        <?php 
+        try {
+          $interfaces = $data->getTopBarInterfaces();
+          // Add public IP as external interface if online
+          if ($public_ip) {
+            $interfaces[] = [
+              'name' => 'ext',
+              'connected' => true,
+              'icon' => 'bi-globe',
+              'ipv4' => $public_ip
+            ];
+          }
+          foreach ($interfaces as $iface): ?>
+            <div class="interface-item <?= $iface['connected'] ? 'connected' : 'disconnected' ?>">
+              <i class="bi <?= htmlspecialchars($iface['icon']) ?>"></i>
+              <span class="interface-name"><?= htmlspecialchars($iface['name']) ?></span>
+              <?php if ($iface['ipv4']): ?>
+                <span class="interface-ip"><?= htmlspecialchars($iface['ipv4']) ?></span>
+              <?php endif; ?>
+            </div>
+          <?php endforeach;
+        } catch (Exception $e) {
+          error_log("Error in interface status: " . $e->getMessage());
+        }
+        ?>
+      </div>
+    </div>
+
+    <div class="nm-main-container mx-auto px-3 px-md-4" style="max-width:1100px;">
         <?php if ($message): ?>
             <div class="alert alert-success"><?= htmlspecialchars($message) ?></div>
         <?php endif; ?>
@@ -709,12 +1003,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <div class="d-flex gap-3">
                     <form method="post" class="d-inline">
                         <input type="hidden" name="action" value="toggle_readonly">
+                        <?= CSRFProtection::tokenField() ?>
                         <button type="submit" class="btn btn-outline-primary">
                             <i class="bi bi-toggle-on me-1"></i> Toggle Read-Only Mode
                         </button>
                     </form>
                     <form method="post" class="d-inline">
                         <input type="hidden" name="action" value="load_secrets">
+                        <?= CSRFProtection::tokenField() ?>
                         <button type="submit" class="btn btn-outline-primary">
                             <i class="bi bi-key me-1"></i> Load Secrets
                         </button>
@@ -804,6 +1100,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                         <input type="hidden" name="uuid" value="<?= htmlspecialchars($conn['uuid']) ?>">
                                         <input type="hidden" name="type" value="<?= htmlspecialchars($conn['mac_details']['type']) ?>">
                                         <input type="hidden" name="current" value="<?= htmlspecialchars($conn['mac_details']['randomization']) ?>">
+                                        <?= CSRFProtection::tokenField() ?>
                                         <label class="mac-toggle" title="Toggle MAC Address Randomization">
                                             <input type="checkbox" <?= $conn['mac_details']['randomization'] === 'always' ? 'checked' : '' ?>>
                                             <span class="mac-toggle-slider"></span>
@@ -879,6 +1176,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                             <input type="hidden" name="action" value="set_mac">
                                             <input type="hidden" name="uuid" value="<?= htmlspecialchars($conn['uuid']) ?>">
                                             <input type="hidden" name="type" value="<?= htmlspecialchars($conn['mac_details']['type']) ?>">
+                                            <?= CSRFProtection::tokenField() ?>
                                             
                                             <div class="mb-3">
                                                 <label class="form-label">MAC Address Configuration</label>

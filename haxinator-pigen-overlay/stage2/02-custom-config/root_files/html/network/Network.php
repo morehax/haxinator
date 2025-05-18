@@ -5,72 +5,126 @@
  * Moved from /var/www/html/network.php to /var/www/html/network/Network.php
  */
 
+// Include security framework
+require_once __DIR__ . '/../security/bootstrap.php';
+
 class Network
 {
     public function deleteConnection($uuid)
     {
-        $escaped = escapeshellarg($uuid);
-        exec("nmcli connection delete uuid $escaped 2>&1", $out, $ret);
+        // Validate input
+        if (!InputValidator::uuid($uuid)) {
+            return [
+                'message' => '',
+                'error' => "Invalid UUID format"
+            ];
+        }
+        
+        $output = [];
+        $return_code = null;
+        SecureCommand::execute("nmcli connection delete uuid %s", [$uuid], $output, $return_code);
+        
         return [
-            'message' => $ret === 0
+            'message' => $return_code === 0
                 ? "Connection <strong>" . htmlspecialchars($uuid) . "</strong> deleted successfully."
                 : '',
-            'error' => $ret !== 0
+            'error' => $return_code !== 0
                 ? "Failed to delete connection <strong>" . htmlspecialchars($uuid) . "</strong>: " .
-                  htmlspecialchars(implode("\n", $out))
+                  htmlspecialchars(implode("\n", $output))
                 : ''
         ];
     }
 
     public function activateConnection($uuid)
     {
-        $escaped = escapeshellarg($uuid);
-        exec("nmcli connection up uuid $escaped 2>&1", $out, $ret);
+        // Validate input
+        if (!InputValidator::uuid($uuid)) {
+            return [
+                'message' => '',
+                'error' => "Invalid UUID format"
+            ];
+        }
+        
+        $output = [];
+        $return_code = null;
+        SecureCommand::execute("nmcli connection up uuid %s", [$uuid], $output, $return_code);
+        
         return [
-            'message' => $ret === 0
+            'message' => $return_code === 0
                 ? "Connection <strong>" . htmlspecialchars($uuid) . "</strong> activated successfully."
                 : '',
-            'error' => $ret !== 0
+            'error' => $return_code !== 0
                 ? "Failed to activate connection <strong>" . htmlspecialchars($uuid) . "</strong>: " .
-                  htmlspecialchars(implode("\n", $out))
+                  htmlspecialchars(implode("\n", $output))
                 : ''
         ];
     }
 
     public function disconnectConnection($uuid)
     {
-        $escaped = escapeshellarg($uuid);
-        exec("nmcli connection down uuid $escaped 2>&1", $out, $ret);
+        // Validate input
+        if (!InputValidator::uuid($uuid)) {
+            return [
+                'message' => '',
+                'error' => "Invalid UUID format"
+            ];
+        }
+        
+        $output = [];
+        $return_code = null;
+        SecureCommand::execute("nmcli connection down uuid %s", [$uuid], $output, $return_code);
+        
         return [
-            'message' => $ret === 0
+            'message' => $return_code === 0
                 ? "Connection <strong>" . htmlspecialchars($uuid) . "</strong> disconnected successfully."
                 : '',
-            'error' => $ret !== 0
+            'error' => $return_code !== 0
                 ? "Failed to disconnect connection <strong>" . htmlspecialchars($uuid) . "</strong>: " .
-                  htmlspecialchars(implode("\n", $out))
+                  htmlspecialchars(implode("\n", $output))
                 : ''
         ];
     }
 
     public function connectWifi($ssid, $password)
     {
-        $ssid_arg = escapeshellarg($ssid);
-        $cmd = $password !== ''
-            ? "nmcli dev wifi connect $ssid_arg password " . escapeshellarg($password) . " ifname wlan0"
-            : "nmcli dev wifi connect $ssid_arg ifname wlan0";
-
-        exec($cmd . " 2>&1", $output, $retval);
-        if ($retval === 0) {
+        // Validate input
+        if (!InputValidator::ssid($ssid)) {
+            return [
+                'message' => '',
+                'error' => "Invalid SSID format"
+            ];
+        }
+        
+        // Password validation is optional (for open networks)
+        if (!empty($password) && strlen($password) < 8) {
+            return [
+                'message' => '',
+                'error' => "Invalid password (must be at least 8 characters)"
+            ];
+        }
+        
+        $output = [];
+        $return_code = null;
+        
+        if ($password !== '') {
+            SecureCommand::execute("nmcli dev wifi connect %s password %s ifname wlan0", [$ssid, $password], $output, $return_code);
+        } else {
+            SecureCommand::execute("nmcli dev wifi connect %s ifname wlan0", [$ssid], $output, $return_code);
+        }
+        
+        if ($return_code === 0) {
             return [
                 'message' => "Connecting to Wi-Fi network <strong>" . htmlspecialchars($ssid) . "</strong>...",
-                'error'   => ''
+                'error' => ''
             ];
         } else {
-            exec("nmcli radio wifi off && nmcli radio wifi on 2>&1");
-            exec("nmcli dev wifi rescan 2>&1");
+            // Reset WiFi radio and rescan on failure
+            SecureCommand::execute("nmcli radio wifi off && nmcli radio wifi on");
+            SecureCommand::execute("nmcli dev wifi rescan");
+            
             return [
-                'error'   => "Failed to connect to <strong>" . htmlspecialchars($ssid) . "</strong>: " .
-                             htmlspecialchars(implode("\n", $output)),
+                'error' => "Failed to connect to <strong>" . htmlspecialchars($ssid) . "</strong>: " .
+                          htmlspecialchars(implode("\n", $output)),
                 'message' => ''
             ];
         }
@@ -78,33 +132,56 @@ class Network
 
     public function disconnectWifi($ssid)
     {
-        $ssid_arg = escapeshellarg($ssid);
-        // First get the connection UUID for this SSID
-        exec("nmcli -t -f NAME,UUID connection show | grep '^$ssid_arg:' 2>&1", $uuid_output, $uuid_retval);
+        // Validate input
+        if (!InputValidator::ssid($ssid)) {
+            return [
+                'message' => '',
+                'error' => "Invalid SSID format"
+            ];
+        }
         
-        if ($uuid_retval === 0 && !empty($uuid_output)) {
+        // First get the connection UUID for this SSID
+        $uuid_output = [];
+        $uuid_return_code = null;
+        SecureCommand::execute("nmcli -t -f NAME,UUID connection show | grep '^%s:'", [$ssid], $uuid_output, $uuid_return_code);
+        
+        if ($uuid_return_code === 0 && !empty($uuid_output)) {
             // Extract UUID from the output (format is "name:uuid")
             $parts = explode(':', $uuid_output[0]);
             if (isset($parts[1])) {
                 $uuid = trim($parts[1]);
-                exec("nmcli connection down uuid " . escapeshellarg($uuid) . " 2>&1", $output, $retval);
                 
-                if ($retval === 0) {
+                // Validate the extracted UUID
+                if (!InputValidator::uuid($uuid)) {
+                    return [
+                        'message' => '',
+                        'error' => "Invalid UUID format from network manager"
+                    ];
+                }
+                
+                $output = [];
+                $return_code = null;
+                SecureCommand::execute("nmcli connection down uuid %s", [$uuid], $output, $return_code);
+                
+                if ($return_code === 0) {
                     return [
                         'message' => "Disconnected from Wi-Fi network <strong>" . htmlspecialchars($ssid) . "</strong>",
-                        'error'   => ''
+                        'error' => ''
                     ];
                 }
             }
         }
         
         // Fallback: try to disconnect the device directly
-        exec("nmcli device disconnect wlan0 2>&1", $output, $retval);
+        $output = [];
+        $return_code = null;
+        SecureCommand::execute("nmcli device disconnect wlan0", [], $output, $return_code);
+        
         return [
-            'message' => $retval === 0 
+            'message' => $return_code === 0 
                 ? "Disconnected from Wi-Fi network <strong>" . htmlspecialchars($ssid) . "</strong>"
                 : '',
-            'error'   => $retval !== 0
+            'error' => $return_code !== 0
                 ? "Failed to disconnect from <strong>" . htmlspecialchars($ssid) . "</strong>: " .
                   htmlspecialchars(implode("\n", $output))
                 : ''
@@ -113,7 +190,7 @@ class Network
 
     public function rescanWifi()
     {
-        exec("nmcli dev wifi rescan 2>&1");
+        SecureCommand::execute("nmcli dev wifi rescan");
     }
 
     public function configureInterface($iface, $mode, $postData)

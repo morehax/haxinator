@@ -1,5 +1,9 @@
 #!/usr/bin/env python3
-import os
+# PHP Dangerous Functions Scanner
+# Author: MoreHax (haxinatorgalore@gmail.com)
+# This script analyzes PHP files for potentially dangerous function calls, generating a detailed
+# HTML report with occurrence details, function counts, and file summaries. Designed for developers
+# and contributors to identify and review security-sensitive code in open-source projects.import os
 import re
 import sys
 from collections import defaultdict

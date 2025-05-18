@@ -153,26 +153,34 @@ body {
 .nav-tabs {
     border-bottom: 1px solid rgba(0,0,0,0.05);
     margin-bottom: 1.5rem;
+    position: relative;
+    z-index: 1;
 }
 
 .nav-tabs .nav-link {
-    color: var(--secondary-color);
+    color: var(--primary-color);
     font-weight: 500;
-    border: none;
+    border: 1px solid transparent;
+    border-bottom: none;
     padding: 0.75rem 1.25rem;
     transition: all var(--transition-speed);
+    border-radius: var(--border-radius) var(--border-radius) 0 0;
+    margin-right: 2px;
+    position: relative;
 }
 
 .nav-tabs .nav-link:hover {
-    color: var(--primary-color);
     background: rgba(233, 241, 251, 0.5);
+    border-color: rgba(0,0,0,0.05);
+    border-bottom: none;
 }
 
 .nav-tabs .nav-link.active {
     background: var(--table-header-bg);
-    color: var(--primary-color);
-    border-radius: var(--border-radius) var(--border-radius) 0 0;
-    font-weight: 600;
+    border-color: rgba(0,0,0,0.05);
+    border-bottom-color: var(--table-header-bg);
+    margin-bottom: -1px;
+    z-index: 2;
 }
 
 /* Modals */
@@ -240,10 +248,6 @@ body {
     to { opacity: 1; }
 }
 
-.fade-in {
-    animation: fadeIn 0.3s ease-in;
-}
-
 /* Empty States */
 .text-muted {
     color: #6c757d !important;
@@ -253,6 +257,26 @@ body {
 /* Console Window and Script Panels */
 .script-panel {
     margin-bottom: 1rem;
+}
+
+/* Common reused styles */
+.text-title {
+    font-weight: 700;
+    font-size: 1.08em;
+    color: #1a365d;
+}
+
+.uuid-sub, .bssid-sub {
+    font-size: 0.80em;
+    color: #b0b8c9;
+    font-family: monospace;
+    font-weight: 400;
+    margin-top: 0.1em;
+    word-break: break-all;
+}
+
+.btn-icon {
+    min-width: 40px;
 }
 
 .script-output {
@@ -350,31 +374,11 @@ body {
     color: var(--primary-color);
 }
 
-/* Wi-Fi Connect Form */
-.card-connect {
-    border: none;
-    border-radius: var(--border-radius);
-    box-shadow: var(--box-shadow);
-    max-width: 400px;
-    margin: 0 auto;
+/* Additional common selectors for tables */
+.name-cell {
+    position: relative;
 }
 
-.card-connect .card-header {
-    background-color: var(--card-background);
-    border-bottom: 1px solid rgba(0,0,0,0.05);
-    font-weight: 500;
-    font-size: 1.1rem;
-    color: var(--primary-color);
-}
-
-.btn-back {
-    font-size: 0.85rem;
-    padding: 0.25rem 0.75rem;
-    background-color: var(--secondary-color);
-    border-color: var(--secondary-color);
-}
-
-.btn-back:hover {
-    background-color: #5c636a;
-    border-color: #5c636a;
+.action-cell {
+    width: 200px;
 } 

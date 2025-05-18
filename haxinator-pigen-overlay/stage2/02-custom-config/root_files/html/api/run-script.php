@@ -4,6 +4,15 @@
  * Handles script execution and output capture
  */
 
+// Include security framework
+require_once __DIR__ . '/../security/bootstrap.php';
+
+// Ensure user is authenticated
+if (!isset($_SESSION['logged_in']) || !$_SESSION['logged_in']) {
+    http_response_code(401);
+    die('Unauthorized');
+}
+
 // Ensure this script is being called via AJAX
 if (!isset($_SERVER['HTTP_X_REQUESTED_WITH']) || strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) != 'xmlhttprequest') {
     die('Direct access not permitted');

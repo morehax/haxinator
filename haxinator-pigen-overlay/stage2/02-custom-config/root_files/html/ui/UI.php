@@ -48,7 +48,6 @@ function ping_google() {
     return false;
 }
 $ping_ok = ping_google();  // Store result
-error_log("Ping status: " . ($ping_ok ? "SUCCESS" : "FAILED"));
 
 function renderLoginPage($login_error)
 {
@@ -104,6 +103,9 @@ function renderLoginPage($login_error)
               <label for="password" class="form-label">Password</label>
               <input type="password" class="form-control" id="password" name="login_password" required />
             </div>
+            <?php if (class_exists('CSRFProtection')): ?>
+              <?= CSRFProtection::tokenField() ?>
+            <?php endif; ?>
             <button type="submit" class="btn btn-primary w-100">Login</button>
           </form>
         </div>
@@ -139,7 +141,7 @@ function renderLoginPage($login_error)
     return ob_get_clean();
 }
 
-function renderMainPage($message, $error, $wifi_list, $saved_connections, $iface_status, $active_uuids, $unique_wifi_list, $public_ip, $dns_ok, $hostname)
+function renderMainPage($message, $error, $wifi_list, $saved_connections, $iface_status, $active_uuids, $unique_wifi_list, $public_ip, $dns_ok, $hostname, $tunnel_status = null)
 {
     global $ping_ok;  // Add this line to make $ping_ok available inside the function
     global $data;
@@ -485,10 +487,80 @@ function renderMainPage($message, $error, $wifi_list, $saved_connections, $iface
           color: #666;
           margin-top: 1px;
         }
+        
+        /* SSH Tunnel specific styles */
+        .ssh-tunnel-card {
+          background: rgba(255, 255, 255, 0.97);
+          border-radius: 12px;
+          box-shadow: 0 4px 24px rgba(0, 0, 0, 0.1);
+        }
+        .ssh-tunnel-status {
+          margin: 20px 0;
+          padding: 10px;
+          background-color: #e0e0e0;
+          border-radius: 5px;
+          transition: background-color 0.3s ease;
+        }
+        .ssh-tunnel-status.running {
+          background-color: #d4edda;
+          border-color: #c3e6cb;
+          color: #155724;
+        }
+        .ssh-tunnel-status.running .server-info {
+          color: #155724;
+        }
+        .ssh-tunnel-status .server-info {
+          font-weight: 600;
+          white-space: nowrap;
+        }
+        .ssh-tunnel-status.stopped {
+          background-color: #e0e0e0;
+          border-color: #d9d9d9;
+          color: #666666;
+        }
+        .ssh-debug {
+          margin: 20px 0;
+          padding: 10px;
+        }
+        .ssh-config-inputs {
+          display: flex;
+          gap: 10px;
+          align-items: center;
+          flex-wrap: wrap;
+        }
+        .ssh-config-inputs label {
+          margin-right: 5px;
+          font-weight: bold;
+        }
+        .ssh-config-inputs input {
+          padding: 5px;
+          border: 1px solid #ccc;
+          border-radius: 4px;
+          font-size: 14px;
+        }
+        .ssh-config-inputs input[type="number"] {
+          width: 80px;
+        }
+        .ssh-debug pre {
+          background-color: #f8f8f8;
+          padding: 10px;
+          border-radius: 5px;
+          max-height: 300px;
+          overflow-y: auto;
+          white-space: pre-wrap;
+          font-size: 12px;
+        }
+        .start-tunnel-btn {
+          background-color: #28a745;
+          color: white;
+        }
+        .stop-tunnel-btn {
+          background-color: #dc3545;
+          color: white;
+        }
       </style>
     </head>
     <body>
-    <!-- TEST123: public_ip=<?php var_export($public_ip); ?> dns_ok=<?php var_export($dns_ok); ?> -->
     <div class="topbar sticky-top">
       <div class="topbar-left">
         <div class="topbar-logo">X</div>
@@ -502,7 +574,6 @@ function renderMainPage($message, $error, $wifi_list, $saved_connections, $iface
       </div>
       <div class="topbar-right">
         <div class="status-group">
-          <!-- Debug: <?php echo "Ping status: " . var_export($ping_ok, true) . " (" . gettype($ping_ok) . ")"; ?> -->
           <?php if ($ping_ok): ?>
             <span title="Ping to 8.8.8.8 successful" class="status-indicator">
               <i class="bi bi-door-open" style="color:#22c55e;"></i>
@@ -537,11 +608,11 @@ function renderMainPage($message, $error, $wifi_list, $saved_connections, $iface
             </span>
           <?php endif; ?>
         </div>
-        <a href="https://<?php echo $_SERVER['SERVER_ADDR']; ?>:4200" target="_blank" class="btn btn-outline-secondary btn-sm ms-3" style="min-width: 40px;"><i class="bi bi-terminal"></i> <span class="d-none d-md-inline">Terminal</span></a>
-        <a href="/configure.php" class="btn btn-outline-secondary btn-sm ms-2" style="min-width: 40px;"><i class="bi bi-gear"></i> <span class="d-none d-md-inline">Configure</span></a>
-        <button onclick="shutdownSystem()" class="btn btn-outline-danger btn-sm ms-2" style="min-width: 40px;"><i class="bi bi-power"></i> <span class="d-none d-md-inline">Shutdown</span></button>
+        <a href="https://<?php echo $_SERVER['SERVER_ADDR']; ?>:4200" target="_blank" class="btn btn-outline-secondary btn-sm ms-3 btn-icon"><i class="bi bi-terminal"></i> <span class="d-none d-md-inline">Terminal</span></a>
+        <a href="/configure.php" class="btn btn-outline-secondary btn-sm ms-2 btn-icon"><i class="bi bi-gear"></i> <span class="d-none d-md-inline">Configure</span></a>
+        <button onclick="shutdownSystem()" class="btn btn-outline-danger btn-sm ms-2 btn-icon"><i class="bi bi-power"></i> <span class="d-none d-md-inline">Shutdown</span></button>
         <form method="get" class="d-inline ms-2">
-          <button type="submit" name="logout" class="btn btn-outline-secondary btn-sm" style="min-width: 40px;"><i class="bi bi-box-arrow-right"></i> <span class="d-none d-md-inline">Logout</span></button>
+          <button type="submit" name="logout" class="btn btn-outline-secondary btn-sm btn-icon"><i class="bi bi-box-arrow-right"></i> <span class="d-none d-md-inline">Logout</span></button>
         </form>
       </div>
     </div>
@@ -597,6 +668,9 @@ function renderMainPage($message, $error, $wifi_list, $saved_connections, $iface
         <li class="nav-item" role="presentation">
           <button class="nav-link" id="haxinate-tab" data-bs-toggle="tab" data-bs-target="#haxinateTab" type="button" role="tab" aria-controls="haxinateTab" aria-selected="false"><i class="bi bi-lightning-charge" style="font-size:0.91em;"></i> Haxinate Wifi</button>
         </li>
+        <li class="nav-item" role="presentation">
+          <button class="nav-link" id="tunnel-tab" data-bs-toggle="tab" data-bs-target="#tunnelTab" type="button" role="tab" aria-controls="tunnelTab" aria-selected="false"><i class="bi bi-shield-lock" style="font-size:0.91em;"></i> SSH Tunnel</button>
+        </li>
       </ul>
 
       <div class="tab-content" id="managerTabsContent">
@@ -616,7 +690,7 @@ function renderMainPage($message, $error, $wifi_list, $saved_connections, $iface
                       <th>SSID</th>
                       <th>Signal</th>
                       <th>Security</th>
-                      <th style="width: 200px;">Action</th>
+                      <th class="action-cell">Action</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -624,15 +698,15 @@ function renderMainPage($message, $error, $wifi_list, $saved_connections, $iface
                     <tr><td colspan="4" class="text-muted">No networks found.</td></tr>
                   <?php else: ?>
                     <?php foreach ($wifi_list as $net):
-                      $ssid_display = $net['ssid'] !== '(hidden)' ? htmlspecialchars($net['ssid']) : '<em>(Hidden)</em>';
-                      $bssid_display = '<div class="bssid-sub" style="font-size:0.92em; color:#b0b8c9; font-family:monospace; font-weight:400; margin-top:0.1em;">' . htmlspecialchars($net['bssid']) . '</div>';
+                      // $ssid_display is not used, so removing
+                      $bssid_display = '<div class="bssid-sub">' . htmlspecialchars($net['bssid']) . '</div>';
                       $signalPercent = intval($net['signal']);
                       $signalColor = $signalPercent >= 75 ? 'bg-success' :
                                      ($signalPercent >= 50 ? 'bg-warning' : 'bg-danger');
                     ?>
                       <tr <?= $net['in_use'] ? 'class="table-success"' : '' ?>>
                         <td class="ssid-cell">
-                          <span style="font-weight:700; font-size:1.08em; color:#1a365d;"><?= htmlspecialchars($net['ssid']) ?></span>
+                          <span class="text-title"><?= htmlspecialchars($net['ssid']) ?></span>
                           <?= $bssid_display ?>
                         </td>
                         <td>
@@ -698,9 +772,9 @@ function renderMainPage($message, $error, $wifi_list, $saved_connections, $iface
                         $isActive = in_array($conn['uuid'], $active_uuids);
                     ?>
                       <tr <?= $isActive ? 'class="table-success"' : '' ?>>
-                        <td style="position:relative;" class="name-cell">
-                          <span style="font-weight:700; font-size:1.08em; color:#1a365d;"><?= htmlspecialchars($conn['name']) ?></span>
-                          <div class="uuid-sub" style="font-size:0.80em; color:#b0b8c9; font-family:monospace; font-weight:400; margin-top:0.1em; word-break:break-all;"><?= htmlspecialchars($conn['uuid']) ?></div>
+                        <td class="name-cell">
+                          <span class="text-title"><?= htmlspecialchars($conn['name']) ?></span>
+                          <div class="uuid-sub"><?= htmlspecialchars($conn['uuid']) ?></div>
                         </td>
                         <td><?= htmlspecialchars($conn['type']) ?></td>
                         <td><?= $conn['device'] ? htmlspecialchars($conn['device']) : '-' ?></td>
@@ -907,7 +981,7 @@ function renderMainPage($message, $error, $wifi_list, $saved_connections, $iface
                       $isConnected = ($st['state'] === 'connected' || !empty($st['connection']));
                   ?>
                     <tr<?= $isConnected ? ' class="table-success"' : '' ?>>
-                      <td class="name-cell" style="font-weight:700; font-size:1.08em; color:#1a365d;">
+                      <td class="name-cell text-title">
                         <?= htmlspecialchars($if) ?>
                       </td>
                       <td>
@@ -1045,6 +1119,72 @@ function renderMainPage($message, $error, $wifi_list, $saved_connections, $iface
                     <pre id="dns-lookup-log" class="script-output">Ready for DNS lookup...</pre>
                   </div>
                 </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- SSH Tunnel Tab -->
+        <div class="tab-pane fade" id="tunnelTab" role="tabpanel" aria-labelledby="tunnel-tab">
+          <div class="card nm-card mb-4">
+            <div class="card-header">SSH Tunnel Management</div>
+            <div class="card-body p-3">
+              <!-- SSH Tunnel Status -->
+              <div class="ssh-tunnel-status d-flex justify-content-between align-items-center <?= isset($tunnel_status) && $tunnel_status['status'] == 'Running' ? 'running' : 'stopped' ?>">
+                <div>
+                  <strong>Status:</strong> <span id="tunnel-status"><?= isset($tunnel_status) ? htmlspecialchars($tunnel_status['status']) : 'Unknown' ?></span>
+                  <?php if (isset($tunnel_status) && $tunnel_status['status'] == 'Running' && isset($tunnel_status['server']) && !empty($tunnel_status['server'])): ?>
+                    <span class="ms-2">→</span> <span class="server-info"><?= htmlspecialchars($tunnel_status['server']) ?></span>
+                  <?php endif; ?>
+                </div>
+                <div class="d-flex gap-2">
+                  <span class="badge bg-info">SOCKS Proxy: 0.0.0.0:8080</span>
+                </div>
+              </div>
+              
+              <!-- SSH Tunnel Configuration Form -->
+              <form method="post" id="tunnel-form">
+                <div class="ssh-config">
+                  <h5 class="mt-3 mb-2">SSH Server Configuration</h5>
+                  <div class="ssh-config-inputs mb-3">
+                    <input type="hidden" name="tunnel_action" id="tunnel_action" value="">
+                    <?= CSRFProtection::tokenField() ?>
+                    <div class="me-2">
+                      <label for="ssh_username">Username:</label>
+                      <input type="text" id="ssh_username" name="ssh_username" class="form-control" 
+                             value="<?= isset($_SESSION['ssh_tunnel']['username']) ? htmlspecialchars($_SESSION['ssh_tunnel']['username']) : (isset($_POST['ssh_username']) ? htmlspecialchars($_POST['ssh_username']) : '') ?>" 
+                             placeholder="e.g., root">
+                    </div>
+                    <div class="me-2">
+                      <label for="ssh_ip">IP Address:</label>
+                      <input type="text" id="ssh_ip" name="ssh_ip" class="form-control" 
+                             value="<?= isset($_SESSION['ssh_tunnel']['ip']) ? htmlspecialchars($_SESSION['ssh_tunnel']['ip']) : (isset($_POST['ssh_ip']) ? htmlspecialchars($_POST['ssh_ip']) : '') ?>" 
+                             placeholder="e.g., 143.198.29.141">
+                    </div>
+                    <div class="me-2">
+                      <label for="ssh_port">Port:</label>
+                      <input type="number" id="ssh_port" name="ssh_port" class="form-control" 
+                             value="<?= isset($_SESSION['ssh_tunnel']['port']) ? htmlspecialchars($_SESSION['ssh_tunnel']['port']) : (isset($_POST['ssh_port']) ? htmlspecialchars($_POST['ssh_port']) : '22') ?>" 
+                             placeholder="22" min="1" max="65535">
+                    </div>
+                  </div>
+                  <div class="controls d-flex gap-2 mb-3">
+                    <button type="button" id="start-tunnel-btn" class="btn start-tunnel-btn" 
+                            <?= isset($tunnel_status) && $tunnel_status['status'] == 'Running' ? 'disabled' : '' ?>>
+                      <i class="bi bi-play-circle me-1"></i> Start Tunnel
+                    </button>
+                    <button type="button" id="stop-tunnel-btn" class="btn stop-tunnel-btn" 
+                            <?= isset($tunnel_status) && $tunnel_status['status'] != 'Running' ? 'disabled' : '' ?>>
+                      <i class="bi bi-stop-circle me-1"></i> Stop Tunnel
+                    </button>
+                  </div>
+                </div>
+              </form>
+              
+              <!-- Debug Information -->
+              <div class="ssh-debug">
+                <h5 class="mb-2">Debug Information</h5>
+                <pre id="ssh-debug-output"><?= isset($tunnel_status) && isset($tunnel_status['debug']) ? htmlspecialchars($tunnel_status['debug']) : 'Configure SSH settings to see debug information.' ?></pre>
               </div>
             </div>
           </div>
@@ -1569,6 +1709,38 @@ function renderMainPage($message, $error, $wifi_list, $saved_connections, $iface
           } catch (e) { /* Ignore errors */ }
         });
       });
+
+      // SSH Tunnel functionality
+      const startTunnelBtn = document.getElementById('start-tunnel-btn');
+      const stopTunnelBtn = document.getElementById('stop-tunnel-btn');
+      const tunnelForm = document.getElementById('tunnel-form');
+      const tunnelAction = document.getElementById('tunnel_action');
+      const tunnelStatusBar = document.querySelector('.ssh-tunnel-status');
+      const tunnelStatusText = document.getElementById('tunnel-status');
+
+      if (startTunnelBtn && stopTunnelBtn && tunnelForm) {
+        startTunnelBtn.addEventListener('click', function() {
+          tunnelAction.value = 'start_tunnel';
+          tunnelForm.submit();
+        });
+
+        stopTunnelBtn.addEventListener('click', function() {
+          tunnelAction.value = 'stop_tunnel';
+          tunnelForm.submit();
+        });
+        
+        // Update status bar based on status text
+        if (tunnelStatusText && tunnelStatusBar) {
+          const status = tunnelStatusText.textContent.trim();
+          if (status === 'Running') {
+            tunnelStatusBar.classList.add('running');
+            tunnelStatusBar.classList.remove('stopped');
+          } else {
+            tunnelStatusBar.classList.add('stopped');
+            tunnelStatusBar.classList.remove('running');
+          }
+        }
+      }
     });
 
     function shutdownSystem() {

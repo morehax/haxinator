@@ -5,6 +5,15 @@
  * Moved from /var/www/html/ping-stream.php to /var/www/html/api/ping-stream.php
  */
 
+// Include security framework
+require_once __DIR__ . '/../security/bootstrap.php';
+
+// Ensure user is authenticated
+if (!isset($_SESSION['logged_in']) || !$_SESSION['logged_in']) {
+    http_response_code(401);
+    die('data: Unauthorized, please login first' . "\n\n" . "event: done\ndata: \n\n");
+}
+
 @ini_set('output_buffering', 'off');
 @ini_set('zlib.output_compression', false);
 while (ob_get_level() > 0) ob_end_flush();

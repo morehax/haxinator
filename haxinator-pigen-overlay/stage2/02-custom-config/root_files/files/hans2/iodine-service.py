@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
-# nm-iodine-service: Python-based NetworkManager VPN plugin for iodine.
-# Final version:
-# - Fixes byte order for 'gateway' (host order required by NM)
-# - Adds address, address-data, addresses
-# - Adds route-metric to prioritize explicit routes
-# - Exits cleanly after Disconnect so NM can restart it
+# NetworkManager Iodine VPN Service
+# Author: MoreHax (haxinatorgalore@gmail.com)
+# A robust Python-based NetworkManager VPN plugin for iodine, replacing the bug-prone network-manager-iodine.
+# Integrates with DBus to manage iodine DNS tunneling, handling connection setup, IP configuration, and clean disconnection.
+# Key improvements: corrects gateway byte order (host order for NM), supports address-data, adds route-metric for explicit routes,
+# and ensures proper process termination for reliable restarts. Logs detailed diagnostics to /tmp/nm-iodine-debug.log.
 
 import dbus
 import dbus.service
