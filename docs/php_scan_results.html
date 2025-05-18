@@ -100,8 +100,15 @@
             color: #ffffff;
             font-size: 1.8rem;
             font-weight: 700;
-            margin-bottom: 1.5rem;
+            margin-bottom: 0.5rem;
             text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        .report-date {
+            text-align: center;
+            color: #ffffff;
+            font-size: 1rem;
+            margin-bottom: 1.5rem;
+            opacity: 0.8;
         }
         .footer {
             text-align: center;
@@ -115,6 +122,7 @@
 <body>
     <div class="container">
         <h2 class="page-header">Haxinator 2000 - PHP Security Scan</h2>
+        <div class="report-date">Generated on Saturday, May 17, 2025 at 08:10 PM </div>
 
         <div class="config-card">
             <!-- Statistics Section -->
@@ -133,351 +141,351 @@
                 <div class="config-title">Details of Occurrences</div>
                 <div class="config-description">Specific instances of dangerous function calls with context.</div>
                 <div class="occurrence-item">
-    <p><strong>File:</strong> ./configure.php, <strong>Line:</strong> 13, <strong>Function:</strong> exec</p>
+    <p><strong>File:</strong> haxinator-pigen-overlay/stage2/02-custom-config/root_files/html/configure.php, <strong>Line:</strong> 13, <strong>Function:</strong> exec</p>
     <div class="context-code">// Function to get NetworkManager connections with full details<br>function getNetworkConnections() {<br>    $connections = [];<br>    $output = [];<br><br>    exec(&#x27;nmcli -t -f NAME,UUID,TYPE,DEVICE con show&#x27;, $output);<br><br>    foreach ($output as $line) {<br>        $parts = explode(&#x27;:&#x27;, $line);<br><br>        if (count($parts) === 4) {</div>
 </div>
 <div class="occurrence-item">
-    <p><strong>File:</strong> ./configure.php, <strong>Line:</strong> 32, <strong>Function:</strong> exec</p>
+    <p><strong>File:</strong> haxinator-pigen-overlay/stage2/02-custom-config/root_files/html/configure.php, <strong>Line:</strong> 32, <strong>Function:</strong> exec</p>
     <div class="context-code">            $macDetails = [];<br>            $macOutput = [];<br><br>            // Always get the configuration<br>            if ($type === &#x27;802-11-wireless&#x27;) {<br>                exec(&quot;nmcli -g 802-11-wireless.mac-address-randomization connection show &#x27;$uuid&#x27;&quot;, $macOutput);<br>                $macDetails[&#x27;type&#x27;] = &#x27;wifi&#x27;;<br>                $macDetails[&#x27;randomization&#x27;] = !empty($macOutput[0]) ? $macOutput[0] : &#x27;default&#x27;;<br>            } elseif ($type === &#x27;802-3-ethernet&#x27;) {<br>                exec(&quot;nmcli -g 802-3-ethernet.cloned-mac-address connection show &#x27;$uuid&#x27;&quot;, $macOutput);<br>                $macDetails[&#x27;type&#x27;] = &#x27;ethernet&#x27;;</div>
 </div>
 <div class="occurrence-item">
-    <p><strong>File:</strong> ./configure.php, <strong>Line:</strong> 36, <strong>Function:</strong> exec</p>
+    <p><strong>File:</strong> haxinator-pigen-overlay/stage2/02-custom-config/root_files/html/configure.php, <strong>Line:</strong> 36, <strong>Function:</strong> exec</p>
     <div class="context-code">            if ($type === &#x27;802-11-wireless&#x27;) {<br>                exec(&quot;nmcli -g 802-11-wireless.mac-address-randomization connection show &#x27;$uuid&#x27;&quot;, $macOutput);<br>                $macDetails[&#x27;type&#x27;] = &#x27;wifi&#x27;;<br>                $macDetails[&#x27;randomization&#x27;] = !empty($macOutput[0]) ? $macOutput[0] : &#x27;default&#x27;;<br>            } elseif ($type === &#x27;802-3-ethernet&#x27;) {<br>                exec(&quot;nmcli -g 802-3-ethernet.cloned-mac-address connection show &#x27;$uuid&#x27;&quot;, $macOutput);<br>                $macDetails[&#x27;type&#x27;] = &#x27;ethernet&#x27;;<br>                $macDetails[&#x27;randomization&#x27;] = !empty($macOutput[0]) &amp;&amp; $macOutput[0] === &#x27;random&#x27; ? &#x27;always&#x27; : &#x27;default&#x27;;<br>            }<br><br>            // Only try to get MAC hardware details if the device is connected/active</div>
 </div>
 <div class="occurrence-item">
-    <p><strong>File:</strong> ./configure.php, <strong>Line:</strong> 45, <strong>Function:</strong> exec</p>
+    <p><strong>File:</strong> haxinator-pigen-overlay/stage2/02-custom-config/root_files/html/configure.php, <strong>Line:</strong> 45, <strong>Function:</strong> exec</p>
     <div class="context-code"><br>            // Only try to get MAC hardware details if the device is connected/active<br>            if ($device !== &#x27;--&#x27; &amp;&amp; !empty($device)) {<br>                // Get current MAC from ip link<br>                $currentMacOutput = [];<br>                exec(&quot;ip link show $device | grep &#x27;link/ether&#x27; | cut -d&#x27; &#x27; -f6&quot;, $currentMacOutput);<br>                $macDetails[&#x27;current_mac&#x27;] = !empty($currentMacOutput[0]) ? $currentMacOutput[0] : &#x27;&#x27;;<br><br>                // Get permanent MAC from sysfs<br>                $permMacOutput = [];<br>                exec(&quot;cat /sys/class/net/$device/address 2&gt;/dev/null || echo &#x27;&#x27;&quot;, $permMacOutput);</div>
 </div>
 <div class="occurrence-item">
-    <p><strong>File:</strong> ./configure.php, <strong>Line:</strong> 50, <strong>Function:</strong> exec</p>
+    <p><strong>File:</strong> haxinator-pigen-overlay/stage2/02-custom-config/root_files/html/configure.php, <strong>Line:</strong> 50, <strong>Function:</strong> exec</p>
     <div class="context-code">                exec(&quot;ip link show $device | grep &#x27;link/ether&#x27; | cut -d&#x27; &#x27; -f6&quot;, $currentMacOutput);<br>                $macDetails[&#x27;current_mac&#x27;] = !empty($currentMacOutput[0]) ? $currentMacOutput[0] : &#x27;&#x27;;<br><br>                // Get permanent MAC from sysfs<br>                $permMacOutput = [];<br>                exec(&quot;cat /sys/class/net/$device/address 2&gt;/dev/null || echo &#x27;&#x27;&quot;, $permMacOutput);<br>                $macDetails[&#x27;permanent_mac&#x27;] = !empty($permMacOutput[0]) ? $permMacOutput[0] : $macDetails[&#x27;current_mac&#x27;];<br>            } else {<br>                // For inactive connections, try to get the MAC from sysfs if device exists<br>                if ($type === &#x27;802-3-ethernet&#x27;) {<br>                    $fallbackMac = [];</div>
 </div>
 <div class="occurrence-item">
-    <p><strong>File:</strong> ./configure.php, <strong>Line:</strong> 56, <strong>Function:</strong> exec</p>
+    <p><strong>File:</strong> haxinator-pigen-overlay/stage2/02-custom-config/root_files/html/configure.php, <strong>Line:</strong> 56, <strong>Function:</strong> exec</p>
     <div class="context-code">                $macDetails[&#x27;permanent_mac&#x27;] = !empty($permMacOutput[0]) ? $permMacOutput[0] : $macDetails[&#x27;current_mac&#x27;];<br>            } else {<br>                // For inactive connections, try to get the MAC from sysfs if device exists<br>                if ($type === &#x27;802-3-ethernet&#x27;) {<br>                    $fallbackMac = [];<br>                    exec(&quot;cat /sys/class/net/eth0/address 2&gt;/dev/null || echo &#x27;00:00:00:00:00:00&#x27;&quot;, $fallbackMac);<br>                    $macDetails[&#x27;current_mac&#x27;] = !empty($fallbackMac[0]) ? $fallbackMac[0] : &#x27;00:00:00:00:00:00&#x27;;<br>                    $macDetails[&#x27;permanent_mac&#x27;] = $macDetails[&#x27;current_mac&#x27;];<br>                }<br>            }<br></div>
 </div>
 <div class="occurrence-item">
-    <p><strong>File:</strong> ./configure.php, <strong>Line:</strong> 65, <strong>Function:</strong> exec</p>
+    <p><strong>File:</strong> haxinator-pigen-overlay/stage2/02-custom-config/root_files/html/configure.php, <strong>Line:</strong> 65, <strong>Function:</strong> exec</p>
     <div class="context-code">            }<br><br>            // Get basic connection details<br>            $details = [];<br>            $detailOutput = [];<br>            exec(&quot;nmcli -f ipv4.addresses,802-11-wireless.ssid,connection.timestamp con show &#x27;$uuid&#x27; | grep -v &#x27;^$&#x27;&quot;, $detailOutput);<br><br>            foreach ($detailOutput as $detail) {<br>                if (strpos($detail, &#x27;ipv4.addresses:&#x27;) !== false) {<br>                    $details[&#x27;ip&#x27;] = trim(explode(&#x27;:&#x27;, $detail, 2)[1]);<br>                }</div>
 </div>
 <div class="occurrence-item">
-    <p><strong>File:</strong> ./configure.php, <strong>Line:</strong> 83, <strong>Function:</strong> exec</p>
+    <p><strong>File:</strong> haxinator-pigen-overlay/stage2/02-custom-config/root_files/html/configure.php, <strong>Line:</strong> 83, <strong>Function:</strong> exec</p>
     <div class="context-code">            }<br><br>            // If no IP from NetworkManager, try ip addr command<br>            if (empty($details[&#x27;ip&#x27;]) &amp;&amp; !empty($device) &amp;&amp; $device !== &#x27;--&#x27;) {<br>                $ipOutput = [];<br>                exec(&quot;ip addr show $device | grep &#x27;inet &#x27; | awk &#x27;{print \$2}&#x27;&quot;, $ipOutput);<br>                if (!empty($ipOutput[0])) {<br>                    $details[&#x27;ip&#x27;] = $ipOutput[0];<br>                }<br>            }<br></div>
 </div>
 <div class="occurrence-item">
-    <p><strong>File:</strong> ./configure.php, <strong>Line:</strong> 92, <strong>Function:</strong> exec</p>
+    <p><strong>File:</strong> haxinator-pigen-overlay/stage2/02-custom-config/root_files/html/configure.php, <strong>Line:</strong> 92, <strong>Function:</strong> exec</p>
     <div class="context-code">            }<br><br>            // Get full connection details<br>            $fullDetails = [];<br>            $fullOutput = [];<br>            exec(&quot;nmcli -f all con show &#x27;$uuid&#x27;&quot;, $fullOutput);<br><br>            $currentSection = &#x27;&#x27;;<br>            foreach ($fullOutput as $line) {<br>                $line = trim($line);<br>                if (empty($line)) continue;</div>
 </div>
 <div class="occurrence-item">
-    <p><strong>File:</strong> ./configure.php, <strong>Line:</strong> 141, <strong>Function:</strong> exec</p>
+    <p><strong>File:</strong> haxinator-pigen-overlay/stage2/02-custom-config/root_files/html/configure.php, <strong>Line:</strong> 141, <strong>Function:</strong> exec</p>
     <div class="context-code">    $current = $_POST[&#x27;current&#x27;] ?? &#x27;default&#x27;;<br><br>    if ($uuid &amp;&amp; $type) {<br>        if ($type === &#x27;wifi&#x27;) {<br>            if ($current === &#x27;default&#x27;) {<br>                exec(&quot;nmcli connection modify &#x27;$uuid&#x27; 802-11-wireless.mac-address-randomization always 802-11-wireless.cloned-mac-address random&quot;);<br>            } else {<br>                exec(&quot;nmcli connection modify &#x27;$uuid&#x27; 802-11-wireless.mac-address-randomization default 802-11-wireless.cloned-mac-address &#x27;&#x27;&quot;);<br>            }<br>            exec(&quot;nmcli connection down &#x27;$uuid&#x27; &amp;&amp; sleep 2 &amp;&amp; nmcli connection up &#x27;$uuid&#x27;&quot;);<br>        } elseif ($type === &#x27;ethernet&#x27;) {</div>
 </div>
 <div class="occurrence-item">
-    <p><strong>File:</strong> ./configure.php, <strong>Line:</strong> 143, <strong>Function:</strong> exec</p>
+    <p><strong>File:</strong> haxinator-pigen-overlay/stage2/02-custom-config/root_files/html/configure.php, <strong>Line:</strong> 143, <strong>Function:</strong> exec</p>
     <div class="context-code">    if ($uuid &amp;&amp; $type) {<br>        if ($type === &#x27;wifi&#x27;) {<br>            if ($current === &#x27;default&#x27;) {<br>                exec(&quot;nmcli connection modify &#x27;$uuid&#x27; 802-11-wireless.mac-address-randomization always 802-11-wireless.cloned-mac-address random&quot;);<br>            } else {<br>                exec(&quot;nmcli connection modify &#x27;$uuid&#x27; 802-11-wireless.mac-address-randomization default 802-11-wireless.cloned-mac-address &#x27;&#x27;&quot;);<br>            }<br>            exec(&quot;nmcli connection down &#x27;$uuid&#x27; &amp;&amp; sleep 2 &amp;&amp; nmcli connection up &#x27;$uuid&#x27;&quot;);<br>        } elseif ($type === &#x27;ethernet&#x27;) {<br>            $newValue = $current === &#x27;default&#x27; ? &#x27;random&#x27; : &#x27;--&#x27;;<br>            exec(&quot;nmcli connection modify &#x27;$uuid&#x27; 802-3-ethernet.cloned-mac-address &#x27;$newValue&#x27;&quot;);</div>
 </div>
 <div class="occurrence-item">
-    <p><strong>File:</strong> ./configure.php, <strong>Line:</strong> 145, <strong>Function:</strong> exec</p>
+    <p><strong>File:</strong> haxinator-pigen-overlay/stage2/02-custom-config/root_files/html/configure.php, <strong>Line:</strong> 145, <strong>Function:</strong> exec</p>
     <div class="context-code">            if ($current === &#x27;default&#x27;) {<br>                exec(&quot;nmcli connection modify &#x27;$uuid&#x27; 802-11-wireless.mac-address-randomization always 802-11-wireless.cloned-mac-address random&quot;);<br>            } else {<br>                exec(&quot;nmcli connection modify &#x27;$uuid&#x27; 802-11-wireless.mac-address-randomization default 802-11-wireless.cloned-mac-address &#x27;&#x27;&quot;);<br>            }<br>            exec(&quot;nmcli connection down &#x27;$uuid&#x27; &amp;&amp; sleep 2 &amp;&amp; nmcli connection up &#x27;$uuid&#x27;&quot;);<br>        } elseif ($type === &#x27;ethernet&#x27;) {<br>            $newValue = $current === &#x27;default&#x27; ? &#x27;random&#x27; : &#x27;--&#x27;;<br>            exec(&quot;nmcli connection modify &#x27;$uuid&#x27; 802-3-ethernet.cloned-mac-address &#x27;$newValue&#x27;&quot;);<br>            exec(&quot;nmcli connection down &#x27;$uuid&#x27; &amp;&amp; sleep 2 &amp;&amp; nmcli connection up &#x27;$uuid&#x27;&quot;);<br>        }</div>
 </div>
 <div class="occurrence-item">
-    <p><strong>File:</strong> ./configure.php, <strong>Line:</strong> 148, <strong>Function:</strong> exec</p>
+    <p><strong>File:</strong> haxinator-pigen-overlay/stage2/02-custom-config/root_files/html/configure.php, <strong>Line:</strong> 148, <strong>Function:</strong> exec</p>
     <div class="context-code">                exec(&quot;nmcli connection modify &#x27;$uuid&#x27; 802-11-wireless.mac-address-randomization default 802-11-wireless.cloned-mac-address &#x27;&#x27;&quot;);<br>            }<br>            exec(&quot;nmcli connection down &#x27;$uuid&#x27; &amp;&amp; sleep 2 &amp;&amp; nmcli connection up &#x27;$uuid&#x27;&quot;);<br>        } elseif ($type === &#x27;ethernet&#x27;) {<br>            $newValue = $current === &#x27;default&#x27; ? &#x27;random&#x27; : &#x27;--&#x27;;<br>            exec(&quot;nmcli connection modify &#x27;$uuid&#x27; 802-3-ethernet.cloned-mac-address &#x27;$newValue&#x27;&quot;);<br>            exec(&quot;nmcli connection down &#x27;$uuid&#x27; &amp;&amp; sleep 2 &amp;&amp; nmcli connection up &#x27;$uuid&#x27;&quot;);<br>        }<br>        header(&#x27;Location: &#x27; . $_SERVER[&#x27;PHP_SELF&#x27;]);<br>        exit;<br>    }</div>
 </div>
 <div class="occurrence-item">
-    <p><strong>File:</strong> ./configure.php, <strong>Line:</strong> 149, <strong>Function:</strong> exec</p>
+    <p><strong>File:</strong> haxinator-pigen-overlay/stage2/02-custom-config/root_files/html/configure.php, <strong>Line:</strong> 149, <strong>Function:</strong> exec</p>
     <div class="context-code">            }<br>            exec(&quot;nmcli connection down &#x27;$uuid&#x27; &amp;&amp; sleep 2 &amp;&amp; nmcli connection up &#x27;$uuid&#x27;&quot;);<br>        } elseif ($type === &#x27;ethernet&#x27;) {<br>            $newValue = $current === &#x27;default&#x27; ? &#x27;random&#x27; : &#x27;--&#x27;;<br>            exec(&quot;nmcli connection modify &#x27;$uuid&#x27; 802-3-ethernet.cloned-mac-address &#x27;$newValue&#x27;&quot;);<br>            exec(&quot;nmcli connection down &#x27;$uuid&#x27; &amp;&amp; sleep 2 &amp;&amp; nmcli connection up &#x27;$uuid&#x27;&quot;);<br>        }<br>        header(&#x27;Location: &#x27; . $_SERVER[&#x27;PHP_SELF&#x27;]);<br>        exit;<br>    }<br>}</div>
 </div>
 <div class="occurrence-item">
-    <p><strong>File:</strong> ./configure.php, <strong>Line:</strong> 199, <strong>Function:</strong> exec</p>
+    <p><strong>File:</strong> haxinator-pigen-overlay/stage2/02-custom-config/root_files/html/configure.php, <strong>Line:</strong> 199, <strong>Function:</strong> exec</p>
     <div class="context-code">        } else {<br>            // Process based on mode<br>            switch($mode) {<br>                case &#x27;permanent&#x27;:<br>                    if ($type === &#x27;wifi&#x27;) {<br>                        exec(&quot;nmcli connection modify &#x27;$uuid&#x27; 802-11-wireless.mac-address-randomization default 802-11-wireless.cloned-mac-address &#x27;&#x27;&quot;);<br>                    } else {<br>                        exec(&quot;nmcli connection modify &#x27;$uuid&#x27; 802-3-ethernet.cloned-mac-address &#x27;&#x27;&quot;);<br>                    }<br>                    break;<br></div>
 </div>
 <div class="occurrence-item">
-    <p><strong>File:</strong> ./configure.php, <strong>Line:</strong> 201, <strong>Function:</strong> exec</p>
+    <p><strong>File:</strong> haxinator-pigen-overlay/stage2/02-custom-config/root_files/html/configure.php, <strong>Line:</strong> 201, <strong>Function:</strong> exec</p>
     <div class="context-code">            switch($mode) {<br>                case &#x27;permanent&#x27;:<br>                    if ($type === &#x27;wifi&#x27;) {<br>                        exec(&quot;nmcli connection modify &#x27;$uuid&#x27; 802-11-wireless.mac-address-randomization default 802-11-wireless.cloned-mac-address &#x27;&#x27;&quot;);<br>                    } else {<br>                        exec(&quot;nmcli connection modify &#x27;$uuid&#x27; 802-3-ethernet.cloned-mac-address &#x27;&#x27;&quot;);<br>                    }<br>                    break;<br><br>                case &#x27;random&#x27;:<br>                    if ($type === &#x27;wifi&#x27;) {</div>
 </div>
 <div class="occurrence-item">
-    <p><strong>File:</strong> ./configure.php, <strong>Line:</strong> 207, <strong>Function:</strong> exec</p>
+    <p><strong>File:</strong> haxinator-pigen-overlay/stage2/02-custom-config/root_files/html/configure.php, <strong>Line:</strong> 207, <strong>Function:</strong> exec</p>
     <div class="context-code">                    }<br>                    break;<br><br>                case &#x27;random&#x27;:<br>                    if ($type === &#x27;wifi&#x27;) {<br>                        exec(&quot;nmcli connection modify &#x27;$uuid&#x27; 802-11-wireless.mac-address-randomization always 802-11-wireless.cloned-mac-address random&quot;);<br>                    } else {<br>                        exec(&quot;nmcli connection modify &#x27;$uuid&#x27; 802-3-ethernet.cloned-mac-address random&quot;);<br>                    }<br>                    break;<br></div>
 </div>
 <div class="occurrence-item">
-    <p><strong>File:</strong> ./configure.php, <strong>Line:</strong> 209, <strong>Function:</strong> exec</p>
+    <p><strong>File:</strong> haxinator-pigen-overlay/stage2/02-custom-config/root_files/html/configure.php, <strong>Line:</strong> 209, <strong>Function:</strong> exec</p>
     <div class="context-code"><br>                case &#x27;random&#x27;:<br>                    if ($type === &#x27;wifi&#x27;) {<br>                        exec(&quot;nmcli connection modify &#x27;$uuid&#x27; 802-11-wireless.mac-address-randomization always 802-11-wireless.cloned-mac-address random&quot;);<br>                    } else {<br>                        exec(&quot;nmcli connection modify &#x27;$uuid&#x27; 802-3-ethernet.cloned-mac-address random&quot;);<br>                    }<br>                    break;<br><br>                case &#x27;custom&#x27;:<br>                    $mac = strtoupper($customMac);</div>
 </div>
 <div class="occurrence-item">
-    <p><strong>File:</strong> ./configure.php, <strong>Line:</strong> 216, <strong>Function:</strong> exec</p>
+    <p><strong>File:</strong> haxinator-pigen-overlay/stage2/02-custom-config/root_files/html/configure.php, <strong>Line:</strong> 216, <strong>Function:</strong> exec</p>
     <div class="context-code">                    break;<br><br>                case &#x27;custom&#x27;:<br>                    $mac = strtoupper($customMac);<br>                    if ($type === &#x27;wifi&#x27;) {<br>                        exec(&quot;nmcli connection modify &#x27;$uuid&#x27; 802-11-wireless.mac-address-randomization default 802-11-wireless.cloned-mac-address &#x27;$mac&#x27;&quot;);<br>                    } else {<br>                        exec(&quot;nmcli connection modify &#x27;$uuid&#x27; 802-3-ethernet.cloned-mac-address &#x27;$mac&#x27;&quot;);<br>                    }<br>                    break;<br>            }</div>
 </div>
 <div class="occurrence-item">
-    <p><strong>File:</strong> ./configure.php, <strong>Line:</strong> 218, <strong>Function:</strong> exec</p>
+    <p><strong>File:</strong> haxinator-pigen-overlay/stage2/02-custom-config/root_files/html/configure.php, <strong>Line:</strong> 218, <strong>Function:</strong> exec</p>
     <div class="context-code">                case &#x27;custom&#x27;:<br>                    $mac = strtoupper($customMac);<br>                    if ($type === &#x27;wifi&#x27;) {<br>                        exec(&quot;nmcli connection modify &#x27;$uuid&#x27; 802-11-wireless.mac-address-randomization default 802-11-wireless.cloned-mac-address &#x27;$mac&#x27;&quot;);<br>                    } else {<br>                        exec(&quot;nmcli connection modify &#x27;$uuid&#x27; 802-3-ethernet.cloned-mac-address &#x27;$mac&#x27;&quot;);<br>                    }<br>                    break;<br>            }<br><br>            // Restart connection to apply changes</div>
 </div>
 <div class="occurrence-item">
-    <p><strong>File:</strong> ./configure.php, <strong>Line:</strong> 224, <strong>Function:</strong> exec</p>
+    <p><strong>File:</strong> haxinator-pigen-overlay/stage2/02-custom-config/root_files/html/configure.php, <strong>Line:</strong> 224, <strong>Function:</strong> exec</p>
     <div class="context-code">                    }<br>                    break;<br>            }<br><br>            // Restart connection to apply changes<br>            exec(&quot;nmcli connection down &#x27;$uuid&#x27; &amp;&amp; sleep 2 &amp;&amp; nmcli connection up &#x27;$uuid&#x27;&quot;);<br>        }<br><br>        if ($error) {<br>            $_SESSION[&#x27;error&#x27;] = $error;<br>        } else {</div>
 </div>
 <div class="occurrence-item">
-    <p><strong>File:</strong> ./pingtest.php, <strong>Line:</strong> 5, <strong>Function:</strong> exec</p>
+    <p><strong>File:</strong> haxinator-pigen-overlay/stage2/02-custom-config/root_files/html/pingtest.php, <strong>Line:</strong> 5, <strong>Function:</strong> exec</p>
     <div class="context-code">&lt;?php<br>$output = [];<br>$retval = null;<br>echo &quot;Starting ping test...\n&quot;;<br>exec(&#x27;ping -c 1 -W 1 8.8.8.8 2&gt;/dev/null&#x27;, $output, $retval);<br>echo &quot;Return value: &quot; . $retval . &quot;\n&quot;;<br>echo &quot;Output: \n&quot; . implode(&quot;\n&quot;, $output) . &quot;\n&quot;;<br>echo &quot;Ping status: &quot; . ($retval === 0 ? &quot;SUCCESS&quot; : &quot;FAILED&quot;) . &quot;\n&quot;;<br>?&gt;</div>
 </div>
 <div class="occurrence-item">
-    <p><strong>File:</strong> ./pingvisual.php, <strong>Line:</strong> 5, <strong>Function:</strong> exec</p>
+    <p><strong>File:</strong> haxinator-pigen-overlay/stage2/02-custom-config/root_files/html/pingvisual.php, <strong>Line:</strong> 5, <strong>Function:</strong> exec</p>
     <div class="context-code">&lt;?php<br>function ping_google() {<br>    $output = [];<br>    $retval = -1;<br>    exec(&#x27;ping -c 1 -W 1 8.8.8.8 2&gt;/dev/null&#x27;, $output, $retval);<br>    $success = ($retval === 0);<br>    return $success;<br>}<br>$ping_ok = ping_google();<br></div>
 </div>
 <div class="occurrence-item">
-    <p><strong>File:</strong> ./ui/UI.php, <strong>Line:</strong> 15, <strong>Function:</strong> curl_exec</p>
+    <p><strong>File:</strong> haxinator-pigen-overlay/stage2/02-custom-config/root_files/html/ui/UI.php, <strong>Line:</strong> 15, <strong>Function:</strong> curl_exec</p>
     <div class="context-code">    $ch = curl_init();<br>    curl_setopt($ch, CURLOPT_URL, &#x27;https://ifconfig.me&#x27;);<br>    curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);<br>    curl_setopt($ch, CURLOPT_TIMEOUT, 2);<br>    curl_setopt($ch, CURLOPT_USERAGENT, &#x27;curl&#x27;);<br>    $ip = trim(curl_exec($ch));<br>    $httpcode = curl_getinfo($ch, CURLINFO_HTTP_CODE);<br>    curl_close($ch);<br>    if (filter_var($ip, FILTER_VALIDATE_IP) &amp;&amp; $httpcode === 200) {<br>        return $ip;<br>    }</div>
 </div>
 <div class="occurrence-item">
-    <p><strong>File:</strong> ./ui/UI.php, <strong>Line:</strong> 30, <strong>Function:</strong> exec</p>
+    <p><strong>File:</strong> haxinator-pigen-overlay/stage2/02-custom-config/root_files/html/ui/UI.php, <strong>Line:</strong> 30, <strong>Function:</strong> exec</p>
     <div class="context-code"><br>// DNS resolution check for google.com<br>function dns_resolves_google() {<br>    $output = null;<br>    $retval = null;<br>    exec(&#x27;dig +short google.com&#x27;, $output, $retval);<br>    foreach ($output as $line) {<br>        if (filter_var($line, FILTER_VALIDATE_IP)) {<br>            return true;<br>        }<br>    }</div>
 </div>
 <div class="occurrence-item">
-    <p><strong>File:</strong> ./ui/UI.php, <strong>Line:</strong> 44, <strong>Function:</strong> exec</p>
+    <p><strong>File:</strong> haxinator-pigen-overlay/stage2/02-custom-config/root_files/html/ui/UI.php, <strong>Line:</strong> 44, <strong>Function:</strong> exec</p>
     <div class="context-code"><br>// Ping check for google.com<br>function ping_google() {<br>    $output = [];<br>    $retval = -1;<br>    exec(&#x27;ping -c 1 -W 1 8.8.8.8 2&gt;/dev/null&#x27;, $output, $retval);<br>    if ($retval === 0) {<br>        return true;<br>    }<br>    return false;<br>}</div>
 </div>
 <div class="occurrence-item">
-    <p><strong>File:</strong> ./ui/UI.php, <strong>Line:</strong> 55, <strong>Function:</strong> ob_start</p>
+    <p><strong>File:</strong> haxinator-pigen-overlay/stage2/02-custom-config/root_files/html/ui/UI.php, <strong>Line:</strong> 55, <strong>Function:</strong> ob_start</p>
     <div class="context-code">$ping_ok = ping_google();  // Store result<br>error_log(&quot;Ping status: &quot; . ($ping_ok ? &quot;SUCCESS&quot; : &quot;FAILED&quot;));<br><br>function renderLoginPage($login_error)<br>{<br>    ob_start();<br>    ?&gt;<br>    &lt;!DOCTYPE html&gt;<br>    &lt;html lang=&quot;en&quot;&gt;<br>    &lt;head&gt;<br>      &lt;meta charset=&quot;UTF-8&quot; /&gt;</div>
 </div>
 <div class="occurrence-item">
-    <p><strong>File:</strong> ./ui/UI.php, <strong>Line:</strong> 146, <strong>Function:</strong> ob_start</p>
+    <p><strong>File:</strong> haxinator-pigen-overlay/stage2/02-custom-config/root_files/html/ui/UI.php, <strong>Line:</strong> 146, <strong>Function:</strong> ob_start</p>
     <div class="context-code"><br>function renderMainPage($message, $error, $wifi_list, $saved_connections, $iface_status, $active_uuids, $unique_wifi_list, $public_ip, $dns_ok, $hostname)<br>{<br>    global $ping_ok;  // Add this line to make $ping_ok available inside the function<br>    global $data;<br>    ob_start();<br>    ?&gt;<br>    &lt;!DOCTYPE html&gt;<br>    &lt;html lang=&quot;en&quot;&gt;<br>    &lt;head&gt;<br>      &lt;meta charset=&quot;UTF-8&quot; /&gt;</div>
 </div>
 <div class="occurrence-item">
-    <p><strong>File:</strong> ./ui/diagnostic-status.php, <strong>Line:</strong> 13, <strong>Function:</strong> curl_exec</p>
+    <p><strong>File:</strong> haxinator-pigen-overlay/stage2/02-custom-config/root_files/html/ui/diagnostic-status.php, <strong>Line:</strong> 13, <strong>Function:</strong> curl_exec</p>
     <div class="context-code">$ch = curl_init();<br>curl_setopt($ch, CURLOPT_URL, &#x27;https://ifconfig.me&#x27;);<br>curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);<br>curl_setopt($ch, CURLOPT_TIMEOUT, 5);<br>curl_setopt($ch, CURLOPT_USERAGENT, &#x27;curl&#x27;);<br>$ip = trim(curl_exec($ch));<br>$curl_errno = curl_errno($ch);<br>$curl_error = curl_error($ch);<br>$httpcode = curl_getinfo($ch, CURLINFO_HTTP_CODE);<br>curl_close($ch);<br></div>
 </div>
 <div class="occurrence-item">
-    <p><strong>File:</strong> ./ui/diagnostic-status.php, <strong>Line:</strong> 24, <strong>Function:</strong> exec</p>
+    <p><strong>File:</strong> haxinator-pigen-overlay/stage2/02-custom-config/root_files/html/ui/diagnostic-status.php, <strong>Line:</strong> 24, <strong>Function:</strong> exec</p>
     <div class="context-code">echo &quot;IP: $ip\n&quot;;<br>echo &quot;cURL errno: $curl_errno\n&quot;;<br>echo &quot;cURL error: $curl_error\n&quot;;<br>echo &quot;HTTP code: $httpcode\n\n&quot;;<br><br>echo &quot;=== exec(&#x27;dig +short google.com&#x27;) ===\n&quot;;<br>$output = null;<br>$retval = null;<br>exec(&#x27;dig +short google.com&#x27;, $output, $retval);<br>echo &quot;Return value: $retval\n&quot;;<br>echo &quot;Output lines:\n&quot;;</div>
 </div>
 <div class="occurrence-item">
-    <p><strong>File:</strong> ./ui/diagnostic-status.php, <strong>Line:</strong> 27, <strong>Function:</strong> exec</p>
+    <p><strong>File:</strong> haxinator-pigen-overlay/stage2/02-custom-config/root_files/html/ui/diagnostic-status.php, <strong>Line:</strong> 27, <strong>Function:</strong> exec</p>
     <div class="context-code">echo &quot;HTTP code: $httpcode\n\n&quot;;<br><br>echo &quot;=== exec(&#x27;dig +short google.com&#x27;) ===\n&quot;;<br>$output = null;<br>$retval = null;<br>exec(&#x27;dig +short google.com&#x27;, $output, $retval);<br>echo &quot;Return value: $retval\n&quot;;<br>echo &quot;Output lines:\n&quot;;<br>foreach ($output as $line) {<br>    echo $line . &quot;\n&quot;;<br>}</div>
 </div>
 <div class="occurrence-item">
-    <p><strong>File:</strong> ./ui/diagnostic-status.php, <strong>Line:</strong> 35, <strong>Function:</strong> ini_get</p>
+    <p><strong>File:</strong> haxinator-pigen-overlay/stage2/02-custom-config/root_files/html/ui/diagnostic-status.php, <strong>Line:</strong> 35, <strong>Function:</strong> ini_get</p>
     <div class="context-code">foreach ($output as $line) {<br>    echo $line . &quot;\n&quot;;<br>}<br><br>echo &quot;\n=== PHP Info (disabled functions) ===\n&quot;;<br>echo ini_get(&#x27;disable_functions&#x27;) . &quot;\n&quot;;</div>
 </div>
 <div class="occurrence-item">
-    <p><strong>File:</strong> ./network/Network.php, <strong>Line:</strong> 13, <strong>Function:</strong> exec</p>
+    <p><strong>File:</strong> haxinator-pigen-overlay/stage2/02-custom-config/root_files/html/network/Network.php, <strong>Line:</strong> 13, <strong>Function:</strong> exec</p>
     <div class="context-code">class Network<br>{<br>    public function deleteConnection($uuid)<br>    {<br>        $escaped = escapeshellarg($uuid);<br>        exec(&quot;nmcli connection delete uuid $escaped 2&gt;&amp;1&quot;, $out, $ret);<br>        return [<br>            &#x27;message&#x27; =&gt; $ret === 0<br>                ? &quot;Connection &lt;strong&gt;&quot; . htmlspecialchars($uuid) . &quot;&lt;/strong&gt; deleted successfully.&quot;<br>                : &#x27;&#x27;,<br>            &#x27;error&#x27; =&gt; $ret !== 0</div>
 </div>
 <div class="occurrence-item">
-    <p><strong>File:</strong> ./network/Network.php, <strong>Line:</strong> 28, <strong>Function:</strong> exec</p>
+    <p><strong>File:</strong> haxinator-pigen-overlay/stage2/02-custom-config/root_files/html/network/Network.php, <strong>Line:</strong> 28, <strong>Function:</strong> exec</p>
     <div class="context-code">    }<br><br>    public function activateConnection($uuid)<br>    {<br>        $escaped = escapeshellarg($uuid);<br>        exec(&quot;nmcli connection up uuid $escaped 2&gt;&amp;1&quot;, $out, $ret);<br>        return [<br>            &#x27;message&#x27; =&gt; $ret === 0<br>                ? &quot;Connection &lt;strong&gt;&quot; . htmlspecialchars($uuid) . &quot;&lt;/strong&gt; activated successfully.&quot;<br>                : &#x27;&#x27;,<br>            &#x27;error&#x27; =&gt; $ret !== 0</div>
 </div>
 <div class="occurrence-item">
-    <p><strong>File:</strong> ./network/Network.php, <strong>Line:</strong> 43, <strong>Function:</strong> exec</p>
+    <p><strong>File:</strong> haxinator-pigen-overlay/stage2/02-custom-config/root_files/html/network/Network.php, <strong>Line:</strong> 43, <strong>Function:</strong> exec</p>
     <div class="context-code">    }<br><br>    public function disconnectConnection($uuid)<br>    {<br>        $escaped = escapeshellarg($uuid);<br>        exec(&quot;nmcli connection down uuid $escaped 2&gt;&amp;1&quot;, $out, $ret);<br>        return [<br>            &#x27;message&#x27; =&gt; $ret === 0<br>                ? &quot;Connection &lt;strong&gt;&quot; . htmlspecialchars($uuid) . &quot;&lt;/strong&gt; disconnected successfully.&quot;<br>                : &#x27;&#x27;,<br>            &#x27;error&#x27; =&gt; $ret !== 0</div>
 </div>
 <div class="occurrence-item">
-    <p><strong>File:</strong> ./network/Network.php, <strong>Line:</strong> 62, <strong>Function:</strong> exec</p>
+    <p><strong>File:</strong> haxinator-pigen-overlay/stage2/02-custom-config/root_files/html/network/Network.php, <strong>Line:</strong> 62, <strong>Function:</strong> exec</p>
     <div class="context-code">        $ssid_arg = escapeshellarg($ssid);<br>        $cmd = $password !== &#x27;&#x27;<br>            ? &quot;nmcli dev wifi connect $ssid_arg password &quot; . escapeshellarg($password) . &quot; ifname wlan0&quot;<br>            : &quot;nmcli dev wifi connect $ssid_arg ifname wlan0&quot;;<br><br>        exec($cmd . &quot; 2&gt;&amp;1&quot;, $output, $retval);<br>        if ($retval === 0) {<br>            return [<br>                &#x27;message&#x27; =&gt; &quot;Connecting to Wi-Fi network &lt;strong&gt;&quot; . htmlspecialchars($ssid) . &quot;&lt;/strong&gt;...&quot;,<br>                &#x27;error&#x27;   =&gt; &#x27;&#x27;<br>            ];</div>
 </div>
 <div class="occurrence-item">
-    <p><strong>File:</strong> ./network/Network.php, <strong>Line:</strong> 69, <strong>Function:</strong> exec</p>
+    <p><strong>File:</strong> haxinator-pigen-overlay/stage2/02-custom-config/root_files/html/network/Network.php, <strong>Line:</strong> 69, <strong>Function:</strong> exec</p>
     <div class="context-code">            return [<br>                &#x27;message&#x27; =&gt; &quot;Connecting to Wi-Fi network &lt;strong&gt;&quot; . htmlspecialchars($ssid) . &quot;&lt;/strong&gt;...&quot;,<br>                &#x27;error&#x27;   =&gt; &#x27;&#x27;<br>            ];<br>        } else {<br>            exec(&quot;nmcli radio wifi off &amp;&amp; nmcli radio wifi on 2&gt;&amp;1&quot;);<br>            exec(&quot;nmcli dev wifi rescan 2&gt;&amp;1&quot;);<br>            return [<br>                &#x27;error&#x27;   =&gt; &quot;Failed to connect to &lt;strong&gt;&quot; . htmlspecialchars($ssid) . &quot;&lt;/strong&gt;: &quot; .<br>                             htmlspecialchars(implode(&quot;\n&quot;, $output)),<br>                &#x27;message&#x27; =&gt; &#x27;&#x27;</div>
 </div>
 <div class="occurrence-item">
-    <p><strong>File:</strong> ./network/Network.php, <strong>Line:</strong> 70, <strong>Function:</strong> exec</p>
+    <p><strong>File:</strong> haxinator-pigen-overlay/stage2/02-custom-config/root_files/html/network/Network.php, <strong>Line:</strong> 70, <strong>Function:</strong> exec</p>
     <div class="context-code">                &#x27;message&#x27; =&gt; &quot;Connecting to Wi-Fi network &lt;strong&gt;&quot; . htmlspecialchars($ssid) . &quot;&lt;/strong&gt;...&quot;,<br>                &#x27;error&#x27;   =&gt; &#x27;&#x27;<br>            ];<br>        } else {<br>            exec(&quot;nmcli radio wifi off &amp;&amp; nmcli radio wifi on 2&gt;&amp;1&quot;);<br>            exec(&quot;nmcli dev wifi rescan 2&gt;&amp;1&quot;);<br>            return [<br>                &#x27;error&#x27;   =&gt; &quot;Failed to connect to &lt;strong&gt;&quot; . htmlspecialchars($ssid) . &quot;&lt;/strong&gt;: &quot; .<br>                             htmlspecialchars(implode(&quot;\n&quot;, $output)),<br>                &#x27;message&#x27; =&gt; &#x27;&#x27;<br>            ];</div>
 </div>
 <div class="occurrence-item">
-    <p><strong>File:</strong> ./network/Network.php, <strong>Line:</strong> 83, <strong>Function:</strong> exec</p>
+    <p><strong>File:</strong> haxinator-pigen-overlay/stage2/02-custom-config/root_files/html/network/Network.php, <strong>Line:</strong> 83, <strong>Function:</strong> exec</p>
     <div class="context-code"><br>    public function disconnectWifi($ssid)<br>    {<br>        $ssid_arg = escapeshellarg($ssid);<br>        // First get the connection UUID for this SSID<br>        exec(&quot;nmcli -t -f NAME,UUID connection show | grep &#x27;^$ssid_arg:&#x27; 2&gt;&amp;1&quot;, $uuid_output, $uuid_retval);<br><br>        if ($uuid_retval === 0 &amp;&amp; !empty($uuid_output)) {<br>            // Extract UUID from the output (format is &quot;name:uuid&quot;)<br>            $parts = explode(&#x27;:&#x27;, $uuid_output[0]);<br>            if (isset($parts[1])) {</div>
 </div>
 <div class="occurrence-item">
-    <p><strong>File:</strong> ./network/Network.php, <strong>Line:</strong> 90, <strong>Function:</strong> exec</p>
+    <p><strong>File:</strong> haxinator-pigen-overlay/stage2/02-custom-config/root_files/html/network/Network.php, <strong>Line:</strong> 90, <strong>Function:</strong> exec</p>
     <div class="context-code">        if ($uuid_retval === 0 &amp;&amp; !empty($uuid_output)) {<br>            // Extract UUID from the output (format is &quot;name:uuid&quot;)<br>            $parts = explode(&#x27;:&#x27;, $uuid_output[0]);<br>            if (isset($parts[1])) {<br>                $uuid = trim($parts[1]);<br>                exec(&quot;nmcli connection down uuid &quot; . escapeshellarg($uuid) . &quot; 2&gt;&amp;1&quot;, $output, $retval);<br><br>                if ($retval === 0) {<br>                    return [<br>                        &#x27;message&#x27; =&gt; &quot;Disconnected from Wi-Fi network &lt;strong&gt;&quot; . htmlspecialchars($ssid) . &quot;&lt;/strong&gt;&quot;,<br>                        &#x27;error&#x27;   =&gt; &#x27;&#x27;</div>
 </div>
 <div class="occurrence-item">
-    <p><strong>File:</strong> ./network/Network.php, <strong>Line:</strong> 102, <strong>Function:</strong> exec</p>
+    <p><strong>File:</strong> haxinator-pigen-overlay/stage2/02-custom-config/root_files/html/network/Network.php, <strong>Line:</strong> 102, <strong>Function:</strong> exec</p>
     <div class="context-code">                }<br>            }<br>        }<br><br>        // Fallback: try to disconnect the device directly<br>        exec(&quot;nmcli device disconnect wlan0 2&gt;&amp;1&quot;, $output, $retval);<br>        return [<br>            &#x27;message&#x27; =&gt; $retval === 0<br>                ? &quot;Disconnected from Wi-Fi network &lt;strong&gt;&quot; . htmlspecialchars($ssid) . &quot;&lt;/strong&gt;&quot;<br>                : &#x27;&#x27;,<br>            &#x27;error&#x27;   =&gt; $retval !== 0</div>
 </div>
 <div class="occurrence-item">
-    <p><strong>File:</strong> ./network/Network.php, <strong>Line:</strong> 116, <strong>Function:</strong> exec</p>
+    <p><strong>File:</strong> haxinator-pigen-overlay/stage2/02-custom-config/root_files/html/network/Network.php, <strong>Line:</strong> 116, <strong>Function:</strong> exec</p>
     <div class="context-code">        ];<br>    }<br><br>    public function rescanWifi()<br>    {<br>        exec(&quot;nmcli dev wifi rescan 2&gt;&amp;1&quot;);<br>    }<br><br>    public function configureInterface($iface, $mode, $postData)<br>    {<br>        $connectionName = &#x27;&#x27;;</div>
 </div>
 <div class="occurrence-item">
-    <p><strong>File:</strong> ./network/Network.php, <strong>Line:</strong> 122, <strong>Function:</strong> exec</p>
+    <p><strong>File:</strong> haxinator-pigen-overlay/stage2/02-custom-config/root_files/html/network/Network.php, <strong>Line:</strong> 122, <strong>Function:</strong> exec</p>
     <div class="context-code">    }<br><br>    public function configureInterface($iface, $mode, $postData)<br>    {<br>        $connectionName = &#x27;&#x27;;<br>        exec(&quot;nmcli -t -f NAME,DEVICE connection show&quot;, $connLines);<br>        foreach ($connLines as $line) {<br>            list($connName, $dev) = explode(&#x27;:&#x27;, $line);<br>            if ($dev === $iface) {<br>                $connectionName = $connName;<br>                break;</div>
 </div>
 <div class="occurrence-item">
-    <p><strong>File:</strong> ./network/Network.php, <strong>Line:</strong> 132, <strong>Function:</strong> exec</p>
+    <p><strong>File:</strong> haxinator-pigen-overlay/stage2/02-custom-config/root_files/html/network/Network.php, <strong>Line:</strong> 132, <strong>Function:</strong> exec</p>
     <div class="context-code">                break;<br>            }<br>        }<br>        if ($connectionName === &#x27;&#x27; &amp;&amp; in_array($iface, [&#x27;eth0&#x27;, &#x27;usb0&#x27;])) {<br>            $connectionName = $iface;<br>            exec(&quot;nmcli connection add type ethernet ifname $iface con-name $iface autoconnect yes 2&gt;&amp;1&quot;);<br>        }<br>        if ($connectionName === &#x27;&#x27;) {<br>            return [<br>                &#x27;error&#x27;   =&gt; &quot;No connection profile found for interface &quot; . strtoupper($iface) . &quot;.&quot;,<br>                &#x27;message&#x27; =&gt; &#x27;&#x27;</div>
 </div>
 <div class="occurrence-item">
-    <p><strong>File:</strong> ./network/Network.php, <strong>Line:</strong> 143, <strong>Function:</strong> exec</p>
+    <p><strong>File:</strong> haxinator-pigen-overlay/stage2/02-custom-config/root_files/html/network/Network.php, <strong>Line:</strong> 143, <strong>Function:</strong> exec</p>
     <div class="context-code">            ];<br>        }<br><br>        $conn_arg = escapeshellarg($connectionName);<br>        if ($mode === &#x27;dhcp&#x27;) {<br>            exec(&quot;nmcli connection modify $conn_arg ipv4.method auto ipv4.addresses \&quot;\&quot; ipv4.gateway \&quot;\&quot; ipv4.dns \&quot;\&quot;&quot;);<br>            exec(&quot;nmcli connection down $conn_arg&quot;, $outDown, $retDown);<br>            exec(&quot;nmcli connection up $conn_arg&quot;, $outUp, $retUp);<br>            return [<br>                &#x27;message&#x27; =&gt; ($retDown === 0 &amp;&amp; $retUp === 0)<br>                    ? strtoupper($iface) . &quot; set to DHCP (automatic IP).&quot;</div>
 </div>
 <div class="occurrence-item">
-    <p><strong>File:</strong> ./network/Network.php, <strong>Line:</strong> 144, <strong>Function:</strong> exec</p>
+    <p><strong>File:</strong> haxinator-pigen-overlay/stage2/02-custom-config/root_files/html/network/Network.php, <strong>Line:</strong> 144, <strong>Function:</strong> exec</p>
     <div class="context-code">        }<br><br>        $conn_arg = escapeshellarg($connectionName);<br>        if ($mode === &#x27;dhcp&#x27;) {<br>            exec(&quot;nmcli connection modify $conn_arg ipv4.method auto ipv4.addresses \&quot;\&quot; ipv4.gateway \&quot;\&quot; ipv4.dns \&quot;\&quot;&quot;);<br>            exec(&quot;nmcli connection down $conn_arg&quot;, $outDown, $retDown);<br>            exec(&quot;nmcli connection up $conn_arg&quot;, $outUp, $retUp);<br>            return [<br>                &#x27;message&#x27; =&gt; ($retDown === 0 &amp;&amp; $retUp === 0)<br>                    ? strtoupper($iface) . &quot; set to DHCP (automatic IP).&quot;<br>                    : &#x27;&#x27;,</div>
 </div>
 <div class="occurrence-item">
-    <p><strong>File:</strong> ./network/Network.php, <strong>Line:</strong> 145, <strong>Function:</strong> exec</p>
+    <p><strong>File:</strong> haxinator-pigen-overlay/stage2/02-custom-config/root_files/html/network/Network.php, <strong>Line:</strong> 145, <strong>Function:</strong> exec</p>
     <div class="context-code"><br>        $conn_arg = escapeshellarg($connectionName);<br>        if ($mode === &#x27;dhcp&#x27;) {<br>            exec(&quot;nmcli connection modify $conn_arg ipv4.method auto ipv4.addresses \&quot;\&quot; ipv4.gateway \&quot;\&quot; ipv4.dns \&quot;\&quot;&quot;);<br>            exec(&quot;nmcli connection down $conn_arg&quot;, $outDown, $retDown);<br>            exec(&quot;nmcli connection up $conn_arg&quot;, $outUp, $retUp);<br>            return [<br>                &#x27;message&#x27; =&gt; ($retDown === 0 &amp;&amp; $retUp === 0)<br>                    ? strtoupper($iface) . &quot; set to DHCP (automatic IP).&quot;<br>                    : &#x27;&#x27;,<br>                &#x27;error&#x27; =&gt; ($retDown !== 0 || $retUp !== 0)</div>
 </div>
 <div class="occurrence-item">
-    <p><strong>File:</strong> ./network/Network.php, <strong>Line:</strong> 213, <strong>Function:</strong> exec</p>
+    <p><strong>File:</strong> haxinator-pigen-overlay/stage2/02-custom-config/root_files/html/network/Network.php, <strong>Line:</strong> 213, <strong>Function:</strong> exec</p>
     <div class="context-code">            $dns_arg  = escapeshellarg($dns);<br><br>            $cmdMod = &quot;nmcli connection modify $conn_arg &quot;<br>                    . &quot;ipv4.method manual ipv4.addresses $addr_arg &quot;<br>                    . &quot;ipv4.gateway $gw_arg ipv4.dns $dns_arg&quot;;<br>            exec(&quot;$cmdMod 2&gt;&amp;1&quot;, $out1, $ret1);<br><br>            if ($ret1 === 0) {<br>                exec(&quot;nmcli connection down $conn_arg&quot;, $outDown, $retDown);<br>                exec(&quot;nmcli connection up   $conn_arg&quot;, $outUp, $retUp);<br>                if ($retDown === 0 &amp;&amp; $retUp === 0) {</div>
 </div>
 <div class="occurrence-item">
-    <p><strong>File:</strong> ./network/Network.php, <strong>Line:</strong> 216, <strong>Function:</strong> exec</p>
+    <p><strong>File:</strong> haxinator-pigen-overlay/stage2/02-custom-config/root_files/html/network/Network.php, <strong>Line:</strong> 216, <strong>Function:</strong> exec</p>
     <div class="context-code">                    . &quot;ipv4.method manual ipv4.addresses $addr_arg &quot;<br>                    . &quot;ipv4.gateway $gw_arg ipv4.dns $dns_arg&quot;;<br>            exec(&quot;$cmdMod 2&gt;&amp;1&quot;, $out1, $ret1);<br><br>            if ($ret1 === 0) {<br>                exec(&quot;nmcli connection down $conn_arg&quot;, $outDown, $retDown);<br>                exec(&quot;nmcli connection up   $conn_arg&quot;, $outUp, $retUp);<br>                if ($retDown === 0 &amp;&amp; $retUp === 0) {<br>                    return [<br>                        &#x27;message&#x27; =&gt; strtoupper($iface) . &quot; configured with static IP $ip.&quot;,<br>                        &#x27;error&#x27;   =&gt; &#x27;&#x27;</div>
 </div>
 <div class="occurrence-item">
-    <p><strong>File:</strong> ./network/Network.php, <strong>Line:</strong> 217, <strong>Function:</strong> exec</p>
+    <p><strong>File:</strong> haxinator-pigen-overlay/stage2/02-custom-config/root_files/html/network/Network.php, <strong>Line:</strong> 217, <strong>Function:</strong> exec</p>
     <div class="context-code">                    . &quot;ipv4.gateway $gw_arg ipv4.dns $dns_arg&quot;;<br>            exec(&quot;$cmdMod 2&gt;&amp;1&quot;, $out1, $ret1);<br><br>            if ($ret1 === 0) {<br>                exec(&quot;nmcli connection down $conn_arg&quot;, $outDown, $retDown);<br>                exec(&quot;nmcli connection up   $conn_arg&quot;, $outUp, $retUp);<br>                if ($retDown === 0 &amp;&amp; $retUp === 0) {<br>                    return [<br>                        &#x27;message&#x27; =&gt; strtoupper($iface) . &quot; configured with static IP $ip.&quot;,<br>                        &#x27;error&#x27;   =&gt; &#x27;&#x27;<br>                    ];</div>
 </div>
 <div class="occurrence-item">
-    <p><strong>File:</strong> ./network/Network.php, <strong>Line:</strong> 245, <strong>Function:</strong> exec</p>
+    <p><strong>File:</strong> haxinator-pigen-overlay/stage2/02-custom-config/root_files/html/network/Network.php, <strong>Line:</strong> 245, <strong>Function:</strong> exec</p>
     <div class="context-code">        $escaped = escapeshellarg($uuid);<br>        $details = [];<br>        $raw = [];<br><br>        // Get all connection info<br>        exec(&quot;nmcli -t connection show uuid $escaped&quot;, $out);<br>        foreach ($out as $line) {<br>            $parts = explode(&#x27;:&#x27;, $line, 2);<br>            if (count($parts) === 2) {<br>                $key = trim($parts[0]);<br>                $value = trim($parts[1]);</div>
 </div>
 <div class="occurrence-item">
-    <p><strong>File:</strong> ./network/Network.php, <strong>Line:</strong> 379, <strong>Function:</strong> exec</p>
+    <p><strong>File:</strong> haxinator-pigen-overlay/stage2/02-custom-config/root_files/html/network/Network.php, <strong>Line:</strong> 379, <strong>Function:</strong> exec</p>
     <div class="context-code">            }<br>        }<br><br>        // Execute all commands<br>        foreach ($commands as $cmd) {<br>            exec($cmd . &quot; 2&gt;&amp;1&quot;, $out, $ret);<br>            if ($ret !== 0) {<br>                $errors[] = implode(&quot;\n&quot;, $out);<br>            }<br>        }<br></div>
 </div>
 <div class="occurrence-item">
-    <p><strong>File:</strong> ./network/Network.php, <strong>Line:</strong> 387, <strong>Function:</strong> exec</p>
+    <p><strong>File:</strong> haxinator-pigen-overlay/stage2/02-custom-config/root_files/html/network/Network.php, <strong>Line:</strong> 387, <strong>Function:</strong> exec</p>
     <div class="context-code">            }<br>        }<br><br>        if (empty($errors)) {<br>            // Restart the connection if it&#x27;s active<br>            exec(&quot;nmcli -t -f NAME,DEVICE connection show --active | grep -q \&quot;$escaped\&quot;&quot;, $out, $ret);<br>            if ($ret === 0) {<br>                exec(&quot;nmcli connection down uuid $escaped &amp;&amp; nmcli connection up uuid $escaped 2&gt;&amp;1&quot;, $out, $ret);<br>                if ($ret !== 0) {<br>                    $errors[] = &quot;Connection updated but failed to restart: &quot; . implode(&quot;\n&quot;, $out);<br>                }</div>
 </div>
 <div class="occurrence-item">
-    <p><strong>File:</strong> ./network/Network.php, <strong>Line:</strong> 389, <strong>Function:</strong> exec</p>
+    <p><strong>File:</strong> haxinator-pigen-overlay/stage2/02-custom-config/root_files/html/network/Network.php, <strong>Line:</strong> 389, <strong>Function:</strong> exec</p>
     <div class="context-code"><br>        if (empty($errors)) {<br>            // Restart the connection if it&#x27;s active<br>            exec(&quot;nmcli -t -f NAME,DEVICE connection show --active | grep -q \&quot;$escaped\&quot;&quot;, $out, $ret);<br>            if ($ret === 0) {<br>                exec(&quot;nmcli connection down uuid $escaped &amp;&amp; nmcli connection up uuid $escaped 2&gt;&amp;1&quot;, $out, $ret);<br>                if ($ret !== 0) {<br>                    $errors[] = &quot;Connection updated but failed to restart: &quot; . implode(&quot;\n&quot;, $out);<br>                }<br>            }<br>        }</div>
 </div>
 <div class="occurrence-item">
-    <p><strong>File:</strong> ./api/shutdown.php, <strong>Line:</strong> 11, <strong>Function:</strong> exec</p>
+    <p><strong>File:</strong> haxinator-pigen-overlay/stage2/02-custom-config/root_files/html/api/shutdown.php, <strong>Line:</strong> 11, <strong>Function:</strong> exec</p>
     <div class="context-code">    http_response_code(401);<br>    die(&#x27;Unauthorized&#x27;);<br>}<br><br>// Execute shutdown command<br>exec(&#x27;sudo /sbin/poweroff 2&gt;&amp;1&#x27;, $output, $return_var);<br><br>if ($return_var === 0) {<br>    echo json_encode([&#x27;success&#x27; =&gt; true, &#x27;message&#x27; =&gt; &#x27;System is shutting down...&#x27;]);<br>} else {<br>    error_log(&quot;Shutdown failed. Output: &quot; . implode(&quot;\n&quot;, $output));</div>
 </div>
 <div class="occurrence-item">
-    <p><strong>File:</strong> ./api/run-script.php, <strong>Line:</strong> 36, <strong>Function:</strong> exec</p>
+    <p><strong>File:</strong> haxinator-pigen-overlay/stage2/02-custom-config/root_files/html/api/run-script.php, <strong>Line:</strong> 36, <strong>Function:</strong> exec</p>
     <div class="context-code">    case &#x27;check.py&#x27;:<br>        // Run check.py with no parameters<br>        if (!is_executable($script_path)) {<br>            die(&#x27;Error: Script is not executable&#x27;);<br>        }<br>        exec($script_path . &#x27; 2&gt;&amp;1&#x27;, $output, $return_var);<br>        if ($return_var !== 0) {<br>            die(&#x27;Error: Script execution failed with code &#x27; . $return_var);<br>        }<br>        break;<br></div>
 </div>
 <div class="occurrence-item">
-    <p><strong>File:</strong> ./api/run-script.php, <strong>Line:</strong> 59, <strong>Function:</strong> exec</p>
+    <p><strong>File:</strong> haxinator-pigen-overlay/stage2/02-custom-config/root_files/html/api/run-script.php, <strong>Line:</strong> 59, <strong>Function:</strong> exec</p>
     <div class="context-code"><br>        // Run nmap.sh with parameters<br>        if (!is_executable($script_path)) {<br>            die(&#x27;Error: Script is not executable&#x27;);<br>        }<br>        exec($script_path . &#x27; &#x27; . $host . &#x27; &#x27; . $range . &#x27; 2&gt;&amp;1&#x27;, $output, $return_var);<br>        if ($return_var !== 0) {<br>            die(&#x27;Error: Script execution failed with code &#x27; . $return_var);<br>        }<br>        break;<br></div>
 </div>
 <div class="occurrence-item">
-    <p><strong>File:</strong> ./api/run-script.php, <strong>Line:</strong> 79, <strong>Function:</strong> exec</p>
+    <p><strong>File:</strong> haxinator-pigen-overlay/stage2/02-custom-config/root_files/html/api/run-script.php, <strong>Line:</strong> 79, <strong>Function:</strong> exec</p>
     <div class="context-code">        // Sanitize parameters<br>        $domain = escapeshellarg($domain);<br>        $type = escapeshellarg($type);<br><br>        // Run dig command<br>        exec(&quot;dig $type $domain +short 2&gt;&amp;1&quot;, $output, $return_var);<br>        if ($return_var !== 0) {<br>            die(&#x27;Error: dig command failed with code &#x27; . $return_var);<br>        }<br>        break;<br>}</div>
 </div>
 <div class="occurrence-item">
-    <p><strong>File:</strong> ./api/upload.php, <strong>Line:</strong> 4, <strong>Function:</strong> ini_set</p>
+    <p><strong>File:</strong> haxinator-pigen-overlay/stage2/02-custom-config/root_files/html/api/upload.php, <strong>Line:</strong> 4, <strong>Function:</strong> ini_set</p>
     <div class="context-code">&lt;?php<br>// Strict error reporting<br>error_reporting(E_ALL);<br>ini_set(&#x27;display_errors&#x27;, 0);<br><br>// Start session securely<br>ini_set(&#x27;session.cookie_httponly&#x27;, 1);<br>ini_set(&#x27;session.cookie_secure&#x27;, 1);<br>ini_set(&#x27;session.use_strict_mode&#x27;, 1);</div>
 </div>
 <div class="occurrence-item">
-    <p><strong>File:</strong> ./api/upload.php, <strong>Line:</strong> 7, <strong>Function:</strong> ini_set</p>
+    <p><strong>File:</strong> haxinator-pigen-overlay/stage2/02-custom-config/root_files/html/api/upload.php, <strong>Line:</strong> 7, <strong>Function:</strong> ini_set</p>
     <div class="context-code">// Strict error reporting<br>error_reporting(E_ALL);<br>ini_set(&#x27;display_errors&#x27;, 0);<br><br>// Start session securely<br>ini_set(&#x27;session.cookie_httponly&#x27;, 1);<br>ini_set(&#x27;session.cookie_secure&#x27;, 1);<br>ini_set(&#x27;session.use_strict_mode&#x27;, 1);<br>session_start();<br><br>// CSRF Protection</div>
 </div>
 <div class="occurrence-item">
-    <p><strong>File:</strong> ./api/upload.php, <strong>Line:</strong> 8, <strong>Function:</strong> ini_set</p>
+    <p><strong>File:</strong> haxinator-pigen-overlay/stage2/02-custom-config/root_files/html/api/upload.php, <strong>Line:</strong> 8, <strong>Function:</strong> ini_set</p>
     <div class="context-code">error_reporting(E_ALL);<br>ini_set(&#x27;display_errors&#x27;, 0);<br><br>// Start session securely<br>ini_set(&#x27;session.cookie_httponly&#x27;, 1);<br>ini_set(&#x27;session.cookie_secure&#x27;, 1);<br>ini_set(&#x27;session.use_strict_mode&#x27;, 1);<br>session_start();<br><br>// CSRF Protection<br>if ($_SERVER[&#x27;REQUEST_METHOD&#x27;] !== &#x27;POST&#x27;) {</div>
 </div>
 <div class="occurrence-item">
-    <p><strong>File:</strong> ./api/upload.php, <strong>Line:</strong> 9, <strong>Function:</strong> ini_set</p>
+    <p><strong>File:</strong> haxinator-pigen-overlay/stage2/02-custom-config/root_files/html/api/upload.php, <strong>Line:</strong> 9, <strong>Function:</strong> ini_set</p>
     <div class="context-code">ini_set(&#x27;display_errors&#x27;, 0);<br><br>// Start session securely<br>ini_set(&#x27;session.cookie_httponly&#x27;, 1);<br>ini_set(&#x27;session.cookie_secure&#x27;, 1);<br>ini_set(&#x27;session.use_strict_mode&#x27;, 1);<br>session_start();<br><br>// CSRF Protection<br>if ($_SERVER[&#x27;REQUEST_METHOD&#x27;] !== &#x27;POST&#x27;) {<br>    http_response_code(405);</div>
 </div>
 <div class="occurrence-item">
-    <p><strong>File:</strong> ./api/upload.php, <strong>Line:</strong> 60, <strong>Function:</strong> preg_replace</p>
+    <p><strong>File:</strong> haxinator-pigen-overlay/stage2/02-custom-config/root_files/html/api/upload.php, <strong>Line:</strong> 60, <strong>Function:</strong> preg_replace</p>
     <div class="context-code"><br>    // Remove extension for sanitizing<br>    $name = pathinfo($filename, PATHINFO_FILENAME);<br><br>    // Replace any non-alphanumeric characters<br>    $name = preg_replace(&#x27;/[^a-zA-Z0-9]/&#x27;, &#x27;_&#x27;, $name);<br><br>    // Trim any leading/trailing underscores<br>    $name = trim($name, &#x27;_&#x27;);<br><br>    // Add timestamp and reconnect extension</div>
 </div>
 <div class="occurrence-item">
-    <p><strong>File:</strong> ./api/upload.php, <strong>Line:</strong> 71, <strong>Function:</strong> mkdir</p>
+    <p><strong>File:</strong> haxinator-pigen-overlay/stage2/02-custom-config/root_files/html/api/upload.php, <strong>Line:</strong> 71, <strong>Function:</strong> mkdir</p>
     <div class="context-code">    return time() . &#x27;-&#x27; . substr($name, 0, 50) . &#x27;.&#x27; . $ext;<br>}<br><br>function verifyUploadDirectory($dir) {<br>    if (!file_exists($dir)) {<br>        if (!mkdir($dir, 0750, true)) {<br>            throw new Exception(&#x27;Failed to create upload directory&#x27;);<br>        }<br>    }<br><br>    // Verify directory permissions</div>
 </div>
 <div class="occurrence-item">
-    <p><strong>File:</strong> ./api/upload.php, <strong>Line:</strong> 85, <strong>Function:</strong> file_put_contents</p>
+    <p><strong>File:</strong> haxinator-pigen-overlay/stage2/02-custom-config/root_files/html/api/upload.php, <strong>Line:</strong> 85, <strong>Function:</strong> file_put_contents</p>
     <div class="context-code">    }<br><br>    // Create .htaccess to prevent direct access<br>    $htaccess = $dir . &#x27;/.htaccess&#x27;;<br>    if (!file_exists($htaccess)) {<br>        file_put_contents($htaccess, &quot;Deny from all\n&quot;);<br>        chmod($htaccess, 0640);<br>    }<br>}<br><br>try {</div>
 </div>
 <div class="occurrence-item">
-    <p><strong>File:</strong> ./api/upload.php, <strong>Line:</strong> 166, <strong>Function:</strong> fopen</p>
+    <p><strong>File:</strong> haxinator-pigen-overlay/stage2/02-custom-config/root_files/html/api/upload.php, <strong>Line:</strong> 166, <strong>Function:</strong> fopen</p>
     <div class="context-code"><br>    // For password files, accept any text-based mime type<br>    if ($type === &#x27;passwords&#x27;) {<br>        $isTextFile = false;<br>        // Check if it&#x27;s a text file by reading the first few bytes<br>        $handle = fopen($file[&#x27;tmp_name&#x27;], &#x27;r&#x27;);<br>        if ($handle === false) {<br>            throw new Exception(&#x27;Failed to read file&#x27;);<br>        }<br>        $firstBytes = fread($handle, 512);<br>        fclose($handle);</div>
 </div>
 <div class="occurrence-item">
-    <p><strong>File:</strong> ./api/upload.php, <strong>Line:</strong> 193, <strong>Function:</strong> copy</p>
+    <p><strong>File:</strong> haxinator-pigen-overlay/stage2/02-custom-config/root_files/html/api/upload.php, <strong>Line:</strong> 193, <strong>Function:</strong> copy</p>
     <div class="context-code">    // Special handling for password files - save directly to passwords.txt<br>    if ($type === &#x27;passwords&#x27;) {<br>        $destination = &#x27;/var/www/html/passwords.txt&#x27;;<br>        error_log(&quot;Saving password file to: &quot; . $destination);<br><br>        if (!copy($file[&#x27;tmp_name&#x27;], $destination)) {<br>            throw new Exception(&#x27;Failed to save password file&#x27;);<br>        }<br><br>        // Set secure permissions<br>        chmod($destination, 0644);</div>
 </div>
 <div class="occurrence-item">
-    <p><strong>File:</strong> ./api/upload.php, <strong>Line:</strong> 210, <strong>Function:</strong> move_uploaded_file</p>
+    <p><strong>File:</strong> haxinator-pigen-overlay/stage2/02-custom-config/root_files/html/api/upload.php, <strong>Line:</strong> 210, <strong>Function:</strong> move_uploaded_file</p>
     <div class="context-code">        $filename = sanitizeFilename($file[&#x27;name&#x27;]);<br>        $destination = $typeConfig[&#x27;dir&#x27;] . &#x27;/&#x27; . $filename;<br><br>        error_log(&quot;Saving to: &quot; . $destination);<br><br>        if (!move_uploaded_file($file[&#x27;tmp_name&#x27;], $destination)) {<br>            throw new Exception(&#x27;Failed to save file&#x27;);<br>        }<br><br>        // Set secure permissions<br>        chmod($destination, 0640);</div>
 </div>
 <div class="occurrence-item">
-    <p><strong>File:</strong> ./api/ping-stream.php, <strong>Line:</strong> 8, <strong>Function:</strong> ini_set</p>
+    <p><strong>File:</strong> haxinator-pigen-overlay/stage2/02-custom-config/root_files/html/api/ping-stream.php, <strong>Line:</strong> 8, <strong>Function:</strong> ini_set</p>
     <div class="context-code"> * SSE endpoint for scanning a selected Wi-Fi network.<br> *<br> * Moved from /var/www/html/ping-stream.php to /var/www/html/api/ping-stream.php<br> */<br><br>@ini_set(&#x27;output_buffering&#x27;, &#x27;off&#x27;);<br>@ini_set(&#x27;zlib.output_compression&#x27;, false);<br>while (ob_get_level() &gt; 0) ob_end_flush();<br>ob_implicit_flush(true);<br><br>header(&#x27;Content-Type: text/event-stream&#x27;);</div>
 </div>
 <div class="occurrence-item">
-    <p><strong>File:</strong> ./api/ping-stream.php, <strong>Line:</strong> 9, <strong>Function:</strong> ini_set</p>
+    <p><strong>File:</strong> haxinator-pigen-overlay/stage2/02-custom-config/root_files/html/api/ping-stream.php, <strong>Line:</strong> 9, <strong>Function:</strong> ini_set</p>
     <div class="context-code"> *<br> * Moved from /var/www/html/ping-stream.php to /var/www/html/api/ping-stream.php<br> */<br><br>@ini_set(&#x27;output_buffering&#x27;, &#x27;off&#x27;);<br>@ini_set(&#x27;zlib.output_compression&#x27;, false);<br>while (ob_get_level() &gt; 0) ob_end_flush();<br>ob_implicit_flush(true);<br><br>header(&#x27;Content-Type: text/event-stream&#x27;);<br>header(&#x27;Cache-Control: no-cache&#x27;);</div>
 </div>
 <div class="occurrence-item">
-    <p><strong>File:</strong> ./api/ping-stream.php, <strong>Line:</strong> 18, <strong>Function:</strong> preg_replace</p>
+    <p><strong>File:</strong> haxinator-pigen-overlay/stage2/02-custom-config/root_files/html/api/ping-stream.php, <strong>Line:</strong> 18, <strong>Function:</strong> preg_replace</p>
     <div class="context-code">header(&#x27;Content-Type: text/event-stream&#x27;);<br>header(&#x27;Cache-Control: no-cache&#x27;);<br>header(&#x27;X-Accel-Buffering: no&#x27;);<br>header(&#x27;Content-Encoding: none&#x27;);<br><br>$ssid = isset($_GET[&#x27;ssid&#x27;]) ? preg_replace(&#x27;/[^a-zA-Z0-9 _\-\.]/&#x27;, &#x27;&#x27;, $_GET[&#x27;ssid&#x27;]) : &#x27;&#x27;;<br>if (!$ssid) {<br>    echo &quot;data: No SSID selected\n\n&quot;;<br>    echo &quot;event: done\ndata: \n\n&quot;;<br>    flush(); if (function_exists(&#x27;ob_flush&#x27;)) ob_flush();<br>    exit;</div>
 </div>
 <div class="occurrence-item">
-    <p><strong>File:</strong> ./api/ping-stream.php, <strong>Line:</strong> 28, <strong>Function:</strong> popen</p>
+    <p><strong>File:</strong> haxinator-pigen-overlay/stage2/02-custom-config/root_files/html/api/ping-stream.php, <strong>Line:</strong> 28, <strong>Function:</strong> popen</p>
     <div class="context-code">    exit;<br>}<br><br>$cmd = &#x27;/var/www/html/wifi-scan.sh &#x27; . escapeshellarg($ssid);<br><br>$proc = popen($cmd . &quot; 2&gt;&amp;1&quot;, &quot;r&quot;);<br>if (!$proc) {<br>    echo &quot;data: Failed to start process\n\n&quot;;<br>    echo &quot;event: done\ndata: \n\n&quot;;<br>    flush(); if (function_exists(&#x27;ob_flush&#x27;)) ob_flush();<br>    exit;</div>
 </div>
 <div class="occurrence-item">
-    <p><strong>File:</strong> ./DEV/ping-stream.php, <strong>Line:</strong> 14, <strong>Function:</strong> ini_set</p>
+    <p><strong>File:</strong> haxinator-pigen-overlay/stage2/02-custom-config/root_files/html/DEV/ping-stream.php, <strong>Line:</strong> 14, <strong>Function:</strong> ini_set</p>
     <div class="context-code">/* ── HTTP &amp; PHP streaming headers ─────────────────────────────── */<br>header(&#x27;Content-Type: text/event-stream&#x27;);<br>header(&#x27;Cache-Control: no-cache&#x27;);<br>header(&#x27;X-Accel-Buffering: no&#x27;);      // nginx: disable buffering<br><br>ini_set(&#x27;output_buffering&#x27;, &#x27;0&#x27;);<br>ini_set(&#x27;zlib.output_compression&#x27;, &#x27;0&#x27;);<br>set_time_limit(0);<br>while (ob_get_level()) ob_end_flush();<br>ob_implicit_flush(true);<br></div>
 </div>
 <div class="occurrence-item">
-    <p><strong>File:</strong> ./DEV/ping-stream.php, <strong>Line:</strong> 15, <strong>Function:</strong> ini_set</p>
+    <p><strong>File:</strong> haxinator-pigen-overlay/stage2/02-custom-config/root_files/html/DEV/ping-stream.php, <strong>Line:</strong> 15, <strong>Function:</strong> ini_set</p>
     <div class="context-code">header(&#x27;Content-Type: text/event-stream&#x27;);<br>header(&#x27;Cache-Control: no-cache&#x27;);<br>header(&#x27;X-Accel-Buffering: no&#x27;);      // nginx: disable buffering<br><br>ini_set(&#x27;output_buffering&#x27;, &#x27;0&#x27;);<br>ini_set(&#x27;zlib.output_compression&#x27;, &#x27;0&#x27;);<br>set_time_limit(0);<br>while (ob_get_level()) ob_end_flush();<br>ob_implicit_flush(true);<br><br>/* ── Send an “init” comment so the browser knows we’re connected ─ */</div>
 </div>
 <div class="occurrence-item">
-    <p><strong>File:</strong> ./DEV/ping-stream.php, <strong>Line:</strong> 26, <strong>Function:</strong> shell_exec</p>
+    <p><strong>File:</strong> haxinator-pigen-overlay/stage2/02-custom-config/root_files/html/DEV/ping-stream.php, <strong>Line:</strong> 26, <strong>Function:</strong> shell_exec</p>
     <div class="context-code">echo &quot;: init\n\n&quot;; flush();<br><br>/* ── Build the ping command ───────────────────────────────────── */<br>$pingBin = &#x27;/bin/ping&#x27;;                     // full path avoids $PATH issues<br>$pingCmd = &quot;$pingBin -n -c 5 8.8.8.8&quot;;      // numeric output, 5 probes<br>$cmd     = (shell_exec(&#x27;command -v stdbuf&#x27;) ? &quot;stdbuf -oL -eL &quot; : &#x27;&#x27;) . $pingCmd;<br><br>/* ── Launch subprocess with correct pipe directions ───────────── */<br>$proc = proc_open(<br>    $cmd,<br>    [</div>
 </div>
 <div class="occurrence-item">
-    <p><strong>File:</strong> ./DEV/ping-stream.php, <strong>Line:</strong> 29, <strong>Function:</strong> proc_open</p>
+    <p><strong>File:</strong> haxinator-pigen-overlay/stage2/02-custom-config/root_files/html/DEV/ping-stream.php, <strong>Line:</strong> 29, <strong>Function:</strong> proc_open</p>
     <div class="context-code">$pingBin = &#x27;/bin/ping&#x27;;                     // full path avoids $PATH issues<br>$pingCmd = &quot;$pingBin -n -c 5 8.8.8.8&quot;;      // numeric output, 5 probes<br>$cmd     = (shell_exec(&#x27;command -v stdbuf&#x27;) ? &quot;stdbuf -oL -eL &quot; : &#x27;&#x27;) . $pingCmd;<br><br>/* ── Launch subprocess with correct pipe directions ───────────── */<br>$proc = proc_open(<br>    $cmd,<br>    [<br>        0 =&gt; [&#x27;pipe&#x27;, &#x27;r&#x27;],     // child stdin  (unused)<br>        1 =&gt; [&#x27;pipe&#x27;, &#x27;w&#x27;],     // child stdout → PHP reads<br>        2 =&gt; [&#x27;pipe&#x27;, &#x27;w&#x27;],     // child stderr → PHP reads</div>
 </div>
 <div class="occurrence-item">
-    <p><strong>File:</strong> ./data/Data.php, <strong>Line:</strong> 17, <strong>Function:</strong> exec</p>
+    <p><strong>File:</strong> haxinator-pigen-overlay/stage2/02-custom-config/root_files/html/data/Data.php, <strong>Line:</strong> 17, <strong>Function:</strong> exec</p>
     <div class="context-code">        $wifi_list = [];<br>        putenv(&#x27;LANG=en_US.UTF-8&#x27;);<br>        setlocale(LC_ALL, &#x27;en_US.UTF-8&#x27;);<br><br>        // ask nmcli to back-slash-escape any colons it finds *inside* fields<br>        exec(&quot;LANG=en_US.UTF-8 nmcli -t --escape yes -f IN-USE,BSSID,SSID,SECURITY,SIGNAL dev wifi list&quot;, $lines);<br><br>        foreach ($lines as $line) {<br>            // at minimum: *,BSSID(6 parts),SSID,SECURITY,SIGNAL → 9 fields<br>            $parts = explode(&#x27;:&#x27;, $line);<br>            if (count($parts) &lt; 9) {</div>
 </div>
 <div class="occurrence-item">
-    <p><strong>File:</strong> ./data/Data.php, <strong>Line:</strong> 58, <strong>Function:</strong> exec</p>
+    <p><strong>File:</strong> haxinator-pigen-overlay/stage2/02-custom-config/root_files/html/data/Data.php, <strong>Line:</strong> 58, <strong>Function:</strong> exec</p>
     <div class="context-code">    public function getTopBarInterfaces()<br>    {<br>        $interfaces = [];<br><br>        // Get interface states from NetworkManager<br>        exec(&quot;nmcli -t -f DEVICE,TYPE,STATE,CONNECTION device&quot;, $nm_lines);<br>        $nm_info = [];<br>        foreach ($nm_lines as $line) {<br>            $parts = explode(&#x27;:&#x27;, $line);<br>            if (count($parts) &gt;= 4) {<br>                $nm_info[$parts[0]] = [</div>
 </div>
 <div class="occurrence-item">
-    <p><strong>File:</strong> ./data/Data.php, <strong>Line:</strong> 72, <strong>Function:</strong> exec</p>
+    <p><strong>File:</strong> haxinator-pigen-overlay/stage2/02-custom-config/root_files/html/data/Data.php, <strong>Line:</strong> 72, <strong>Function:</strong> exec</p>
     <div class="context-code">                ];<br>            }<br>        }<br><br>        // Get IP addresses<br>        exec(&quot;ip -br addr&quot;, $ip_lines);<br>        foreach ($ip_lines as $line) {<br>            $parts = preg_split(&#x27;/\s+/&#x27;, trim($line), 4);<br>            if (count($parts) &gt;= 2) {<br>                $iface = $parts[0];<br></div>
 </div>
 <div class="occurrence-item">
-    <p><strong>File:</strong> ./data/Data.php, <strong>Line:</strong> 141, <strong>Function:</strong> exec</p>
+    <p><strong>File:</strong> haxinator-pigen-overlay/stage2/02-custom-config/root_files/html/data/Data.php, <strong>Line:</strong> 141, <strong>Function:</strong> exec</p>
     <div class="context-code">    }<br><br>    public function getSavedConnections()<br>    {<br>        $saved_connections = [];<br>        exec(&quot;nmcli -t -f NAME,UUID,TYPE,DEVICE connection show&quot;, $lines);<br>        foreach ($lines as $line) {<br>            $parts = explode(&#x27;:&#x27;, $line, 4);<br>            if (count($parts) === 4) {<br>                $saved_connections[] = [<br>                    &#x27;name&#x27;   =&gt; $parts[0],</div>
 </div>
 <div class="occurrence-item">
-    <p><strong>File:</strong> ./data/Data.php, <strong>Line:</strong> 162, <strong>Function:</strong> exec</p>
+    <p><strong>File:</strong> haxinator-pigen-overlay/stage2/02-custom-config/root_files/html/data/Data.php, <strong>Line:</strong> 162, <strong>Function:</strong> exec</p>
     <div class="context-code">    {<br>        $iface_status = [];<br><br>        // Get all devices if no specific interfaces are requested<br>        if ($interfaces === null) {<br>            exec(&quot;nmcli -t -f DEVICE device status&quot;, $devices);<br>            $interfaces = array_map(&#x27;trim&#x27;, $devices);<br>        }<br><br>        foreach ($interfaces as $if) {<br>            $iface_status[$if] = [</div>
 </div>
 <div class="occurrence-item">
-    <p><strong>File:</strong> ./data/Data.php, <strong>Line:</strong> 178, <strong>Function:</strong> exec</p>
+    <p><strong>File:</strong> haxinator-pigen-overlay/stage2/02-custom-config/root_files/html/data/Data.php, <strong>Line:</strong> 178, <strong>Function:</strong> exec</p>
     <div class="context-code">                &#x27;mac&#x27;            =&gt; &#x27;&#x27;<br>            ];<br><br>            // Get device state and connection info<br>            $stateLine = [];<br>            exec(&quot;nmcli -t -f DEVICE,STATE,CONNECTION device status | grep ^$if:&quot;, $stateLine);<br>            if (!empty($stateLine)) {<br>                $fields = explode(&#x27;:&#x27;, $stateLine[0]);<br>                if (count($fields) &gt;= 3) {<br>                    $iface_status[$if][&#x27;state&#x27;] = $fields[1];<br>                    if ($fields[2] !== &quot;--&quot;) {</div>
 </div>
 <div class="occurrence-item">
-    <p><strong>File:</strong> ./data/Data.php, <strong>Line:</strong> 186, <strong>Function:</strong> exec</p>
+    <p><strong>File:</strong> haxinator-pigen-overlay/stage2/02-custom-config/root_files/html/data/Data.php, <strong>Line:</strong> 186, <strong>Function:</strong> exec</p>
     <div class="context-code">                if (count($fields) &gt;= 3) {<br>                    $iface_status[$if][&#x27;state&#x27;] = $fields[1];<br>                    if ($fields[2] !== &quot;--&quot;) {<br>                        $iface_status[$if][&#x27;connection&#x27;] = $fields[2];<br>                        // Get connection type for active connections<br>                        exec(&quot;nmcli -t -f TYPE connection show &quot; . escapeshellarg($fields[2]), $typeLine);<br>                        if (!empty($typeLine)) {<br>                            $iface_status[$if][&#x27;connection_type&#x27;] = trim($typeLine[0]);<br>                        }<br>                    }<br>                }</div>
 </div>
 <div class="occurrence-item">
-    <p><strong>File:</strong> ./data/Data.php, <strong>Line:</strong> 196, <strong>Function:</strong> exec</p>
+    <p><strong>File:</strong> haxinator-pigen-overlay/stage2/02-custom-config/root_files/html/data/Data.php, <strong>Line:</strong> 196, <strong>Function:</strong> exec</p>
     <div class="context-code">                }<br>            }<br><br>            // Get IP address<br>            $ipLine = [];<br>            exec(&quot;nmcli -t -f IP4.ADDRESS dev show $if | grep IP4.ADDRESS&quot;, $ipLine);<br>            if (!empty($ipLine)) {<br>                $addr = explode(&#x27;:&#x27;, $ipLine[0]);<br>                if (isset($addr[1])) {<br>                    $iface_status[$if][&#x27;ip&#x27;] = explode(&#x27;/&#x27;, $addr[1])[0];<br>                }</div>
 </div>
 <div class="occurrence-item">
-    <p><strong>File:</strong> ./data/Data.php, <strong>Line:</strong> 208, <strong>Function:</strong> exec</p>
+    <p><strong>File:</strong> haxinator-pigen-overlay/stage2/02-custom-config/root_files/html/data/Data.php, <strong>Line:</strong> 208, <strong>Function:</strong> exec</p>
     <div class="context-code"><br>            // Get connection method (DHCP/Static)<br>            if ($iface_status[$if][&#x27;connection&#x27;] !== &#x27;&#x27;) {<br>                $methLine = [];<br>                $conn_name_arg = escapeshellarg($iface_status[$if][&#x27;connection&#x27;]);<br>                exec(&quot;nmcli -t -f ipv4.method connection show $conn_name_arg&quot;, $methLine);<br>                if (!empty($methLine)) {<br>                    $methodVal = trim($methLine[0]);<br>                    $iface_status[$if][&#x27;method&#x27;] = (strpos($methodVal, &#x27;manual&#x27;) !== false) ? &#x27;Static&#x27; : &#x27;DHCP&#x27;;<br>                }<br>            }</div>
 </div>
 <div class="occurrence-item">
-    <p><strong>File:</strong> ./data/Data.php, <strong>Line:</strong> 217, <strong>Function:</strong> exec</p>
+    <p><strong>File:</strong> haxinator-pigen-overlay/stage2/02-custom-config/root_files/html/data/Data.php, <strong>Line:</strong> 217, <strong>Function:</strong> exec</p>
     <div class="context-code">                }<br>            }<br><br>            // Get MAC address<br>            $macLine = [];<br>            exec(&quot;nmcli -t -f GENERAL.HWADDR dev show $if | grep GENERAL.HWADDR&quot;, $macLine);<br>            if (!empty($macLine)) {<br>                $macParts = explode(&#x27;:&#x27;, $macLine[0], 2);<br>                if (isset($macParts[1])) {<br>                    $iface_status[$if][&#x27;mac&#x27;] = trim($macParts[1]);<br>                }</div>
 </div>
 <div class="occurrence-item">
-    <p><strong>File:</strong> ./data/Data.php, <strong>Line:</strong> 231, <strong>Function:</strong> exec</p>
+    <p><strong>File:</strong> haxinator-pigen-overlay/stage2/02-custom-config/root_files/html/data/Data.php, <strong>Line:</strong> 231, <strong>Function:</strong> exec</p>
     <div class="context-code">    }<br><br>    public function getActiveConnectionUuids()<br>    {<br>        $active_uuids = [];<br>        exec(&quot;nmcli -t -f UUID connection show --active&quot;, $out);<br>        foreach ($out as $line) {<br>            $active_uuids[] = trim($line);<br>        }<br>        return $active_uuids;<br>    }</div>
 </div>
 
@@ -491,7 +499,7 @@
                 <p><strong>Total incidents:</strong> 87</p>
                 <p><strong>Files with incidents:</strong></p>
                 <ul>
-                    <li>./DEV/ping-stream.php: 4 incident(s)</li><li>./api/ping-stream.php: 4 incident(s)</li><li>./api/run-script.php: 3 incident(s)</li><li>./api/shutdown.php: 1 incident(s)</li><li>./api/upload.php: 10 incident(s)</li><li>./configure.php: 21 incident(s)</li><li>./data/Data.php: 11 incident(s)</li><li>./network/Network.php: 22 incident(s)</li><li>./pingtest.php: 1 incident(s)</li><li>./pingvisual.php: 1 incident(s)</li><li>./ui/UI.php: 5 incident(s)</li><li>./ui/diagnostic-status.php: 4 incident(s)</li>
+                    <li>haxinator-pigen-overlay/stage2/02-custom-config/root_files/html/DEV/ping-stream.php: 4 incident(s)</li><li>haxinator-pigen-overlay/stage2/02-custom-config/root_files/html/api/ping-stream.php: 4 incident(s)</li><li>haxinator-pigen-overlay/stage2/02-custom-config/root_files/html/api/run-script.php: 3 incident(s)</li><li>haxinator-pigen-overlay/stage2/02-custom-config/root_files/html/api/shutdown.php: 1 incident(s)</li><li>haxinator-pigen-overlay/stage2/02-custom-config/root_files/html/api/upload.php: 10 incident(s)</li><li>haxinator-pigen-overlay/stage2/02-custom-config/root_files/html/configure.php: 21 incident(s)</li><li>haxinator-pigen-overlay/stage2/02-custom-config/root_files/html/data/Data.php: 11 incident(s)</li><li>haxinator-pigen-overlay/stage2/02-custom-config/root_files/html/network/Network.php: 22 incident(s)</li><li>haxinator-pigen-overlay/stage2/02-custom-config/root_files/html/pingtest.php: 1 incident(s)</li><li>haxinator-pigen-overlay/stage2/02-custom-config/root_files/html/pingvisual.php: 1 incident(s)</li><li>haxinator-pigen-overlay/stage2/02-custom-config/root_files/html/ui/UI.php: 5 incident(s)</li><li>haxinator-pigen-overlay/stage2/02-custom-config/root_files/html/ui/diagnostic-status.php: 4 incident(s)</li>
                 </ul>
             </div>
 
@@ -509,51 +517,51 @@
                     </thead>
                     <tbody>
                         <tr>
-    <td>./DEV/ping-stream.php</td>
+    <td>haxinator-pigen-overlay/stag</td>
     <td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style='background: #ffcccc;'>2</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style='background: #ffcccc;'>1</td><td style='background: #ffcccc;'>1</td>
 </tr>
 <tr>
-    <td>./api/ping-stream.php</td>
+    <td>haxinator-pigen-overlay/stag</td>
     <td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style='background: #ffcccc;'>2</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style='background: #ffcccc;'>1</td><td style='background: #ffcccc;'>1</td><td style=''>0</td><td style=''>0</td>
 </tr>
 <tr>
-    <td>./api/run-script.php</td>
+    <td>haxinator-pigen-overlay/stag</td>
     <td style=''>0</td><td style=''>0</td><td style='background: #ffcccc;'>3</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td>
 </tr>
 <tr>
-    <td>./api/shutdown.php</td>
+    <td>haxinator-pigen-overlay/stag</td>
     <td style=''>0</td><td style=''>0</td><td style='background: #ffcccc;'>1</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td>
 </tr>
 <tr>
-    <td>./api/upload.php</td>
+    <td>haxinator-pigen-overlay/stag</td>
     <td style='background: #ffcccc;'>1</td><td style=''>0</td><td style=''>0</td><td style='background: #ffcccc;'>1</td><td style='background: #ffcccc;'>1</td><td style=''>0</td><td style='background: #ffcccc;'>4</td><td style='background: #ffcccc;'>1</td><td style='background: #ffcccc;'>1</td><td style=''>0</td><td style=''>0</td><td style='background: #ffcccc;'>1</td><td style=''>0</td><td style=''>0</td>
 </tr>
 <tr>
-    <td>./configure.php</td>
+    <td>haxinator-pigen-overlay/stag</td>
     <td style=''>0</td><td style=''>0</td><td style='background: #ff0000;'>21</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td>
 </tr>
 <tr>
-    <td>./data/Data.php</td>
+    <td>haxinator-pigen-overlay/stag</td>
     <td style=''>0</td><td style=''>0</td><td style='background: #ff6666;'>11</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td>
 </tr>
 <tr>
-    <td>./network/Network.php</td>
+    <td>haxinator-pigen-overlay/stag</td>
     <td style=''>0</td><td style=''>0</td><td style='background: #ff0000;'>22</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td>
 </tr>
 <tr>
-    <td>./pingtest.php</td>
+    <td>haxinator-pigen-overlay/stag</td>
     <td style=''>0</td><td style=''>0</td><td style='background: #ffcccc;'>1</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td>
 </tr>
 <tr>
-    <td>./pingvisual.php</td>
+    <td>haxinator-pigen-overlay/stag</td>
     <td style=''>0</td><td style=''>0</td><td style='background: #ffcccc;'>1</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td>
 </tr>
 <tr>
-    <td>./ui/UI.php</td>
+    <td>haxinator-pigen-overlay/stag</td>
     <td style=''>0</td><td style='background: #ffcccc;'>1</td><td style='background: #ffcccc;'>2</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style='background: #ffcccc;'>2</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td>
 </tr>
 <tr>
-    <td>./ui/diagnostic-status.php</td>
+    <td>haxinator-pigen-overlay/stag</td>
     <td style=''>0</td><td style='background: #ffcccc;'>1</td><td style='background: #ffcccc;'>2</td><td style=''>0</td><td style=''>0</td><td style='background: #ffcccc;'>1</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td><td style=''>0</td>
 </tr>
 
@@ -561,7 +569,7 @@
                 </table>
             </div>
         </div>
-        <div class="footer">Generated on 2025-05-17 20:00:39</div>
+        <div class="footer">Generated on 2025-05-17 20:10:57</div>
     </div>
 
     <script src="/js/bootstrap.bundle.min.js"></script>
