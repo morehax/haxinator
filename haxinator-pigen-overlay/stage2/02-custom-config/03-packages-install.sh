@@ -30,7 +30,7 @@ red_echo "==> Allowing www-data to poweroff in sudoers"
 # Allowing www-data all sorts of naughty things
 echo "www-data ALL=(ALL) NOPASSWD: /sbin/poweroff, /usr/bin/ssh, /bin/kill, /usr/bin/pgrep, /usr/bin/ssh, /bin/kill, /usr/bin/pgrep, /usr/bin/ssh-keygen" | sudo tee -a /etc/sudoers
 # And then make the web root haxable. Hopefully i'll remember to secure this one day.
-chown -R www-data:www-data /var/www/html
+chown -R www-data:www-data /var/www
 
 # Lets stop auto downloading these for a while.
 
