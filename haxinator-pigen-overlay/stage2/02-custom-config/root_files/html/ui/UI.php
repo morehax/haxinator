@@ -25,28 +25,7 @@ function renderLoginPage($login_error)
       <title>Haxinator 2000 Login</title>
       <link href="/css/bootstrap.min.css" rel="stylesheet" />
       <link href="/css/theme.css" rel="stylesheet" />
-      <style>
-        * { margin: 0; padding: 0; }
-        body { background: black; }
-        canvas#c {
-          display: block;
-          position: fixed;
-          top: 0;
-          left: 0;
-          width: 100vw;
-          height: 100vh;
-          z-index: 0;
-        }
-        .card {
-          position: relative;
-          z-index: 2;
-          background: rgba(255,255,255,0.93);
-        }
-        .login-container {
-          position: relative;
-          z-index: 2;
-        }
-      </style>
+      <link href="/css/login.css" rel="stylesheet" />
     </head>
     <body class="d-flex align-items-center justify-content-center" style="height:100vh;">
       <canvas id="c"></canvas>
@@ -79,22 +58,45 @@ function renderLoginPage($login_error)
         var ctx = c.getContext("2d");
         c.height = window.innerHeight;
         c.width = window.innerWidth;
-        var matrix = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ123456789@#$%^&*()*&^%+-/~{[|`]}";
-        matrix = matrix.split("");
+        var matrix = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ123456789@#$%^&*()*&^%+-/~{[|`] }".split("");
+        // Wider gradient palette (teal → cyan → blue)
+        var colors = ["#65ddb7", "#3fcdbd", "#22d3ee", "#1cb8f6", "#3a9fbd", "#3a7cbd"];
+        // Hacker phrase list for easter egg
+        var phrases = [
+          "Haxinate!", "Hack the Planet!", "0x41414141",
+          "All Your WiFi", "sudo make me a sandwich",
+          "rm -rf /", "hack all the things!", "grep -R lol"
+        ];
+
         var font_size = 10;
         var columns = c.width/font_size;
+        // Each drop holds y (row), p (phrase idx), c (char idx)
         var drops = [];
-        for(var x = 0; x < columns; x++) drops[x] = 1;
+        for(var x = 0; x < columns; x++) {
+          drops[x] = {y:1, p: Math.floor(Math.random()*phrases.length), c:0};
+        }
         function draw() {
           ctx.fillStyle = "rgba(0, 0, 0, 0.04)";
           ctx.fillRect(0, 0, c.width, c.height);
-          ctx.fillStyle = "#f4427d";
           ctx.font = font_size + "px arial";
           for(var i = 0; i < drops.length; i++) {
-            var text = matrix[Math.floor(Math.random()*matrix.length)];
-            ctx.fillText(text, i*font_size, drops[i]*font_size);
-            if(drops[i]*font_size > c.height && Math.random() > 0.975) drops[i] = 0;
-            drops[i]++;
+            var d = drops[i];
+            var phrase = phrases[d.p];
+            var char = phrase.charAt(d.c);
+            ctx.fillStyle = colors[i % colors.length];
+            ctx.fillText(char, i*font_size, d.y*font_size);
+
+            // advance positions
+            d.y++;
+            d.c++;
+            if(d.c >= phrase.length) { d.c = 0; }
+
+            // reset drop at bottom with small chance and pick new phrase
+            if(d.y*font_size > c.height && Math.random() > 0.97) {
+               d.y = 0;
+               d.p = Math.floor(Math.random()*phrases.length);
+               d.c = 0;
+            }
           }
         }
         setInterval(draw, 35);
@@ -120,485 +122,10 @@ function renderMainPage($message, $error, $wifi_list, $saved_connections, $iface
       <link href="/css/bootstrap.min.css" rel="stylesheet" />
       <link href="/css/theme.css" rel="stylesheet" />
       <link rel="stylesheet" href="/css/bootstrap-icons/bootstrap-icons.min.css">
-      <style>
-        body {
-          background-color: #3a7cbd;
-          font-family: 'Segoe UI', Arial, sans-serif;
-          margin: 0;
-          padding: 0;
-          position: relative;
-        }
-        
-        /* Add a pseudo-element for the gradient that covers the entire viewport */
-        body::before {
-          content: "";
-          position: fixed;
-          top: 0;
-          left: 0;
-          width: 100%;
-          height: 100%;
-          background: linear-gradient(135deg, #65ddb7 0%, #3a7cbd 100%);
-          z-index: -1;
-        }
-        
-        .topbar {
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          padding: 0.7rem 1.2rem;
-          background: #f6f8fa;
-          border-bottom: 2px solid #e0e7ef;
-          min-height: 56px;
-        }
-        .topbar-left {
-          display: flex;
-          align-items: center;
-          gap: 0.7rem;
-          flex-shrink: 0;
-        }
-        .topbar-logo {
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          width: 40px;
-          height: 40px;
-          background: #2563eb;
-          color: #fff;
-          font-size: 1.5rem;
-          font-weight: 900;
-          border-radius: 50%;
-          margin-bottom: 0;
-          box-shadow: 0 2px 8px rgba(37,99,235,0.10);
-          flex-shrink: 0;
-        }
-        .topbar-title {
-          font-size: 1.25rem;
-          font-weight: 700;
-          color: #1a365d;
-          letter-spacing: 1px;
-          margin-bottom: 0;
-          line-height: 1;
-          white-space: nowrap;
-        }
-        .topbar-center {
-          display: flex;
-          align-items: center;
-          gap: 0.8rem;
-          margin: 0 1rem;
-          flex-grow: 1;
-          justify-content: center;
-        }
-        .interface-bar {
-          background: #ffffff;
-          padding: 0.7rem 1.2rem;
-          border-bottom: 1px solid #e0e7ef;
-          margin-bottom: 24px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          flex-wrap: wrap;
-          gap: 0.8rem;
-          box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
-        }
-        .interface-status {
-          display: flex;
-          align-items: center;
-          gap: 0.8rem;
-          flex-wrap: wrap;
-          justify-content: center;
-        }
-        .interface-item {
-          display: flex;
-          align-items: center;
-          gap: 0.4rem;
-          font-size: 0.91rem;
-          color: #1a365d;
-          padding: 0.3rem 0.7rem;
-          border-radius: 6px;
-          background: #fff;
-          border: 1px solid #e0e7ef;
-          min-width: 140px;
-          height: 36px;
-          transition: all 0.2s ease;
-          box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
-        }
-        .interface-item:hover {
-          border-color: #2563eb;
-          box-shadow: 0 2px 4px rgba(37, 99, 235, 0.08);
-        }
-        .interface-item i {
-          font-size: 0.91em;
-          opacity: 0.85;
-          flex-shrink: 0;
-        }
-        .interface-item.connected {
-          border-color: #22c55e;
-          background: rgba(34,197,94,0.05);
-        }
-        .interface-item.disconnected {
-          border-color: #f59e42;
-          background: rgba(245,158,66,0.05);
-        }
-        .interface-name {
-          font-weight: 600;
-          margin-right: 0.3rem;
-          flex-shrink: 0;
-        }
-        .interface-ip {
-          color: #4a5568;
-          font-family: monospace;
-          font-size: 0.88em;
-          overflow: hidden;
-          text-overflow: ellipsis;
-        }
-        @media (max-width: 1200px) {
-          .interface-item { 
-            min-width: 120px;
-            font-size: 0.85rem;
-        }
-          .interface-ip { 
-            font-size: 0.82em;
-          }
-        }
-        @media (max-width: 992px) {
-          .topbar {
-            flex-wrap: wrap;
-            gap: 0.8rem;
-          }
-          .topbar-center {
-            order: 2;
-            width: 100%;
-            margin: 0;
-          }
-          .interface-bar {
-            padding: 0.5rem 1rem;
-          }
-          .interface-status {
-            width: 100%;
-            justify-content: center;
-          }
-        }
-        @media (max-width: 599px) {
-          .nav-tabs .nav-item { flex: 1 1 100%; }
-        }
-        .btn-primary, .btn-success, .btn-warning {
-          border-radius: calc(var(--border-radius) * 0.7);
-          font-weight: 500;
-          letter-spacing: 0.5px;
-        }
-        .nm-btn, .btn-primary {
-          background: #2563eb;
-          color: #fff;
-          border: none;
-          border-radius: calc(var(--border-radius) * 0.6) !important;
-          font-weight: 500;
-          letter-spacing: 0.5px;
-          min-width: 92px;
-          padding: 0.38em 1.1em;
-          font-size: 1rem;
-          box-shadow: 0 1px 3px rgba(0,0,0,0.04);
-          transition: background 0.13s, color 0.13s, box-shadow 0.13s;
-        }
-        .nm-btn:hover, .btn-primary:hover {
-          background: #1a365d;
-          color: #fff;
-          box-shadow: 0 2px 8px rgba(37,99,235,0.13);
-        }
-        .nm-btn:active { transform: scale(0.97); }
-        .btn-outline-secondary {
-          border-radius: 0.5em;
-          font-weight: 500;
-          letter-spacing: 0.5px;
-        }
-        .btn-outline-secondary:hover {
-          background: #e0e7ef;
-          color: #1a365d;
-        }
-        .nm-main-container {
-          max-width: 1100px;
-          margin: 0 auto;
-          padding: 0 1.2rem;
-          margin-top: 24px;
-        }
-        @media (max-width: 900px) {
-          .nm-main-container { max-width: 100%; padding: 0 0.5rem; }
-          .nm-header { font-size: 1.5rem; }
-          .nm-subheader { font-size: 1rem; }
-          .nm-card { margin-bottom: 1.2rem; }
-        }
-        @media (max-width: 600px) {
-          .nm-header { font-size: 1.1rem; }
-          .nm-subheader { font-size: 0.95rem; }
-          .nm-main-container { padding: 0 0.2rem; }
-          .nm-card { border-radius: 0.5rem; }
-        }
-        @media (max-width: 700px) {
-          .topbar { padding: 0 0.7rem; }
-          .topbar-title { font-size: 1.05rem; }
-          .topbar-logo { width: 32px; height: 32px; font-size: 1.1rem; }
-          .topbar-right { font-size: 0.97rem; gap: 0.7rem; }
-        }
-        .nm-priority-cell {
-          max-width: 90px;
-          text-align: center;
-          vertical-align: middle !important;
-        }
-        .priority-select {
-          border-radius: 0.5em !important;
-          width: auto !important;
-          min-width: 60px;
-          max-width: 100px;
-          padding: 0.2em 0.7em;
-          box-sizing: border-box;
-          background-clip: padding-box;
-        }
-        .script-output {
-          background: #111;
-          color: #0f0;
-          padding: 1rem;
-          height: 23.5rem;
-          overflow-y: auto;
-          white-space: pre-wrap;
-          border-radius: 0.4rem;
-        }
-        .nm-action-group {
-          display: flex;
-          align-items: center;
-          gap: 0.3em;
-          flex-wrap: nowrap;
-          justify-content: center;
-        }
-        .nm-btn, .nm-btn-sm {
-          min-width: 60px;
-          padding: 0.22em 0.7em;
-          font-size: 0.93rem;
-          border-radius: calc(var(--border-radius) * 0.6) !important;
-          margin-bottom: 0;
-        }
-        .nm-table {
-          background: #fff;
-          border-radius: var(--border-radius);
-          overflow: hidden;
-          box-shadow: 0 1px 6px rgba(0,0,0,0.04);
-        }
-        .modal-content {
-          border-radius: var(--border-radius);
-          box-shadow: 0 4px 24px rgba(0,0,0,0.10);
-        }
-        .form-control, .form-select {
-          border-radius: calc(var(--border-radius) * 0.7);
-        }
-        .nm-signal-bar-row {
-          display: flex;
-          align-items: center;
-          gap: 0.5em;
-          min-width: 110px;
-        }
-        .nm-signal-bar {
-          flex: 1 1 60px;
-          min-width: 60px;
-          max-width: 90px;
-        }
-        .nm-signal-text {
-          font-size: 0.88em;
-          min-width: 2.5em;
-          text-align: left;
-          margin-left: 0.4em;
-          line-height: 1;
-        }
-        .action-cell .btn {
-          padding: 0.25em 0.6em;
-          min-width: 36px;
-          height: 32px;
-          display: inline-flex;
-          align-items: center;
-          justify-content: center;
-        }
-        .action-cell .btn i {
-          font-size: 0.91em;
-        }
-        .nm-action-group .btn {
-          padding: 0.25em 0.6em;
-          min-width: 36px;
-          height: 32px;
-          display: inline-flex;
-          align-items: center;
-          justify-content: center;
-        }
-        .nm-action-group .btn i {
-          font-size: 0.91em;
-        }
-        .topbar-right {
-          display: flex;
-          align-items: center;
-          gap: 0.7rem;
-        }
-        .topbar-right i {
-          font-size: 1.15em;
-          vertical-align: middle;
-        }
-        .action-buttons {
-          display: flex;
-          align-items: center;
-          gap: 0.5rem;
-        }
-        .status-group {
-          display: flex;
-          align-items: center;
-          gap: 1.2rem;
-        }
-        .status-indicator {
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          line-height: 1;
-        }
-        .status-indicator i {
-          font-size: 1.35em;
-          margin-bottom: 2px;
-          width: 1.4em;  /* Fixed width for all icons */
-          height: 1.4em; /* Fixed height for all icons */
-          display: flex;
-          align-items: center;
-          justify-content: center;
-        }
-        .status-indicator .status-label {
-          font-size: 0.65em;
-          color: #666;
-          margin-top: 1px;
-        }
-        
-        /* SSH Tunnel specific styles */
-        .ssh-tunnel-card {
-          background: rgba(255, 255, 255, 0.97);
-          border-radius: 12px;
-          box-shadow: 0 4px 24px rgba(0, 0, 0, 0.1);
-        }
-        .ssh-tunnel-status {
-          margin: 20px 0;
-          padding: 10px;
-          background-color: #e0e0e0;
-          border-radius: 5px;
-          transition: background-color 0.3s ease;
-        }
-        .ssh-tunnel-status.running {
-          background-color: #d4edda;
-          border-color: #c3e6cb;
-          color: #155724;
-        }
-        .ssh-tunnel-status.running .server-info {
-          color: #155724;
-        }
-        .ssh-tunnel-status .server-info {
-          font-weight: 600;
-          white-space: nowrap;
-        }
-        .ssh-tunnel-status.stopped {
-          background-color: #e0e0e0;
-          border-color: #d9d9d9;
-          color: #666666;
-        }
-        .ssh-debug {
-          margin: 20px 0;
-          padding: 10px;
-        }
-        .ssh-config-inputs {
-          display: flex;
-          gap: 10px;
-          align-items: center;
-          flex-wrap: wrap;
-        }
-        .ssh-config-inputs label {
-          margin-right: 5px;
-          font-weight: bold;
-        }
-        .ssh-config-inputs input {
-          padding: 5px;
-          border: 1px solid #ccc;
-          border-radius: 4px;
-          font-size: 14px;
-        }
-        .ssh-config-inputs input[type="number"] {
-          width: 80px;
-        }
-        .ssh-debug pre {
-          font-size: 0.8rem;
-          background: #f8f9fa;
-          border: 1px solid #dee2e6;
-          border-radius: 3px;
-          padding: 0.5rem;
-          max-height: 200px;
-          overflow-y: auto;
-          white-space: pre-wrap;
-        }
-        
-        /* SSH Key Management Styles */
-        .ssh-key-management {
-          background-color: rgba(248, 249, 250, 0.5);
-          border-radius: 5px;
-          padding: 15px;
-          border: 1px solid #e0e7ef;
-        }
-        
-        .ssh-key-status {
-          display: flex;
-          align-items: center;
-        }
-        
-        .ssh-key-management h5 {
-          color: #1a365d;
-          font-size: 1rem;
-          margin-bottom: 12px;
-        }
-        .start-tunnel-btn {
-          background: #22c55e;
-          color: white;
-          border: none;
-          border-radius: calc(var(--border-radius) * 0.6) !important;
-          font-weight: 500;
-          letter-spacing: 0.5px;
-          min-width: 92px;
-          padding: 0.38em 1.1em;
-          font-size: 1rem;
-          box-shadow: 0 1px 3px rgba(0,0,0,0.04);
-          transition: background 0.13s, color 0.13s, box-shadow 0.13s;
-        }
-        .start-tunnel-btn:hover {
-          background: #15803d;
-          color: white;
-          box-shadow: 0 2px 8px rgba(34,197,94,0.13);
-        }
-        .stop-tunnel-btn {
-          background: #ef4444;
-          color: white;
-          border: none;
-          border-radius: calc(var(--border-radius) * 0.6) !important;
-          font-weight: 500;
-          letter-spacing: 0.5px;
-          min-width: 92px;
-          padding: 0.38em 1.1em;
-          font-size: 1rem;
-          box-shadow: 0 1px 3px rgba(0,0,0,0.04);
-          transition: background 0.13s, color 0.13s, box-shadow 0.13s;
-        }
-        .stop-tunnel-btn:hover {
-          background: #b91c1c;
-          color: white;
-          box-shadow: 0 2px 8px rgba(239,68,68,0.13);
-        }
-        .start-tunnel-btn:disabled, .stop-tunnel-btn:disabled {
-          background: #d1d5db;
-          color: #9ca3af;
-          box-shadow: none;
-          cursor: not-allowed;
-        }
-        .tunnel-heading {
-          font-size: 1rem;
-          margin-bottom: 12px;
-        }
-      </style>
+
+
     </head>
-    <body>
+    <body class="gradient-bg">
     <div class="topbar sticky-top">
       <div class="topbar-left">
         <div class="topbar-logo">X</div>
@@ -1251,7 +778,7 @@ function renderMainPage($message, $error, $wifi_list, $saved_connections, $iface
                       <label for="ssh_ip">IP Address:</label>
                       <input type="text" id="ssh_ip" name="ssh_ip" class="form-control" 
                              value="<?= isset($_SESSION['ssh_tunnel']['ip']) ? htmlspecialchars($_SESSION['ssh_tunnel']['ip']) : (isset($_POST['ssh_ip']) ? htmlspecialchars($_POST['ssh_ip']) : '') ?>" 
-                             placeholder="e.g., 143.198.29.141">
+                             placeholder="e.g., 192.168.194.2">
                     </div>
                     <div class="me-2">
                       <label for="ssh_port">Port:</label>

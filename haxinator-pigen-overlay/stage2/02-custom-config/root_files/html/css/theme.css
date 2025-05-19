@@ -183,6 +183,8 @@ body {
     border-radius: var(--border-radius) var(--border-radius) 0 0;
     margin-right: 2px;
     position: relative;
+    width: 100%;
+    text-align: center;
 }
 
 .nav-tabs .nav-link:hover {
@@ -197,6 +199,12 @@ body {
     border-bottom-color: var(--table-header-bg);
     margin-bottom: -1px;
     z-index: 2;
+}
+
+/* Consistent hover styling for inactive nav links */
+.nav-tabs .nav-link:not(.active):hover {
+    background: var(--table-hover-bg);
+    color: var(--primary-color);
 }
 
 /* Modals */
@@ -453,6 +461,7 @@ body {
     padding-bottom: 0.3rem;
     margin-bottom: 0.3rem;
     border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+    padding-right: 2rem;
 }
 
 .connection-header i:first-child {
@@ -593,4 +602,209 @@ body {
     .connection-box {
         width: 100%;
     }
+}
+
+/* ---- Topbar & Interface bar (moved from inline/configure) ---- */
+.topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.7rem 1.2rem;
+    background: #f6f8fa;
+    border-bottom: 2px solid #e0e7ef;
+    min-height: 56px;
+}
+.topbar-left {
+    display: flex;
+    align-items: center;
+    gap: 0.7rem;
+    flex-shrink: 0;
+}
+.topbar-logo {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    background: #2563eb;
+    color: #fff;
+    font-size: 1.5rem;
+    font-weight: 900;
+    border-radius: 50%;
+    margin-bottom: 0;
+    box-shadow: 0 2px 8px rgba(37,99,235,0.10);
+    flex-shrink: 0;
+}
+.topbar-title {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: #1a365d;
+    letter-spacing: 1px;
+    margin-bottom: 0;
+    line-height: 1;
+    white-space: nowrap;
+}
+.topbar-center {
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+    margin: 0 1rem;
+    flex-grow: 1;
+    justify-content: center;
+}
+.topbar-right {
+    display: flex;
+    align-items: center;
+    gap: 0.7rem;
+}
+.status-group {
+    display: flex;
+    align-items: center;
+    gap: 1.2rem;
+}
+.status-indicator {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    line-height: 1;
+}
+.status-indicator i {
+    font-size: 1.35em;
+    margin-bottom: 2px;
+    width: 1.4em;
+    height: 1.4em;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.status-indicator .status-label {
+    font-size: 0.65em;
+    color: #666;
+    margin-top: 1px;
+}
+
+.interface-bar {
+    background: #ffffff;
+    padding: 0.7rem 1.2rem;
+    border-bottom: 1px solid #e0e7ef;
+    margin-bottom: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 0.8rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+}
+.interface-status {
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+.interface-item {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.91rem;
+    color: #1a365d;
+    padding: 0.3rem 0.7rem;
+    border-radius: 6px;
+    background: #fff;
+    border: 1px solid #e0e7ef;
+    min-width: 140px;
+    height: 36px;
+    transition: all 0.2s ease;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
+}
+.interface-item:hover {
+    border-color: #2563eb;
+    box-shadow: 0 2px 4px rgba(37, 99, 235, 0.08);
+}
+.interface-item i {
+    font-size: 0.91em;
+    opacity: 0.85;
+    flex-shrink: 0;
+}
+.interface-item.connected {
+    border-color: #22c55e;
+    background: rgba(34,197,94,0.05);
+}
+.interface-item.disconnected {
+    border-color: #f59e42;
+    background: rgba(245,158,66,0.05);
+}
+.interface-name {
+    font-weight: 600;
+    margin-right: 0.3rem;
+    flex-shrink: 0;
+}
+.interface-ip {
+    color: #4a5568;
+    font-family: monospace;
+    font-size: 0.88em;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Gradient background utility */
+.gradient-bg {
+    background-color: #3a7cbd;
+    position: relative;
+}
+.gradient-bg::before {
+    content: "";
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(135deg, #65ddb7 0%, #3a7cbd 100%);
+    z-index: -1;
+}
+
+/* Responsive tweaks for topbar/interface on small screens */
+@media (max-width: 992px) {
+    .topbar {
+        flex-wrap: wrap;
+        gap: 0.8rem;
+    }
+    .topbar-center {
+        order: 2;
+        width: 100%;
+        margin: 0;
+    }
+}
+@media (max-width: 599px) {
+    .nav-tabs .nav-item { flex: 1 1 100%; }
+}
+
+/* === Responsive tweaks for small screens (added) === */
+@media (max-width: 768px) {
+  .topbar-right { flex-wrap: wrap; justify-content: center; }
+  .status-group { width: 100%; justify-content: center; margin-bottom: 0.5rem; }
+  .btn-icon span { display: none; }
+  .topbar-right .btn { margin-left: .4rem !important; margin-right: .4rem !important; }
+}
+
+@media (max-width: 700px) {
+  .nav-tabs { overflow-x: auto; white-space: nowrap; flex-wrap: nowrap; }
+  .nav-tabs .nav-item { flex: 0 0 auto; }
+}
+
+/* === Hybrid tab responsiveness === */
+/* Phones: wrap into two columns instead of scrolling */
+@media (max-width: 600px) {
+  .nav-tabs { overflow-x: visible; white-space: normal; flex-wrap: wrap; }
+  .nav-tabs .nav-item { flex: 1 1 50%; }
+}
+/* Tablets / small laptops: allow wrapping into two rows (50% width each) */
+@media (min-width: 601px) and (max-width: 900px) {
+  .nav-tabs { overflow-x: visible; white-space: normal; flex-wrap: wrap; }
+  .nav-tabs .nav-item { flex: 1 1 50%; }
+}
+
+/* Uniform tab widths */
+@media (min-width: 901px) {
+  .nav-tabs .nav-item { flex: 0 0 180px; }
 } 
