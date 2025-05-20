@@ -94,4 +94,6 @@ sudo ./01-build-script.sh
 ```
 
 
-[PHP Security Scan Results](php_scan_results.html)
+[PHP Security Scan Results](https://hax.me/images/psalm.html)
+[Interesting functions to look at](php_scan_results.html)
+
