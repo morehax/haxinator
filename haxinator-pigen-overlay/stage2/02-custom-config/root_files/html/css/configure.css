@@ -18,6 +18,52 @@ body::before {
     z-index: -1;
 }
 
+/* Fix for tab styling - prevent text stacking */
+.nav-tabs .nav-link {
+    display: flex;
+    align-items: center;
+    white-space: nowrap;
+    flex-direction: row;
+    justify-content: center;
+}
+
+.nav-tabs .nav-link i {
+    margin-right: 8px;
+    margin-bottom: 0 !important;
+}
+
+/* Tab container responsive behavior */
+.nav-tabs {
+    display: flex;
+    flex-wrap: wrap;
+}
+
+.nav-tabs .nav-item {
+    flex: 1 1 100%;
+    min-width: 100%;
+}
+
+/* On medium screens and larger, display tabs horizontally */
+@media (min-width: 768px) {
+    .nav-tabs .nav-item {
+        flex: 0 0 auto;
+        min-width: auto;
+    }
+}
+
+/* On very small screens, ensure clean stacking */
+@media (max-width: 480px) {
+    .nav-tabs {
+        flex-direction: column;
+        gap: 5px;
+    }
+    
+    .nav-tabs .nav-link {
+        border-radius: var(--border-radius);
+        margin-right: 0;
+    }
+}
+
 .topbar {
   display: flex;
   align-items: center;

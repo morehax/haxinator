@@ -236,7 +236,7 @@ function renderMainPage($message, $error, $wifi_list, $saved_connections, $iface
           <button class="nav-link active" id="wifi-tab" data-bs-toggle="tab" data-bs-target="#wifiTab" type="button" role="tab" aria-controls="wifiTab" aria-selected="true"><i class="bi bi-wifi" style="font-size:0.91em;"></i> Wi-Fi Networks</button>
         </li>
         <li class="nav-item" role="presentation">
-          <button class="nav-link" id="saved-tab" data-bs-toggle="tab" data-bs-target="#savedTab" type="button" role="tab" aria-controls="savedTab" aria-selected="false"><i class="bi bi-bookmark-star" style="font-size:0.91em;"></i> Saved Connections</button>
+          <button class="nav-link" id="saved-tab" data-bs-toggle="tab" data-bs-target="#savedTab" type="button" role="tab" aria-controls="savedTab" aria-selected="false"><i class="bi bi-bookmark-star" style="font-size:0.91em;"></i> Connections</button>
         </li>
         <li class="nav-item" role="presentation">
           <button class="nav-link" id="current-tab" data-bs-toggle="tab" data-bs-target="#currentTab" type="button" role="tab" aria-controls="currentTab" aria-selected="false"><i class="bi bi-activity" style="font-size:0.91em;"></i> Network Status</button>
