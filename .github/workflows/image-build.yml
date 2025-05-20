@@ -1,0 +1,105 @@
+name: RPi image builder
+
+permissions:
+  contents: write
+  actions: read
+
+env:
+  IMAGE_NAME: haxinator-builder
+
+on:
+  push:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref_name }}
+  cancel-in-progress: true
+
+# TODO:
+# - Use super-linter/super-linter
+# - Use cache for buildx to speed up builds
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - 
+        name: Git Checkout
+        uses: actions/checkout@v4
+      - 
+        name: Lint Dockerfile
+        uses: hadolint/hadolint-action@v3.1.0
+        with:
+          dockerfile: Dockerfile
+          verbose: true
+          failure-threshold: error
+      -
+        name: Shellcheck scripts
+        uses: sudo-bot/action-shellcheck@latest
+        with:
+          cli-args: "*.sh haxinator-pigen-overlay/stage0/01-locale/*.sh haxinator-pigen-overlay/stage2/02-custom-config/*.sh haxinator-pigen-overlay/stage2/02-custom-config/root_files/*.sh haxinator-pigen-overlay/stage2/02-custom-config/root_files/files/*.sh haxinator-pigen-overlay/stage2/02-custom-config/root_files/html/*.sh haxinator-pigen-overlay/stage2/99-self-tests/*.sh utils/*.sh"
+      -
+        name: Lint markdown files
+        uses: articulate/actions-markdownlint@v1
+
+  rpi-image-builder:
+    runs-on: ubuntu-24.04-arm
+    needs: lint
+
+    steps:
+      -
+        name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+      -
+        name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      -
+        name: Build
+        uses: docker/build-push-action@v6
+        with:
+           tags: ${{ env.IMAGE_NAME }}:${{ github.sha }}
+           outputs: type=docker,dest=${{ runner.temp }}/${{ env.IMAGE_NAME }}.tar
+      -
+        name: Transfer to next job
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.IMAGE_NAME }}
+          path: ${{ runner.temp }}/${{ env.IMAGE_NAME }}.tar
+
+  upload-image:
+    runs-on: ubuntu-24.04-arm
+    needs: rpi-image-builder
+
+    steps:
+      - 
+        name: Get docker image from last job
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ env.IMAGE_NAME }}
+          path: ${{ runner.temp }}
+      -
+        name: Load image
+        run: |
+          docker load --input ${{ runner.temp }}/${{ env.IMAGE_NAME }}.tar
+      -
+        name: Build the RPi image with ${{ env.IMAGE_NAME }} image built previously
+        run: |
+          docker run -a STDOUT -a STDERR --name ${{ env.IMAGE_NAME }} --privileged ${{ env.IMAGE_NAME }}:${{ github.sha }}
+      -
+        name: Copy output image
+        run: |
+          mkdir output
+          docker cp ${{ env.IMAGE_NAME }}:/haxinator/pi-gen/deploy/. output/
+      -
+        name: Release images as prerelease for ${{ github.sha }}
+        id: release_images
+        uses: softprops/action-gh-release@v2
+        with:
+          files: output/*
+          body: Images from ${{ github.ref_name }} - commit ${{ github.sha }}
+          draft: false
+          name: ${{ github.sha }}
+          prerelease: ${{ github.ref_type == 'tag' }}
+      -
+        name: Display URL
+        run: |
+          echo "URL: ${{ steps.release_images.outputs.url }}"
