@@ -36,7 +36,7 @@ jobs:
         name: Shellcheck scripts
         uses: sudo-bot/action-shellcheck@latest
         with:
-          cli-args: "-S warning -x *.sh haxinator-pigen-overlay/stage0/01-locale/*.sh haxinator-pigen-overlay/stage2/02-custom-config/*.sh haxinator-pigen-overlay/stage2/02-custom-config/root_files/*.sh haxinator-pigen-overlay/stage2/02-custom-config/root_files/files/*.sh haxinator-pigen-overlay/stage2/02-custom-config/root_files/html/*.sh haxinator-pigen-overlay/stage2/99-self-tests/*.sh utils/*.sh"
+          cli-args: "-S warning -x *.sh $(find -iname '*.sh' | tr '\n' ' ')"
       -
         name: Lint markdown files
         uses: articulate/actions-markdownlint@v1
