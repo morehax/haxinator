@@ -5,11 +5,20 @@ set -euo pipefail
 IFS=$'\n\t'
 
 # Script configuration
-readonly IMAGE_NAME="haxinator-builder"
-readonly IMAGE_TAG="latest"
-readonly OUTPUT_DIR="$(pwd)/output"
-readonly SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-readonly SCRIPT_NAME=$(basename "$0")
+IMAGE_NAME="haxinator-builder"
+IMAGE_TAG="latest"
+OUTPUT_DIR="$(pwd)/output"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+SCRIPT_NAME=$(basename "$0")
+
+readonly IMAGE_NAME
+readonly IMAGE_TAG
+readonly OUTPUT_DIR
+# shellcheck disable=SC2034
+readonly SCRIPT_DIR
+readonly SCRIPT_NAME
+
+
 
 # Logging functions
 log() { echo "==> $*" >&2; }
@@ -71,7 +80,8 @@ main() {
 
     # Initial cleanup of any previous builds
     log "Cleaning up previous builds..."
-    docker rm -f $(docker ps -a -q --filter ancestor="$IMAGE_NAME:$IMAGE_TAG") 2>/dev/null || true
+    IMAGE_LIST="$(docker ps -a -q --filter ancestor="$IMAGE_NAME:$IMAGE_TAG")"
+    docker rm -f "$IMAGE_LIST" 2>/dev/null || true
     docker rmi "$IMAGE_NAME:$IMAGE_TAG" 2>/dev/null || true
 
     # Display start message
@@ -94,6 +104,7 @@ main() {
         
         # Rebuild with proxy
         log "Rebuilding with APT_PROXY..."
+        # shellcheck disable=SC2086
         if ! docker build $PROXY_ARG -t "$IMAGE_NAME:$IMAGE_TAG" .; then
             die "Docker build with proxy failed"
         fi
@@ -104,13 +115,13 @@ main() {
         die "Failed to create container"
 
     # Start the container
-    if ! docker start -a $CONTAINER_ID; then
+    if ! docker start -a "$CONTAINER_ID"; then
         die "Container failed to start or run"
     fi
 
     # Copy the result from the container
     log "Copying build artifacts from container..."
-    if ! docker cp $CONTAINER_ID:/haxinator/pi-gen/deploy/. "$OUTPUT_DIR"; then
+    if ! docker cp "$CONTAINER_ID":/haxinator/pi-gen/deploy/. "$OUTPUT_DIR"; then
         die "Failed to copy build artifacts"
     fi
 

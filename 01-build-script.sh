@@ -22,6 +22,7 @@ fi
 
 # Get the original user's home directory
 ORIGINAL_USER=$(logname || echo "${SUDO_USER:-${USER}}")
+# shellcheck disable=SC2034
 ORIGINAL_HOME=$(eval echo "~$ORIGINAL_USER")
 
 #===============================================================================
