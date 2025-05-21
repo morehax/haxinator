@@ -2,7 +2,9 @@
 CONFIG_FILE="${ROOTFS_DIR}/boot/firmware/config.txt"
 CMDLINE_FILE="${ROOTFS_DIR}/boot/firmware/cmdline.txt"
 
+# shellcheck disable=SC2034
 USB_CMDLINE_FILE="${ROOTFS_DIR}/boot/firmware/cmdline_usb.txt"
+# shellcheck disable=SC2034
 SERIAL_CMDLINE_FILE="${ROOTFS_DIR}/boot/firmware/cmdline_serial.txt"
 TIMESTAMP="$(date +%Y%m%d_%H%M%S)"
 
@@ -37,6 +39,7 @@ if [ -f "$CMDLINE_FILE" ]; then
         :
     elif echo "$NEW_CMDLINE" | grep -q "modules-load=dwc2,g_serial"; then
         # Replace g_serial with g_cdc
+        # shellcheck disable=SC2001
         NEW_CMDLINE=$(echo "$NEW_CMDLINE" | sed 's/modules-load=dwc2,g_serial/modules-load=dwc2,g_cdc/')
     else
         # Add modules load parameter with g_cdc

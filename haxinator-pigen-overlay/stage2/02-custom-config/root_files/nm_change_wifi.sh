@@ -34,6 +34,7 @@ echo "Connecting…"
 nmcli device wifi connect "$SSID" password "$PSK" ifname "$IFACE" >/dev/null
 
 # ───────────────────── Poll until DHCP lease is obtained ──────────────────
+# shellcheck disable=SC2034
 for i in {1..10}; do
   sleep 1
   ACTIVE_SSID=$(nmcli -t -f ACTIVE,SSID dev wifi | awk -F: '$1=="yes"{print $2}')

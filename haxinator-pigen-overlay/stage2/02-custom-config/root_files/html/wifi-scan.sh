@@ -37,6 +37,7 @@ COUNT=0
 
 # Create temporary connection
 nmcli connection add type wifi con-name "$CON_NAME" ssid "$SSID" ifname "$WIFI_DEV" save no
+# shellcheck disable=SC2181
 if [ $? -ne 0 ]; then
     echo "Error: Failed to create temporary connection" | tee -a "$LOG_FILE"
     exit 1
@@ -48,6 +49,7 @@ while IFS= read -r password; do
     nmcli connection modify "$CON_NAME" wifi-sec.key-mgmt wpa-psk wifi-sec.psk "$password"
     for ((i=1; i<=RETRIES; i++)); do
         timeout "$TIMEOUT" nmcli connection up "$CON_NAME" &> /dev/null
+        # shellcheck disable=SC2181
         if [ $? -eq 0 ]; then
             echo "Success! Connected with password: $password Attempt $i" | tee -a "$LOG_FILE"
             nmcli connection show >> "$LOG_FILE"

@@ -24,6 +24,7 @@ echo "Scanning $HOST for ports $RANGE..."
 echo "----------------------------------------"
 
 # Run nmap scan
+# shellcheck disable=SC2086
 nmap -p $RANGE $HOST
 
 echo "----------------------------------------"

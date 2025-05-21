@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 set -euo pipefail
+#shellcheck disable=SC2034
 SCRIPT_DIR="$(dirname "$0")"
 
 # Source common functions
