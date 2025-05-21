@@ -35,7 +35,6 @@ jobs:
       -
         name: Shellcheck scripts
         run: |
-          sudo apt-get install shellcheck -y
           SHELL_FILES="$(find -iname '*.sh')"
           shellcheck -S warning -x -a ${SHELL_FILES} >/dev/null
 
