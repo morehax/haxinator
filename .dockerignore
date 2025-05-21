@@ -1,0 +1,6 @@
+.devcontainer/**
+.chglog/**
+.github/dependabot.yml
+.github/workflows/update-changelog.yml
+docs/**
+README.md
