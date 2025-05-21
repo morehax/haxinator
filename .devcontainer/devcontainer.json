@@ -20,7 +20,8 @@
 		"ghcr.io/devcontainers/features/git:1": {},
 		"ghcr.io/devcontainers/features/git-lfs:1": {},
 		"ghcr.io/prulloac/devcontainer-features/gitlint:1": {},
-		"ghcr.io/devcontainers-extra/features/gitty:1": {}
+		"ghcr.io/devcontainers-extra/features/gitty:1": {},
+		"ghcr.io/devcontainers/features/node:1": {}
 	},
 	"customizations": {
 		"vscode": {
@@ -42,7 +43,7 @@
 	// "forwardPorts": [],
 
 	// Use 'postCreateCommand' to run commands after the container is created.
-	"postCreateCommand": "sudo apt-get install -y openvpn",
+	"postCreateCommand": "sudo apt-get install -y openvpn php-codesniffer apt-cacher-ng",
 
 	// Configure tool-specific properties.
 	// "customizations": {},
