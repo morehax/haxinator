@@ -24,6 +24,7 @@ raspi-config
 nginx-light
 php-fpm
 php-mbstring
+php-ssh2
 openssl
 ca-certificates
 ipcalc
