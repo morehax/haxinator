@@ -22,10 +22,10 @@ jobs:
   lint:
     runs-on: ubuntu-latest
     steps:
-      - 
+      -
         name: Git Checkout
         uses: actions/checkout@v4
-      - 
+      -
         name: Lint Dockerfile
         uses: hadolint/hadolint-action@v3.1.0
         with:
@@ -60,8 +60,8 @@ jobs:
         name: Build
         uses: docker/build-push-action@v6
         with:
-           tags: ${{ env.IMAGE_NAME }}:${{ github.sha }}
-           outputs: type=docker,dest=${{ runner.temp }}/${{ env.IMAGE_NAME }}.tar
+          tags: ${{ env.IMAGE_NAME }}:${{ github.sha }}
+          outputs: type=docker,dest=${{ runner.temp }}/${{ env.IMAGE_NAME }}.tar
       -
         name: Transfer to next job
         uses: actions/upload-artifact@v4
@@ -74,7 +74,7 @@ jobs:
     needs: rpi-image-builder
 
     steps:
-      - 
+      -
         name: Get docker image from last job
         uses: actions/download-artifact@v4
         with:
@@ -85,9 +85,10 @@ jobs:
         run: |
           docker load --input ${{ runner.temp }}/${{ env.IMAGE_NAME }}.tar
       -
-        name: Build the RPi image with ${{ env.IMAGE_NAME }} image built previously
+        name: Build RPi image (${{ env.IMAGE_NAME }}) with container
         run: |
-          docker run -a STDOUT -a STDERR --name ${{ env.IMAGE_NAME }} --privileged ${{ env.IMAGE_NAME }}:${{ github.sha }}
+          docker run -a STDOUT -a STDERR --name ${{ env.IMAGE_NAME }} \
+            --privileged ${{ env.IMAGE_NAME }}:${{ github.sha }}
       -
         name: Copy output image
         run: |
