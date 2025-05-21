@@ -15,3 +15,6 @@ docs/vendor/
 
 # Auto-generated files
 docs/changelog.md
+
+# NodeJS
+node_modules/

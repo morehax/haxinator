@@ -4,3 +4,10 @@
 .github/workflows/update-changelog.yml
 docs/**
 README.md
+package-lock.json
+package.json
+node_modules/**
+.flake8
+.bandit.yaml
+.pylintrc
+.stylelintrc.json
