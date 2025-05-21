@@ -34,9 +34,13 @@ jobs:
           failure-threshold: error
       -
         name: Shellcheck scripts
-        uses: sudo-bot/action-shellcheck@latest
-        with:
-          cli-args: "-S warning -x *.sh $(find -iname '*.sh' | tr '\n' ' ')"
+        run: |
+          apt-get install shellcheck -y
+          SHELL_FILES="$(find -iname '*.sh')"
+          shellcheck -S warning -x -a ${SHELL_FILES} >/dev/null
+
+          # Display everything
+          shellcheck -x -a ${SHELL_FILES} || true
       -
         name: Lint markdown files
         uses: articulate/actions-markdownlint@v1
