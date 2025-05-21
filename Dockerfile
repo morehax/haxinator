@@ -14,6 +14,7 @@ RUN if [ -n "$APT_PROXY" ]; then \
     fi
 
 # Update and install dependencies
+# hadolint ignore=DL3015,DL3008
 RUN apt-get update && apt-get upgrade -y && \
     apt-get install -y coreutils quilt parted qemu-user-static debootstrap zerofree zip \
     dosfstools libarchive-tools libcap2-bin grep rsync xz-utils file git curl bc \
