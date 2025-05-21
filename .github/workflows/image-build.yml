@@ -51,7 +51,7 @@ jobs:
         run: |
           find . -name "*.php" -exec php -l {} \;
 
-  rpi-image-builder:
+  docker-image-builder:
     runs-on: ubuntu-24.04-arm
     needs: lint
 
@@ -75,9 +75,9 @@ jobs:
           name: ${{ env.IMAGE_NAME }}
           path: ${{ runner.temp }}/${{ env.IMAGE_NAME }}.tar
 
-  upload-image:
+  rpi-image-builder:
     runs-on: ubuntu-24.04-arm
-    needs: rpi-image-builder
+    needs: docker-image-builder
 
     steps:
       -
