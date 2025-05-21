@@ -8,7 +8,15 @@ env:
   IMAGE_NAME: haxinator-builder
 
 on:
+  workflow_dispatch:
   push:
+    paths-ignore: 
+      - .devcontainer/**
+      - .chglog/**
+      - .github/dependabot.yml
+      - .github/workflows/update-changelog.yml
+      - docs/**
+      - README.md
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref_name }}
@@ -100,6 +108,13 @@ jobs:
         run: |
           mkdir output
           docker cp ${{ env.IMAGE_NAME }}:/haxinator/pi-gen/deploy/. output/
+          ls -al output/
+      -
+        name: Generate tag
+        id: releasetag
+        run: |
+          RELEASE_TAG=$(date -u +"%F_%H-%M-%S-%3N")
+          echo "RELEASE_TAG=${RELEASE_TAG}" >> ${GITHUB_ENV}
       -
         name: Release images as prerelease for ${{ github.sha }}
         id: release_images
@@ -110,6 +125,7 @@ jobs:
           draft: false
           name: ${{ github.sha }}
           prerelease: ${{ github.ref_type == 'tag' }}
+          tags: ${{ steps.releasetag.outputs.RELEASE_TAG }}
       -
         name: Display URL
         run: |
