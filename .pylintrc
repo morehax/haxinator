@@ -1,0 +1,20 @@
+[MASTER]
+ignore=.git,.devcontainer,__pycache__
+jobs=2
+
+[MESSAGES CONTROL]
+# disable unwanted checks
+disable=
+    C0114,  # missing-module-docstring
+    C0115,  # missing-class-docstring
+    C0116   # missing-function-docstring
+
+[FORMAT]
+max-line-length=88
+
+[REPORTS]
+# no human-readable report
+output-format=sarif
+
+[PYLINT_SARIF]
+# optional: map severities, default maps OK→note, R/W/C/E→warning, F→error

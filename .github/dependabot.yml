@@ -10,3 +10,11 @@ updates:
    directory: "/"
    schedule:
      interval: weekly
+ - package-ecosystem: "npm"
+   directory: "/"
+   schedule:
+    interval: "weekly"
+   open-pull-requests-limit: 10
+   commit-message:
+    prefix: "npm"
+    include: "scope"

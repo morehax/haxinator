@@ -1,0 +1,15 @@
+# Exclude dirs/patterns you don’t want scanned:
+exclude:
+  - .chglog
+  - .devcontainer
+  - .github
+  - docs/
+# Only report MEDIUM+ severity and CONFIDENTIAL+ confidence
+severity:
+  - MEDIUM
+confidence:
+  - MEDIDENTIAL
+# Skip rules that you’ve already assessed as false-positives
+skips:
+  - B101  # assert_used
+  - B102  # exec_used

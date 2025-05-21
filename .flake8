@@ -1,0 +1,12 @@
+[flake8]
+# recurse into subdirs by default; lint *.py only
+max-line-length = 88
+extend-ignore = E203, W503
+exclude =
+    .git,
+    .devcontainer,
+    __pycache__
+
+[flake8:format]
+format = sarif
+output-file = flake8-report.sarif
