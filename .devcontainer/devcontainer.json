@@ -21,7 +21,8 @@
 		"ghcr.io/devcontainers/features/git-lfs:1": {},
 		"ghcr.io/prulloac/devcontainer-features/gitlint:1": {},
 		"ghcr.io/devcontainers-extra/features/gitty:1": {},
-		"ghcr.io/devcontainers/features/node:1": {}
+		"ghcr.io/devcontainers/features/node:1": {},
+		"ghcr.io/michidk/devcontainers-features/typos:1": {}
 	},
 	"customizations": {
 		"vscode": {
@@ -34,6 +35,7 @@
 				"idleberg.openvpn",
 				"ryu1kn.partial-diff",
 				"mhutchie.git-graph",
+				"streetsidesoftware.code-spell-checker",
 				"ms-azuretools.vscode-containers"
 			]
 		}
@@ -43,7 +45,7 @@
 	// "forwardPorts": [],
 
 	// Use 'postCreateCommand' to run commands after the container is created.
-	"postCreateCommand": "sudo apt-get install -y openvpn php-codesniffer apt-cacher-ng",
+	"postCreateCommand": "sudo apt-get update && sudo DEBIAN_FRONTEND=noninteractive apt-get install -y openvpn php-codesniffer apt-cacher-ng && sudo apt autoclean",
 
 	// Configure tool-specific properties.
 	// "customizations": {},
