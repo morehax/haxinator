@@ -26,7 +26,9 @@ esac
 
 # -------- Runtime detection --------------------------------------------------
 root_fs_type=$(awk '$2=="/"{print $3; exit}' /proc/mounts)
-is_ro() [[ $root_fs_type == overlay ]]
+is_ro() {
+  [[ $root_fs_type == overlay ]]
+}
 current_state() { is_ro && echo "ro" || echo "rw"; }
 
 # -------- Status only --------------------------------------------------------

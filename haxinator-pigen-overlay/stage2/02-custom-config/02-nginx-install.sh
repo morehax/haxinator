@@ -51,7 +51,7 @@ export PHP_SOCK
 export TARGET_HOSTNAME
 
 red_echo "==> Writing trim nginx.conf …"
-cp /etc/nginx/nginx.conf /etc/nginx/nginx.conf.bak.$(date +%s)
+cp /etc/nginx/nginx.conf /etc/nginx/nginx.conf.bak."$(date +%s)"
 cat >/etc/nginx/nginx.conf <<'NG'
 user www-data;
 worker_processes 1;
@@ -104,6 +104,6 @@ red_echo "==> Disabling rarely-needed PHP extensions (xml*, opcache, pdo_mysql, 
 phpdismod -v "$PHP_VER" -s fpm xmlreader xmlwriter xmlrpc opcache pdo_mysql mysqli >/dev/null || true
 
 red_echo "==> Enabling Nginx & PHP-FPM …"
-systemctl enable php${PHP_VER}-fpm
+systemctl enable "php${PHP_VER}-fpm"
 systemctl enable nginx
 exit 0

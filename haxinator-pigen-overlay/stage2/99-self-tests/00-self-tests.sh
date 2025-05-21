@@ -56,17 +56,17 @@ verify_image() {
     # Root – PHP-FPM
     PHP_VER=$(find /etc/php -maxdepth 1 -mindepth 1 -type d -printf '%f\n' | sort -V | tail -n1 || true)
     if [ -n "$PHP_VER" ]; then
-        [ -f /etc/php/$PHP_VER/fpm/pool.d/www.conf ] && echo "$(green_check) PHP-FPM pool config exists" || echo "$(red_x) PHP-FPM pool config missing"
-        [ -f /etc/php/$PHP_VER/fpm/php.ini ] && echo "$(green_check) php.ini exists" || echo "$(red_x) php.ini missing"
-        grep -q "pm = ondemand" /etc/php/$PHP_VER/fpm/pool.d/www.conf && echo "$(green_check) PHP-FPM ondemand" || echo "$(red_x) PHP-FPM not ondemand"
-        grep -q "memory_limit = 64M" /etc/php/$PHP_VER/fpm/php.ini && echo "$(green_check) PHP memory limit 64M" || echo "$(red_x) PHP memory limit incorrect"
+        [ -f "/etc/php/${PHP_VER}/fpm/pool.d/www.conf" ] && echo "$(green_check) PHP-FPM pool config exists" || echo "$(red_x) PHP-FPM pool config missing"
+        [ -f "/etc/php/${PHP_VER}/fpm/php.ini" ] && echo "$(green_check) php.ini exists" || echo "$(red_x) php.ini missing"
+        grep -q "pm = ondemand" "/etc/php/${PHP_VER}/fpm/pool.d/www.conf" && echo "$(green_check) PHP-FPM ondemand" || echo "$(red_x) PHP-FPM not ondemand"
+        grep -q "memory_limit = 64M" "/etc/php/${PHP_VER}/fpm/php.ini" && echo "$(green_check) PHP memory limit 64M" || echo "$(red_x) PHP memory limit incorrect"
     else
         echo "$(red_x) PHP not installed"
     fi
 
     # Root – services
     [ -L /etc/systemd/system/multi-user.target.wants/nginx.service ] && echo "$(green_check) nginx.service enabled" || echo "$(red_x) nginx.service not enabled"
-    [ -L /etc/systemd/system/multi-user.target.wants/php${PHP_VER}-fpm.service ] && echo "$(green_check) php${PHP_VER}-fpm.service enabled" || echo "$(red_x) php${PHP_VER}-fpm.service not enabled"
+    [ -L "/etc/systemd/system/multi-user.target.wants/php${PHP_VER}-fpm.service" ] && echo "$(green_check) php${PHP_VER}-fpm.service enabled" || echo "$(red_x) php${PHP_VER}-fpm.service not enabled"
     [ -f /etc/systemd/system/bluetooth_pair.service ] && echo "$(green_check) bluetooth_pair.service exists" || echo "$(red_x) bluetooth_pair.service missing"
 
     # Root – NetworkManager / dnsmasq
