@@ -58,6 +58,7 @@ green_echo "Loop device created: $LOOPDEV"
 #------------------------------------------------------------------------------
 # 4. Check partition layout dynamically (instead of hardcoding /dev/loop0p1/p2)
 #------------------------------------------------------------------------------
+# shellcheck disable=SC2207
 partitions=( $(ls "${LOOPDEV}"p* 2>/dev/null) )
 if [[ ${#partitions[@]} -lt 2 ]]; then
     red_echo "Error: Could not detect at least two partitions on $LOOPDEV"
