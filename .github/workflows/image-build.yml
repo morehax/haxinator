@@ -25,6 +25,11 @@ concurrency:
 # TODO:
 # - Use super-linter/super-linter
 # - Use cache for buildx to speed up builds
+# - Check if building on Mac is faster
+# - Try checkov
+# - Get and upload SARIF
+# - Build docs in parallel with building the image to give in assets
+# - Create sha256sum of the files if not already created
 
 jobs:
   lint:
