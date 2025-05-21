@@ -2,6 +2,7 @@
 set -euo pipefail
 
 # Source common functions
+# shellcheck source=common-functions.sh
 source "/common-functions.sh"
 
 red_echo "==> Setting up nginx-light + php-fpm + openssl"

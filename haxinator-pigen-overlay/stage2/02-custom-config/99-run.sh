@@ -2,6 +2,7 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(dirname "$0")"
+# shellcheck source=common-functions.sh
 source "${SCRIPT_DIR}/common-functions.sh"
 
 green_echo "==> Removing apt proxy file from final image..."

@@ -4,6 +4,7 @@ set -euo pipefail
 SCRIPT_DIR="$(dirname "$0")"
 
 # Source common functions
+# shellcheck source=common-functions.sh
 source "/common-functions.sh"
 
 red_echo "==> Installing interactive packages"

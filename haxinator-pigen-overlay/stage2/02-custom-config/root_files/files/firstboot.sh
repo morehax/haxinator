@@ -45,7 +45,7 @@ die() { echo "ERROR: $*" >&2; exit 1; }
 if [[ ! -r $CONF_FILE ]]; then
     die "Cannot read config file $CONF_FILE (does it exist, correct perms 600?)"
 fi
-# shellcheck source=/root/.env
+# shellcheck source=haxinator-pigen-overlay/stage2/02-custom-config/root_files/files/env-secrets.template
 source "$CONF_FILE"
 
 # ------------------------------------------------------------------

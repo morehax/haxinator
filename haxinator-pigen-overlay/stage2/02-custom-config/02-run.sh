@@ -2,6 +2,7 @@
 
 # Source common functions
 SCRIPT_DIR="$(dirname "$0")"
+# shellcheck source=common-functions.sh
 source "${SCRIPT_DIR}/common-functions.sh"
 
 # Install required packages

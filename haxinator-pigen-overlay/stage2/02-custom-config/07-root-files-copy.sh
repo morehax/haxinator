@@ -3,6 +3,7 @@ set -euo pipefail
 [[ $EUID -eq 0 ]] || { red_echo "Run as root"; exit 1; }
 
 # Source common functions
+# shellcheck source=common-functions.sh
 source "/common-functions.sh"
 
 green_echo "==> Starting file copy operations..."
