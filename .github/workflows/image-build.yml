@@ -36,7 +36,7 @@ jobs:
         name: Shellcheck scripts
         run: |
           SHELL_FILES="$(find -iname '*.sh')"
-          shellcheck -S warning -x -a ${SHELL_FILES} >/dev/null
+          shellcheck -S warning -x -a ${SHELL_FILES}
 
           ## Display everything
           #(shellcheck -x -a ${SHELL_FILES} || true)
