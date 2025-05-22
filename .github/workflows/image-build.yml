@@ -34,9 +34,10 @@ concurrency:
 # - Create sha256sum of the files if not already created
 
 jobs:
-  lint:
+  lint-sarif:
+    name: Lint -> SARIF -> upload
     runs-on: ubuntu-latest
-    timeout-minutes: 2
+    timeout-minutes: 5
     permissions:
       contents: read
       security-events: write
@@ -45,55 +46,28 @@ jobs:
         name: Git Checkout
         uses: actions/checkout@v4
       -
-        name: Run checkov (Dockerfile) -> SARIF
+        name: Checkov
         continue-on-error: true
         uses: bridgecrewio/checkov-action@v12
         with:
           output_format: sarif
           output_file_path: checkov.sarif
+          framework: dockerfile
       -
-        name: Upload Checkov SARIF report
-        uses: github/codeql-action/upload-sarif@v3
-        if: ${{ hashFiles('checkov.sarif') != '' }}
-        with:
-          sarif_file: checkov.sarif
-      -
-        name: Display checkov (Dockerfile)  results
-        uses: bridgecrewio/checkov-action@v12
-        with:
-          output_format: cli
-          output_file_path: console
-      -
-        name: Run ShellCheck Analysis
-        uses: ludeeus/action-shellcheck@master
+        name: Shellcheck
+        continue-on-error: true
+        uses: reactive-firewall/shellcheck-scan@v1
         env:
           SHELLCHECK_OPTS: -x -a
         with:
           severity: 'warning'
       -
-        name: Shellcheck -> SARIF
-        continue-on-error: true
-        uses: reactive-firewall/shellcheck-scan@v1
-        with:
-          severity: 'warning'
-      -
-        name: Upload Shellcheck SARIF report
-        uses: github/codeql-action/upload-sarif@v3
-        if: ${{ hashFiles('flake8-report.sarif') != '' }}
-        with:
-          sarif_file: shellcheck.sarif
-      -
-        name: Lint markdown files
-        uses: articulate/actions-markdownlint@v1
-      -
-        name: Lint php files
-        run: |
-          find . -name "*.php" -exec php -l {} \;
-      -
-        name: Lint python scripts
+        name: Python
         continue-on-error: true
         shell: bash
         run: |
+          set +e
+
           # 1. Install everything against built-in Python
           python3 -m pip install --upgrade pip
           python3 -m pip install \
@@ -102,51 +76,87 @@ jobs:
             bandit bandit-sarif
 
           # 2. Flake8
-          echo "⎯⎯⎯ Flake8: console output ⎯⎯⎯"
-          flake8 .
-
-          echo "⎯⎯⎯ Flake8: exporting SARIF ⎯⎯⎯"
+          echo "⎯⎯⎯ Flake8 ⎯⎯⎯"
           flake8 . --format=sarif --output-file=flake8-report.sarif
 
           # 3. Pylint
-          echo "⎯⎯⎯ Pylint: console output ⎯⎯⎯"
-          pylint **/*.py
-
-          echo "⎯⎯⎯ Pylint: exporting SARIF ⎯⎯⎯"
-          pylint --recursive=y **/*.py --output-format=json > pylint-report.json
+          echo "⎯⎯⎯ Pylint ⎯⎯⎯"
+          pylint --recursive=y ./**/*.py --output-format=json > pylint-report.json
           python3 -m lintrunner_adapters to-sarif \
             pylint-report.json pylint-report.sarif
 
           # 4. Bandit
-          echo "⎯⎯⎯ Bandit: console output ⎯⎯⎯"
-          bandit -r .
-
-          echo "⎯⎯⎯ Bandit: exporting SARIF ⎯⎯⎯"
+          echo "⎯⎯⎯ Bandit ⎯⎯⎯"
           bandit -r . --format=sarif --output-file=bandit-report.sarif
 
+          set -e
       -
-        name: Upload Flake8 SARIF report
+        name: Upload all SARIF reports
         uses: github/codeql-action/upload-sarif@v3
-        if: ${{ hashFiles('flake8-report.sarif') != '' }}
         with:
-          sarif_file: flake8-report.sarif
+          sarif_file: .
+
+
+  lint-display:
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    permissions:
+      contents: read
+    steps:
       -
-        name: Upload pylint SARIF report
-        uses: github/codeql-action/upload-sarif@v3
-        if: ${{ hashFiles('pylint-report.sarif') != '' }}
-        with:
-          sarif_file: pylint-report.sarif
+        name: Git Checkout
+        uses: actions/checkout@v4
       -
-        name: Upload Bandit SARIF report
-        uses: github/codeql-action/upload-sarif@v3
-        if: ${{ hashFiles('bandit-report.sarif') != '' }}
+        name: Display checkov (Dockerfile) analysis
+        uses: bridgecrewio/checkov-action@v12
         with:
-          sarif_file: bandit-report.sarif
+          output_format: cli
+          output_file_path: console
+          framework: dockerfile
+      -
+        name: Display ShellCheck analysis
+        uses: ludeeus/action-shellcheck@master
+        env:
+          SHELLCHECK_OPTS: -x -a
+        with:
+          severity: 'warning'
+      -
+        name: Display markdown lint analysis
+        uses: articulate/actions-markdownlint@v1
+      -
+        name: Display PHP lint analysis
+        run: |
+          find . -name "*.php" -exec php -l {} \;
+      -
+        name: Display Python lint analysis
+        continue-on-error: true
+        shell: bash
+        run: |
+          set +e
+
+          # 1. Install everything against built-in Python
+          python3 -m pip install --upgrade pip
+          python3 -m pip install \
+            flake8 pylint bandit
+
+          # 2. Flake8
+          echo "⎯⎯⎯ Flake8: ⎯⎯⎯"
+          flake8 .
+
+          # 3. Pylint
+          echo "⎯⎯⎯ Pylint: ⎯⎯⎯"
+          pylint ./**/*.py
+
+          # 4. Bandit
+          echo "⎯⎯⎯ Bandit: ⎯⎯⎯"
+          bandit -r .
+
+          set -e
 
   docker-image-builder:
     runs-on: ubuntu-24.04-arm
     timeout-minutes: 10
-    needs: lint
+    needs: lint-display
 
     steps:
       -
