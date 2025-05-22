@@ -41,7 +41,7 @@ jobs:
   devcontainer:
     runs-on: ubuntu-24.04
     needs:
-      - docker-build
+      - lint
     timeout-minutes: 8
     steps:
       -
