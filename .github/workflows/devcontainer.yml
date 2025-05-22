@@ -1,0 +1,56 @@
+# yamllint disable-line rule:document-start
+name: Devcontainer build
+
+# yamllint disable-line rule:truthy
+on:
+  push:
+    branches:
+      - 'main'
+    paths:
+      - '.devcontainer'
+      - '.github/workflows/devcontainer.yml'
+  schedule:
+    - cron: '30 3 1 * *'
+  workflow_dispatch:
+  pull_request:
+    branches:
+      - 'main'
+    paths:
+      - '.devcontainer'
+      - '.github/workflows/devcontainer.yml'
+
+jobs:
+  lint:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      -
+        name: Git Checkout
+        uses: actions/checkout@v4
+      -
+        name: Lint shell script
+        uses: hadolint/hadolint-action@v3.1.0
+        run:
+          SHELL_FILES="$(find .devcontainer/ -iname '*.sh')"
+          shellcheck -S warning -x -a ${SHELL_FILES}
+      -
+        name: Lint devcontainer.json
+        run: |
+          npm install -g @devcontainers/cli
+          devcontainer validate .devcontainer/devcontainer.json
+
+  devcontainer:
+    runs-on: ubuntu-24.04
+    needs:
+      - docker-build
+    timeout-minutes: 8
+    steps:
+      -
+        name: Git Checkout
+        uses: actions/checkout@v4
+      -
+        name: Install devcontainer CLI
+        run: npm install -g @devcontainers/cli
+      -
+        name: Build the devcontainer
+        run: devcontainer build --workspace-folder .
