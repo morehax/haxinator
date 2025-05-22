@@ -227,6 +227,10 @@ jobs:
           # 2. sha256sum
           sha256sum ./output/* | tee SHA256
           mv SHA256 output/
+
+          # 3. Keep file list in variable
+          RELEASE_FILES="$(ls -1 ./output/*)"
+          echo "RELEASE_FILES=${RELEASE_FILES}" >> "${GITHUB_ENV}"
       -
         name: Generate tag
         id: releasetag
@@ -238,7 +242,7 @@ jobs:
         id: release_images
         uses: softprops/action-gh-release@v2
         with:
-          files: output/*
+          files: ${{ steps.processfilenames.outputs.RELEASE_FILES }}
           body: Images from ${{ github.ref_name }} - commit ${{ github.sha }}
           draft: false
           name: ${{ github.sha }}
