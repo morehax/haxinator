@@ -1,3 +1,8 @@
+#checkov:skip=CKV_DOCKER_2: one time use so HEALTHCHECK not needed
+#checkov:skip=CKV_DOCKER_3: building image requires root
+#checkov:skip=CKV2_DOCKER_4: need to look into it because pip is not used with trusted-host option
+#checkov:skip=CKV2_DOCKER_9: not RPM-based distro
+#checkov:skip=CKV2_DOCKER_15: not RPM-based distro
 FROM ubuntu:24.04
 
 # Set non-interactive mode for apt
