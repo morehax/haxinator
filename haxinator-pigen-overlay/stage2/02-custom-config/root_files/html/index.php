@@ -16,6 +16,12 @@ require_once __DIR__ . '/config/config.php';
 require_once __DIR__ . '/auth/Auth.php';
 require_once __DIR__ . '/network/Network.php';
 require_once __DIR__ . '/network/Tunnel.php';
+
+// Define CLI_MODE as true to prevent SSH2Tunnel.php from outputting its HTML
+define('CLI_MODE', true);
+require_once __DIR__ . "/network/SSH2Tunnel.php";
+require_once __DIR__ . "/network/SSH2TunnelAdapter.php";
+
 require_once __DIR__ . '/data/Data.php';
 require_once __DIR__ . '/data/Util.php';
 require_once __DIR__ . '/ui/UI.php';
@@ -33,7 +39,7 @@ $message = '';
 $error = '';
 
 // Create tunnel instance to handle SSH tunnel operations
-$tunnel = new Tunnel();
+$tunnel = new SSH2TunnelAdapter();
 $tunnel_status = null;
 
 // Handle SSH tunnel operations
@@ -53,13 +59,91 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['tunnel_action'])) {
     
     switch ($_POST['tunnel_action']) {
         case 'start_tunnel':
-            $result = $tunnel->startTunnel($ssh_username, $ssh_ip, $ssh_port);
-            if (strpos($result, 'successfully') !== false) {
-                $message = $result;
+            // If we have the additional SSH2 parameters, use them
+            if (isset($_POST['tunnel_type']) && isset($_POST['listen_port'])) {
+                // Create connection first if needed
+                $connection_name = "{$ssh_username}@{$ssh_ip}:{$ssh_port}";
+                $tunnel_type = $_POST['tunnel_type'];
+                $listen_port = $_POST['listen_port'];
+                $remote_host = isset($_POST['remote_host']) ? $_POST['remote_host'] : '';
+                $remote_port = isset($_POST['remote_port']) ? $_POST['remote_port'] : '';
+                
+                // Get connection details
+                if (function_exists('loadJsonFile')) {
+                    $connections = loadJsonFile(dirname($tunnel->getPidFilePath()) . '/ssh_connections.json');
+                    
+                    if (!isset($connections[$connection_name])) {
+                        $connections[$connection_name] = [
+                            'host' => $ssh_ip,
+                            'port' => $ssh_port,
+                            'username' => $ssh_username,
+                            'password' => '',
+                            'key' => 'id_rsa',
+                            'created' => date('Y-m-d H:i:s'),
+                            'modified' => date('Y-m-d H:i:s')
+                        ];
+                        
+                        saveJsonFile(dirname($tunnel->getPidFilePath()) . '/ssh_connections.json', $connections);
+                    }
+                    
+                    // Call SSH2 startTunnelProcess function through adapter
+                    $tunnelData = [
+                        'connection_name' => $connection_name,
+                        'tunnel_type' => $tunnel_type,
+                        'listen_port' => $listen_port,
+                        'remote_host' => $remote_host,
+                        'remote_port' => $remote_port
+                    ];
+                    
+                    // Use startTunnelProcess directly instead of handleTunnelCreate
+                    $result = startTunnelProcess(
+                        $connection_name,
+                        $tunnel_type,
+                        $listen_port,
+                        $remote_host,
+                        $remote_port
+                    );
+                    
+                    if ($result['success']) {
+                        // Save the tunnel info to tunnels.json
+                        $tunnels = loadJsonFile($GLOBALS['tunnelsFile']);
+                        $tunnelId = time() . '-' . rand(1000, 9999);
+                        
+                        $tunnels[$tunnelId] = [
+                            'pid'            => $result['pid'],
+                            'connectionName' => $connection_name,
+                            'type'           => $tunnel_type,
+                            'listenPort'     => $listen_port,
+                            'remoteHost'     => $remote_host,
+                            'remotePort'     => $remote_port,
+                            'startedAt'      => date('Y-m-d H:i:s'),
+                        ];
+                        
+                        saveJsonFile($GLOBALS['tunnelsFile'], $tunnels);
+                        $message = "Tunnel started successfully with PID {$result['pid']} (ID $tunnelId).";
+                    } else {
+                        $error = $result['message'];
+                    }
+                } else {
+                    // Fall back to standard tunnel start
+                    $result = $tunnel->startTunnel($ssh_username, $ssh_ip, $ssh_port);
+                    if (strpos($result, 'successfully') !== false) {
+                        $message = $result;
+                    } else {
+                        $error = $result;
+                    }
+                }
             } else {
-                $error = $result;
+                // Standard tunnel start
+                $result = $tunnel->startTunnel($ssh_username, $ssh_ip, $ssh_port);
+                if (strpos($result, 'successfully') !== false) {
+                    $message = $result;
+                } else {
+                    $error = $result;
+                }
             }
             break;
+            
         case 'stop_tunnel':
             $result = $tunnel->stopTunnel();
             if (strpos($result, 'successfully') !== false) {
@@ -68,12 +152,112 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['tunnel_action'])) {
                 $error = $result;
             }
             break;
+            
+        case 'stop_specific':
+            if (isset($_POST['tunnel_id'])) {
+                $result = $tunnel->stopTunnelById($_POST['tunnel_id']);
+                if ($result['success']) {
+                    $message = $result['message'];
+                } else {
+                    $error = $result['message'];
+                }
+            } else {
+                $error = "No tunnel ID specified";
+            }
+            break;
+            
         case 'regenerate_ssh_keys':
             $result = $tunnel->regenerateSshKeys();
             if ($result['status']) {
                 $message = $result['message'];
             } else {
                 $error = $result['message'];
+            }
+            break;
+            
+        case 'upload_key':
+            if (isset($_FILES['ssh_key']) && function_exists('handleKeyUpload')) {
+                $result = handleKeyUpload($_FILES['ssh_key']);
+                if ($result['success']) {
+                    $message = $result['message'];
+                } else {
+                    $error = $result['message'];
+                }
+            } else {
+                $error = "No key file uploaded or function not available";
+            }
+            break;
+            
+        case 'delete_key':
+            if (isset($_POST['key_name']) && function_exists('handleKeyDelete')) {
+                $result = handleKeyDelete($_POST['key_name']);
+                if ($result['success']) {
+                    $message = $result['message'];
+                } else {
+                    $error = $result['message'];
+                }
+            } else {
+                $error = "Invalid key name or function not available";
+            }
+            break;
+            
+        case 'save_connection':
+            if (isset($_POST['connection_name']) && isset($_POST['host']) && 
+                isset($_POST['port']) && isset($_POST['username']) && 
+                function_exists('handleConnectionAdd')) {
+                    
+                $result = handleConnectionAdd($_POST);
+                if ($result['success']) {
+                    $message = $result['message'];
+                } else {
+                    $error = $result['message'];
+                }
+            } else {
+                $error = "Missing connection details or function not available";
+            }
+            break;
+            
+        case 'delete_connection':
+            if (isset($_POST['connection_name']) && function_exists('handleConnectionDelete')) {
+                $result = handleConnectionDelete($_POST['connection_name']);
+                if ($result['success']) {
+                    $message = $result['message'];
+                } else {
+                    $error = $result['message'];
+                }
+            } else {
+                $error = "Invalid connection name or function not available";
+            }
+            break;
+            
+        case 'test_connection':
+            if (!empty($ssh_username) && !empty($ssh_ip) && function_exists('handleConnectionTest')) {
+                $connection_name = "{$ssh_username}@{$ssh_ip}:{$ssh_port}";
+                
+                // Create temporary connection for testing
+                if (function_exists('loadJsonFile') && function_exists('handleConnectionAdd')) {
+                    $connections = loadJsonFile(dirname($tunnel->getPidFilePath()) . '/ssh_connections.json');
+                    
+                    if (!isset($connections[$connection_name])) {
+                        handleConnectionAdd([
+                            'connection_name' => $connection_name,
+                            'host' => $ssh_ip,
+                            'port' => $ssh_port,
+                            'username' => $ssh_username,
+                            'key' => 'id_rsa',
+                            'password' => ''
+                        ]);
+                    }
+                }
+                
+                $result = handleConnectionTest($connection_name);
+                if ($result['success']) {
+                    $message = $result['message'];
+                } else {
+                    $error = $result['message'];
+                }
+            } else {
+                $error = "Missing connection details or function not available";
             }
             break;
     }

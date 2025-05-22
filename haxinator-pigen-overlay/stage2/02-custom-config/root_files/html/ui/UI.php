@@ -768,37 +768,201 @@ function renderMainPage($message, $error, $wifi_list, $saved_connections, $iface
                   <div class="ssh-config-inputs mb-3">
                     <input type="hidden" name="tunnel_action" id="tunnel_action" value="">
                     <?= CSRFProtection::tokenField() ?>
-                    <div class="me-2">
-                      <label for="ssh_username">Username:</label>
-                      <input type="text" id="ssh_username" name="ssh_username" class="form-control" 
-                             value="<?= isset($_SESSION['ssh_tunnel']['username']) ? htmlspecialchars($_SESSION['ssh_tunnel']['username']) : (isset($_POST['ssh_username']) ? htmlspecialchars($_POST['ssh_username']) : '') ?>" 
-                             placeholder="e.g., root">
+                    
+                    <!-- Connection Name field (for SSH2) -->
+                    <div class="mb-3">
+                      <label for="connection_name">Connection Name:</label>
+                      <div class="d-flex">
+                        <input type="text" id="connection_name" name="connection_name" class="form-control" 
+                               value="<?= isset($_SESSION['ssh_tunnel']['username']) && isset($_SESSION['ssh_tunnel']['ip']) ? 
+                                      htmlspecialchars($_SESSION['ssh_tunnel']['username'] . '@' . $_SESSION['ssh_tunnel']['ip']) : '' ?>" 
+                               placeholder="e.g., myserver" readonly>
+                        <button type="button" class="btn btn-outline-secondary ms-2" data-bs-toggle="modal" data-bs-target="#sshConnectionModal">
+                          <i class="bi bi-list"></i>
+                        </button>
+                      </div>
+                      <small class="text-muted">This will be automatically generated from the server details below</small>
                     </div>
-                    <div class="me-2">
-                      <label for="ssh_ip">IP Address:</label>
-                      <input type="text" id="ssh_ip" name="ssh_ip" class="form-control" 
-                             value="<?= isset($_SESSION['ssh_tunnel']['ip']) ? htmlspecialchars($_SESSION['ssh_tunnel']['ip']) : (isset($_POST['ssh_ip']) ? htmlspecialchars($_POST['ssh_ip']) : '') ?>" 
-                             placeholder="e.g., 192.168.194.2">
+                    
+                    <div class="row">
+                      <div class="col-md-4 mb-3">
+                        <label for="ssh_username">Username:</label>
+                        <input type="text" id="ssh_username" name="ssh_username" class="form-control" 
+                               value="<?= isset($_SESSION['ssh_tunnel']['username']) ? htmlspecialchars($_SESSION['ssh_tunnel']['username']) : (isset($_POST['ssh_username']) ? htmlspecialchars($_POST['ssh_username']) : '') ?>" 
+                               placeholder="e.g., root">
+                      </div>
+                      <div class="col-md-5 mb-3">
+                        <label for="ssh_ip">IP Address/Hostname:</label>
+                        <input type="text" id="ssh_ip" name="ssh_ip" class="form-control" 
+                               value="<?= isset($_SESSION['ssh_tunnel']['ip']) ? htmlspecialchars($_SESSION['ssh_tunnel']['ip']) : (isset($_POST['ssh_ip']) ? htmlspecialchars($_POST['ssh_ip']) : '') ?>" 
+                               placeholder="e.g., 192.168.194.2">
+                      </div>
+                      <div class="col-md-3 mb-3">
+                        <label for="ssh_port">Port:</label>
+                        <input type="number" id="ssh_port" name="ssh_port" class="form-control" 
+                               value="<?= isset($_SESSION['ssh_tunnel']['port']) ? htmlspecialchars($_SESSION['ssh_tunnel']['port']) : (isset($_POST['ssh_port']) ? htmlspecialchars($_POST['ssh_port']) : '22') ?>" 
+                               placeholder="22" min="1" max="65535">
+                      </div>
                     </div>
-                    <div class="me-2">
-                      <label for="ssh_port">Port:</label>
-                      <input type="number" id="ssh_port" name="ssh_port" class="form-control" 
-                             value="<?= isset($_SESSION['ssh_tunnel']['port']) ? htmlspecialchars($_SESSION['ssh_tunnel']['port']) : (isset($_POST['ssh_port']) ? htmlspecialchars($_POST['ssh_port']) : '22') ?>" 
-                             placeholder="22" min="1" max="65535">
+                    
+                    <!-- Key Selection field (for SSH2) -->
+                    <div class="row">
+                      <div class="col-md-12 mb-3">
+                        <label for="key">SSH Key:</label>
+                        <select name="key" id="key" class="form-control">
+                          <?php
+                          // Get list of SSH keys
+                          $keys = [];
+                          $keysDir = '/var/www/.ssh';
+                          if (is_dir($keysDir)) {
+                              $keys = array_filter(scandir($keysDir), function($f) {
+                                  return $f !== '.' && $f !== '..' && substr($f, -4) !== '.pub';
+                              });
+                          }
+                          ?>
+                          <option value="id_rsa">Default Key (id_rsa)</option>
+                          <?php foreach ($keys as $keyFile): ?>
+                            <?php if ($keyFile !== 'id_rsa'): ?>
+                              <option value="<?= htmlspecialchars($keyFile); ?>">
+                                <?= htmlspecialchars($keyFile); ?>
+                              </option>
+                            <?php endif; ?>
+                          <?php endforeach; ?>
+                        </select>
+                      </div>
+                    </div>
+                    
+                    <!-- Tunnel Type and Port (for SSH2) -->
+                    <div class="row">
+                      <div class="col-md-6 mb-3">
+                        <label for="tunnel_type">Tunnel Type:</label>
+                        <select name="tunnel_type" id="tunnel_type" class="form-control">
+                          <option value="D" selected>Dynamic (SOCKS Proxy)</option>
+                          <option value="L">Local Port Forward</option>
+                          <option value="R">Remote Port Forward</option>
+                        </select>
+                      </div>
+                      <div class="col-md-6 mb-3">
+                        <label for="listen_port">Listen Port:</label>
+                        <input type="number" name="listen_port" id="listen_port" class="form-control" value="8080" min="1" max="65535">
+                      </div>
+                    </div>
+                    
+                    <!-- Remote Host/Port fields (for SSH2) -->
+                    <div id="remote-settings" class="d-none row">
+                      <div class="col-md-6 mb-3">
+                        <label for="remote_host">Remote Host:</label>
+                        <input type="text" name="remote_host" id="remote_host" class="form-control" value="127.0.0.1" placeholder="e.g., 127.0.0.1">
+                      </div>
+                      <div class="col-md-6 mb-3">
+                        <label for="remote_port">Remote Port:</label>
+                        <input type="number" name="remote_port" id="remote_port" class="form-control" value="80" min="1" max="65535">
+                      </div>
                     </div>
                   </div>
+                  
                   <div class="controls d-flex gap-2 mb-3">
-                    <button type="button" id="start-tunnel-btn" class="btn start-tunnel-btn" 
+                    <button type="button" id="start-tunnel-btn" class="btn btn-primary start-tunnel-btn" 
                             <?= isset($tunnel_status) && $tunnel_status['status'] == 'Running' ? 'disabled' : '' ?>>
                       <i class="bi bi-play-circle me-1"></i> Start Tunnel
                     </button>
-                    <button type="button" id="stop-tunnel-btn" class="btn stop-tunnel-btn" 
+                    <button type="button" id="stop-tunnel-btn" class="btn btn-danger stop-tunnel-btn" 
                             <?= isset($tunnel_status) && $tunnel_status['status'] != 'Running' ? 'disabled' : '' ?>>
                       <i class="bi bi-stop-circle me-1"></i> Stop Tunnel
+                    </button>
+                    <button type="button" id="test-tunnel-btn" class="btn btn-outline-secondary"
+                            <?= empty($_SESSION['ssh_tunnel']['username']) || empty($_SESSION['ssh_tunnel']['ip']) ? 'disabled' : '' ?>>
+                      <i class="bi bi-check-circle me-1"></i> Test Connection
+                    </button>
+                    <button type="button" id="upload-key-btn" class="btn btn-outline-secondary ms-auto" data-bs-toggle="modal" data-bs-target="#uploadKeyModal">
+                      <i class="bi bi-upload me-1"></i> Upload Key
                     </button>
                   </div>
                 </div>
               </form>
+              
+              <!-- Active Tunnels Section (from SSH2) -->
+              <div class="active-tunnels mb-4">
+                <h5 class="mb-2">Active Tunnels</h5>
+                <?php
+                // Get tunnel statuses from SSH2 implementation
+                global $connectionsFile, $tunnelsFile;
+                $tunnels = [];
+                
+                if (function_exists('getTunnelStatuses')) {
+                    $tunnels = getTunnelStatuses();
+                }
+                
+                if (empty($tunnels)): 
+                ?>
+                  <div class="alert alert-info">
+                    <i class="bi bi-info-circle me-2"></i>
+                    No active tunnels found.
+                  </div>
+                <?php else: ?>
+                  <div class="table-responsive">
+                    <table class="table table-sm table-striped table-bordered">
+                      <thead>
+                        <tr>
+                          <th>Connection</th>
+                          <th>Type</th>
+                          <th>Listen Port</th>
+                          <th>Remote</th>
+                          <th>Started</th>
+                          <th>Status</th>
+                          <th>Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <?php foreach ($tunnels as $id => $tunnel): ?>
+                          <tr>
+                            <td><?= htmlspecialchars($tunnel['connectionName']) ?></td>
+                            <td>
+                              <?php 
+                                $tunnelTypeDesc = '';
+                                switch($tunnel['type']) {
+                                  case 'D': $tunnelTypeDesc = 'SOCKS'; break;
+                                  case 'L': $tunnelTypeDesc = 'Local'; break;
+                                  case 'R': $tunnelTypeDesc = 'Remote'; break;
+                                }
+                                echo $tunnelTypeDesc;
+                              ?>
+                            </td>
+                            <td><?= htmlspecialchars($tunnel['listenPort']) ?></td>
+                            <td>
+                              <?php 
+                                if ($tunnel['type'] !== 'D' && !empty($tunnel['remoteHost']) && !empty($tunnel['remotePort'])) {
+                                  echo htmlspecialchars($tunnel['remoteHost'] . ':' . $tunnel['remotePort']);
+                                } else {
+                                  echo '-';
+                                }
+                              ?>
+                            </td>
+                            <td><?= htmlspecialchars($tunnel['startedAt']) ?></td>
+                            <td>
+                              <?php if ($tunnel['isRunning']): ?>
+                                <span class="badge bg-success">Running</span>
+                              <?php else: ?>
+                                <span class="badge bg-danger">Stopped</span>
+                              <?php endif; ?>
+                            </td>
+                            <td>
+                              <form method="post">
+                                <input type="hidden" name="tunnel_action" value="stop_specific">
+                                <input type="hidden" name="tunnel_id" value="<?= htmlspecialchars($id) ?>">
+                                <?= CSRFProtection::tokenField() ?>
+                                <button type="submit" class="btn btn-sm btn-danger">
+                                  <i class="bi bi-x-circle"></i> Stop
+                                </button>
+                              </form>
+                            </td>
+                          </tr>
+                        <?php endforeach; ?>
+                      </tbody>
+                    </table>
+                  </div>
+                <?php endif; ?>
+              </div>
               
               <!-- Debug Information -->
               <div class="ssh-debug">
@@ -955,6 +1119,195 @@ function renderMainPage($message, $error, $wifi_list, $saved_connections, $iface
             </div>
             <p class="mb-0">Establishing SSH tunnel connection...</p>
             <small class="text-muted">This may take a few moments</small>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- SSH Connection Modal -->
+    <div class="modal fade" id="sshConnectionModal" tabindex="-1" aria-labelledby="sshConnectionModalLabel" aria-hidden="true">
+      <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="sshConnectionModalLabel">Saved SSH Connections</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <?php
+            // Get SSH connections from SSH2 implementation
+            $connections = [];
+            if (function_exists('loadJsonFile')) {
+                global $connectionsFile;
+                $connections = loadJsonFile($connectionsFile);
+            }
+            
+            if (empty($connections)): 
+            ?>
+              <div class="alert alert-info">
+                <i class="bi bi-info-circle me-2"></i>
+                No saved SSH connections found. Create a new connection by entering details in the form.
+              </div>
+            <?php else: ?>
+              <div class="table-responsive">
+                <table class="table table-hover table-bordered">
+                  <thead>
+                    <tr>
+                      <th>Name</th>
+                      <th>Host</th>
+                      <th>Port</th>
+                      <th>Username</th>
+                      <th>Key</th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <?php foreach ($connections as $name => $conn): ?>
+                      <tr class="connection-row" data-connection-name="<?= htmlspecialchars($name) ?>" data-host="<?= htmlspecialchars($conn['host']) ?>" data-port="<?= htmlspecialchars($conn['port']) ?>" data-username="<?= htmlspecialchars($conn['username']) ?>" data-key="<?= htmlspecialchars($conn['key']) ?>">
+                        <td><?= htmlspecialchars($name) ?></td>
+                        <td><?= htmlspecialchars($conn['host']) ?></td>
+                        <td><?= htmlspecialchars($conn['port']) ?></td>
+                        <td><?= htmlspecialchars($conn['username']) ?></td>
+                        <td><?= htmlspecialchars($conn['key']) ?></td>
+                        <td>
+                          <button type="button" class="btn btn-sm btn-primary select-connection">
+                            <i class="bi bi-check-circle"></i> Select
+                          </button>
+                          <form method="post" class="d-inline ms-2">
+                            <input type="hidden" name="tunnel_action" value="delete_connection">
+                            <input type="hidden" name="connection_name" value="<?= htmlspecialchars($name) ?>">
+                            <?= CSRFProtection::tokenField() ?>
+                            <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Are you sure you want to delete this connection?')">
+                              <i class="bi bi-trash"></i>
+                            </button>
+                          </form>
+                        </td>
+                      </tr>
+                    <?php endforeach; ?>
+                  </tbody>
+                </table>
+              </div>
+            <?php endif; ?>
+            
+            <hr>
+            
+            <h6>Add New Connection</h6>
+            <form method="post" id="newConnectionForm">
+              <input type="hidden" name="tunnel_action" value="save_connection">
+              <?= CSRFProtection::tokenField() ?>
+              <div class="row">
+                <div class="col-md-12 mb-3">
+                  <label for="new_connection_name">Name:</label>
+                  <input type="text" name="connection_name" id="new_connection_name" class="form-control" required placeholder="e.g., my-server">
+                </div>
+              </div>
+              <div class="row">
+                <div class="col-md-6 mb-3">
+                  <label for="new_host">Host/IP:</label>
+                  <input type="text" name="host" id="new_host" class="form-control" required placeholder="e.g., 192.168.1.100">
+                </div>
+                <div class="col-md-6 mb-3">
+                  <label for="new_port">Port:</label>
+                  <input type="number" name="port" id="new_port" class="form-control" value="22" required min="1" max="65535">
+                </div>
+              </div>
+              <div class="row">
+                <div class="col-md-6 mb-3">
+                  <label for="new_username">Username:</label>
+                  <input type="text" name="username" id="new_username" class="form-control" required placeholder="e.g., root">
+                </div>
+                <div class="col-md-6 mb-3">
+                  <label for="new_key">Key File:</label>
+                  <select name="key" id="new_key" class="form-control">
+                    <option value="id_rsa">Default Key (id_rsa)</option>
+                    <?php
+                    // Get list of SSH keys
+                    $keys = [];
+                    $keysDir = '/var/www/.ssh';
+                    if (is_dir($keysDir)) {
+                        $keys = array_filter(scandir($keysDir), function($f) {
+                            return $f !== '.' && $f !== '..' && substr($f, -4) !== '.pub';
+                        });
+                    }
+                    ?>
+                    <?php foreach ($keys as $keyFile): ?>
+                      <?php if ($keyFile !== 'id_rsa'): ?>
+                        <option value="<?= htmlspecialchars($keyFile); ?>">
+                          <?= htmlspecialchars($keyFile); ?>
+                        </option>
+                      <?php endif; ?>
+                    <?php endforeach; ?>
+                  </select>
+                </div>
+              </div>
+              <div class="text-end">
+                <button type="submit" class="btn btn-primary">
+                  <i class="bi bi-plus-circle me-1"></i> Add Connection
+                </button>
+              </div>
+            </form>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Upload SSH Key Modal -->
+    <div class="modal fade" id="uploadKeyModal" tabindex="-1" aria-labelledby="uploadKeyModalLabel" aria-hidden="true">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="uploadKeyModalLabel">Upload SSH Key</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <form method="post" enctype="multipart/form-data" id="uploadKeyForm">
+              <input type="hidden" name="tunnel_action" value="upload_key">
+              <?= CSRFProtection::tokenField() ?>
+              <div class="mb-3">
+                <label for="ssh_key" class="form-label">Select SSH Key File:</label>
+                <input class="form-control" type="file" id="ssh_key" name="ssh_key" required>
+                <div class="form-text">
+                  Supported formats: OpenSSH, RSA, DSA and EC private keys. Keys should not be encrypted.
+                </div>
+              </div>
+              <div class="text-end">
+                <button type="submit" class="btn btn-primary">
+                  <i class="bi bi-upload me-1"></i> Upload Key
+                </button>
+              </div>
+            </form>
+            
+            <hr>
+            
+            <h6>Existing SSH Keys</h6>
+            <?php if (!empty($keys)): ?>
+              <ul class="list-group">
+                <?php foreach ($keys as $keyFile): ?>
+                  <li class="list-group-item d-flex justify-content-between align-items-center">
+                    <?= htmlspecialchars($keyFile) ?>
+                    <form method="post" class="d-inline">
+                      <input type="hidden" name="tunnel_action" value="delete_key">
+                      <input type="hidden" name="key_name" value="<?= htmlspecialchars($keyFile) ?>">
+                      <?= CSRFProtection::tokenField() ?>
+                      <button type="submit" class="btn btn-sm btn-danger" <?= $keyFile === 'id_rsa' ? 'disabled' : '' ?> 
+                              onclick="return confirm('Are you sure you want to delete this key?')">
+                        <i class="bi bi-trash"></i> Delete
+                      </button>
+                    </form>
+                  </li>
+                <?php endforeach; ?>
+              </ul>
+            <?php else: ?>
+              <div class="alert alert-info">
+                <i class="bi bi-info-circle me-2"></i>
+                No SSH keys found.
+              </div>
+            <?php endif; ?>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
           </div>
         </div>
       </div>
@@ -1358,11 +1711,91 @@ function renderMainPage($message, $error, $wifi_list, $saved_connections, $iface
       // SSH Tunnel functionality
       const startTunnelBtn = document.getElementById('start-tunnel-btn');
       const stopTunnelBtn = document.getElementById('stop-tunnel-btn');
+      const testTunnelBtn = document.getElementById('test-tunnel-btn');
       const tunnelForm = document.getElementById('tunnel-form');
       const tunnelAction = document.getElementById('tunnel_action');
       const tunnelStatusBar = document.querySelector('.ssh-tunnel-status');
       const tunnelStatusText = document.getElementById('tunnel-status');
       let tunnelConnectModal;
+      
+      // Show/hide remote host/port fields based on tunnel type
+      const tunnelTypeSelect = document.getElementById('tunnel_type');
+      const remoteSettings = document.getElementById('remote-settings');
+      
+      if (tunnelTypeSelect && remoteSettings) {
+        tunnelTypeSelect.addEventListener('change', function() {
+          const showRemoteFields = this.value === 'L' || this.value === 'R';
+          remoteSettings.classList.toggle('d-none', !showRemoteFields);
+        });
+      }
+      
+      // Update connection name when server details change
+      const sshUsername = document.getElementById('ssh_username');
+      const sshIp = document.getElementById('ssh_ip');
+      const connectionName = document.getElementById('connection_name');
+      
+      function updateConnectionName() {
+        if (sshUsername && sshUsername.value && sshIp && sshIp.value) {
+          if (connectionName) {
+            connectionName.value = sshUsername.value + '@' + sshIp.value;
+          }
+        }
+      }
+      
+      if (sshUsername && sshIp && connectionName) {
+        sshUsername.addEventListener('change', updateConnectionName);
+        sshUsername.addEventListener('input', updateConnectionName);
+        sshIp.addEventListener('change', updateConnectionName);
+        sshIp.addEventListener('input', updateConnectionName);
+      }
+      
+      // Handle connection selection from modal
+      const selectConnectionButtons = document.querySelectorAll('.select-connection');
+      
+      selectConnectionButtons.forEach(button => {
+        button.addEventListener('click', function() {
+          const row = this.closest('.connection-row');
+          const connectionName = row.dataset.connectionName;
+          const host = row.dataset.host;
+          const port = row.dataset.port;
+          const username = row.dataset.username;
+          const key = row.dataset.key;
+          
+          // Update form fields
+          if (document.getElementById('connection_name')) {
+            document.getElementById('connection_name').value = connectionName;
+          }
+          if (document.getElementById('ssh_username')) {
+            document.getElementById('ssh_username').value = username;
+          }
+          if (document.getElementById('ssh_ip')) {
+            document.getElementById('ssh_ip').value = host;
+          }
+          if (document.getElementById('ssh_port')) {
+            document.getElementById('ssh_port').value = port;
+          }
+          
+          // Set key selection if available
+          const keySelect = document.getElementById('key');
+          if (keySelect && key) {
+            const keyOption = Array.from(keySelect.options).find(option => option.value === key);
+            if (keyOption) {
+              keySelect.value = key;
+            }
+          }
+          
+          // Close modal
+          const modal = bootstrap.Modal.getInstance(document.getElementById('sshConnectionModal'));
+          if (modal) {
+            modal.hide();
+          }
+          
+          // Enable test button
+          if (testTunnelBtn) {
+            testTunnelBtn.disabled = false;
+          }
+        });
+      });
 
       if (startTunnelBtn && stopTunnelBtn && tunnelForm) {
         // Initialize the modal
@@ -1373,6 +1806,46 @@ function renderMainPage($message, $error, $wifi_list, $saved_connections, $iface
 
         startTunnelBtn.addEventListener('click', function() {
           tunnelAction.value = 'start_tunnel';
+          
+          // Set the connection name if not already set
+          updateConnectionName();
+          
+          // Add other required fields for SSH2
+          if (!document.getElementById('tunnel-form').querySelector('input[name="tunnel_type"]')) {
+            const tunnelTypeInput = document.createElement('input');
+            tunnelTypeInput.type = 'hidden';
+            tunnelTypeInput.name = 'tunnel_type';
+            tunnelTypeInput.value = document.getElementById('tunnel_type').value;
+            document.getElementById('tunnel-form').appendChild(tunnelTypeInput);
+          }
+          
+          if (!document.getElementById('tunnel-form').querySelector('input[name="listen_port"]')) {
+            const listenPortInput = document.createElement('input');
+            listenPortInput.type = 'hidden';
+            listenPortInput.name = 'listen_port';
+            listenPortInput.value = document.getElementById('listen_port').value;
+            document.getElementById('tunnel-form').appendChild(listenPortInput);
+          }
+          
+          // Add remote host/port if applicable
+          if (document.getElementById('tunnel_type').value !== 'D') {
+            if (!document.getElementById('tunnel-form').querySelector('input[name="remote_host"]')) {
+              const remoteHostInput = document.createElement('input');
+              remoteHostInput.type = 'hidden';
+              remoteHostInput.name = 'remote_host';
+              remoteHostInput.value = document.getElementById('remote_host').value;
+              document.getElementById('tunnel-form').appendChild(remoteHostInput);
+            }
+            
+            if (!document.getElementById('tunnel-form').querySelector('input[name="remote_port"]')) {
+              const remotePortInput = document.createElement('input');
+              remotePortInput.type = 'hidden';
+              remotePortInput.name = 'remote_port';
+              remotePortInput.value = document.getElementById('remote_port').value;
+              document.getElementById('tunnel-form').appendChild(remotePortInput);
+            }
+          }
+          
           tunnelConnectModal.show();
           tunnelForm.submit();
         });
@@ -1397,6 +1870,69 @@ function renderMainPage($message, $error, $wifi_list, $saved_connections, $iface
             tunnelStatusBar.classList.remove('running');
           }
         }
+      }
+      
+      // Handle test connection button
+      if (testTunnelBtn) {
+        testTunnelBtn.addEventListener('click', function() {
+          // Prepare connection name
+          updateConnectionName();
+          
+          const username = document.getElementById('ssh_username').value;
+          const ip = document.getElementById('ssh_ip').value;
+          const port = document.getElementById('ssh_port').value;
+          
+          if (!username || !ip) {
+            alert('Please enter SSH server details first.');
+            return;
+          }
+          
+          this.disabled = true;
+          const originalText = this.innerHTML;
+          this.innerHTML = '<i class="bi bi-hourglass-split me-1"></i> Testing...';
+          
+          // Create a form and submit it
+          const form = document.createElement('form');
+          form.method = 'POST';
+          form.style.display = 'none';
+          
+          const actionInput = document.createElement('input');
+          actionInput.type = 'hidden';
+          actionInput.name = 'tunnel_action';
+          actionInput.value = 'test_connection';
+          form.appendChild(actionInput);
+          
+          const usernameInput = document.createElement('input');
+          usernameInput.type = 'hidden';
+          usernameInput.name = 'ssh_username';
+          usernameInput.value = username;
+          form.appendChild(usernameInput);
+          
+          const ipInput = document.createElement('input');
+          ipInput.type = 'hidden';
+          ipInput.name = 'ssh_ip';
+          ipInput.value = ip;
+          form.appendChild(ipInput);
+          
+          const portInput = document.createElement('input');
+          portInput.type = 'hidden';
+          portInput.name = 'ssh_port';
+          portInput.value = port;
+          form.appendChild(portInput);
+          
+          // Add CSRF token
+          const csrfToken = document.getElementById('tunnel-form').querySelector('input[name="csrf_token"]');
+          if (csrfToken) {
+            const tokenInput = document.createElement('input');
+            tokenInput.type = 'hidden';
+            tokenInput.name = 'csrf_token';
+            tokenInput.value = csrfToken.value;
+            form.appendChild(tokenInput);
+          }
+          
+          document.body.appendChild(form);
+          form.submit();
+        });
       }
     });
 
