@@ -45,18 +45,24 @@ jobs:
         name: Git Checkout
         uses: actions/checkout@v4
       -
-        name: Run checkov (Dockerfile)
+        name: Run checkov (Dockerfile) -> SARIF
         continue-on-error: true
         uses: bridgecrewio/checkov-action@v12
         with:
-          output_format: cli,sarif
-          output_file_path: console,checkov.sarif
+          output_format: sarif
+          output_file_path: checkov.sarif
       -
         name: Upload Checkov SARIF report
         uses: github/codeql-action/upload-sarif@v3
         if: ${{ hashFiles('checkov.sarif') != '' }}
         with:
           sarif_file: checkov.sarif
+      -
+        name: Display checkov (Dockerfile)  results
+        uses: bridgecrewio/checkov-action@v12
+        with:
+          output_format: cli
+          output_file_path: console
       -
         name: Run ShellCheck Analysis
         uses: ludeeus/action-shellcheck@master
@@ -66,6 +72,7 @@ jobs:
           severity: 'warning'
       -
         name: Shellcheck -> SARIF
+        continue-on-error: true
         uses: reactive-firewall/shellcheck-scan@v1
         with:
           severity: 'warning'
@@ -77,7 +84,6 @@ jobs:
           sarif_file: shellcheck.sarif
       -
         name: Lint markdown files
-        continue-on-error: true
         uses: articulate/actions-markdownlint@v1
       -
         name: Lint php files
