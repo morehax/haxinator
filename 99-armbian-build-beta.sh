@@ -7,8 +7,8 @@ cd build || exit 1
 
 # Create directory for web files using Armbian's recommended structure
 mkdir -p userpatches/overlay/html
-cp -rf ../html userpatches/overlay/
-cp -rf ../files  userpatches/overlay/
+cp -rf ../html/ userpatches/overlay/
+cp -rf ../files/  userpatches/overlay/
 
 # Create userpatches directory and customize image
 cat << 'EOF' > userpatches/customize-image.sh
@@ -120,13 +120,13 @@ systemctl mask wpa_supplicant@wlan0.service || yellow_echo "WARNING: Failed to m
 systemctl enable NetworkManager || yellow_echo "WARNING: Failed to enable NetworkManager"
 systemctl disable dnsmasq || yellow_echo "WARNING: Failed to disable dnsmasq"
 
-
+apt-get clean
 
 # Set proper permissions for web directory
 if [ -d /var/www/html ]; then
     echo "Setting permissions on /var/www/html" >> /root/customize.log
-    chown -R www-data:www-data /var/www/html
-    chmod -R 755 /var/www/html
+    chown -R www-data:www-data /var/www/
+    chmod -R 755 /var/www/
     
     # Verify contents
     echo "Contents of /var/www/html:" >> /root/customize.log
@@ -142,7 +142,7 @@ echo "Running custom script in chroot" >> /root/customize.log
 touch /root/custom-file
 SCRIPT
 chmod +x /tmp/custom-script.sh
-/tmp/custom-script.sh 
+/tmp/custom-script.sh
 EOF
 
 chmod +x userpatches/customize-image.sh || exit 1
