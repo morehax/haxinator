@@ -60,6 +60,10 @@ jobs:
       -
         name: Run ShellCheck Analysis
         uses: ludeeus/action-shellcheck@master
+        env:
+          SHELLCHECK_OPTS: -x -a
+        with:
+          severity: 'warning'
       -
         name: Shellcheck -> SARIF
         uses: reactive-firewall/shellcheck-scan@v1
