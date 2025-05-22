@@ -215,6 +215,19 @@ jobs:
           docker cp ${{ env.IMAGE_NAME }}:/haxinator/pi-gen/deploy/. output/
           ls -al output/
       -
+        name: Rename and sha256sum
+        id: processfilenames
+        run: |
+          # 1. Rename
+          SHORT_SHA="$(echo ${{ github.sha }} | cut -b 1-7)"
+          # shellcheck disable=SC2012
+          DATE_STR="$(ls -1 ./*.info | cut -b 1-10)"
+          rename.ul "s/${DATE_STR}/${SHORT_SHA}/" ./output/*
+
+          # 2. sha256sum
+          sha256sum ./output/* | tee SHA256
+          mv SHA256 output/
+      -
         name: Generate tag
         id: releasetag
         run: |
