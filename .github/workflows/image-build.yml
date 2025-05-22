@@ -229,7 +229,7 @@ jobs:
           body: Images from ${{ github.ref_name }} - commit ${{ github.sha }}
           draft: false
           name: ${{ github.sha }}
-          prerelease: ${{ github.ref_type == 'tag' }}
+          prerelease: ${{ github.ref_type != 'tag' }}
           tag_name: ${{ steps.releasetag.outputs.RELEASE_TAG }}
       -
         name: Display URL
