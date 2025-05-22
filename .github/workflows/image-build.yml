@@ -199,7 +199,7 @@ jobs:
         name: Generate tag
         id: releasetag
         run: |
-          RELEASE_TAG=$(date -u +"%F_%H-%M-%S-%3N")
+          RELEASE_TAG="$(date -u +'%F_%H-%M-%S-%3N')"
           echo "RELEASE_TAG=${RELEASE_TAG}" >> ${GITHUB_ENV}
       -
         name: Release images as prerelease for ${{ github.sha }}
