@@ -29,10 +29,9 @@ jobs:
         uses: actions/checkout@v4
       -
         name: Lint shell script
-        uses: hadolint/hadolint-action@v3.1.0
-        run:
-          SHELL_FILES="$(find .devcontainer/ -iname '*.sh')"
-          shellcheck -S warning -x -a ${SHELL_FILES}
+        uses: ludeeus/action-shellcheck@master
+        with:
+          scandir: './scripts'
       -
         name: Lint devcontainer.json
         run: |
