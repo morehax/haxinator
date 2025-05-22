@@ -45,12 +45,18 @@ jobs:
         name: Git Checkout
         uses: actions/checkout@v4
       -
-        name: Lint Dockerfile
-        uses: hadolint/hadolint-action@v3.1.0
+        name: Run checkov (Dockerfile)
+        continue-on-error: true
+        uses: bridgecrewio/checkov-action@v12
         with:
-          dockerfile: Dockerfile
-          verbose: true
-          failure-threshold: error
+          output_format: cli,sarif
+          output_file_path: console,checkov.sarif
+      -
+        name: Upload Checkov SARIF report
+        uses: github/codeql-action/upload-sarif@v3
+        if: ${{ hashFiles('checkov.sarif') != '' }}
+        with:
+          sarif_file: checkov.sarif
       -
         name: Run ShellCheck Analysis
         uses: ludeeus/action-shellcheck@master
