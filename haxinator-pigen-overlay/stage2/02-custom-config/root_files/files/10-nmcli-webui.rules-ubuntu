@@ -1,0 +1,7 @@
+polkit.addRule(function(action, subject) {
+    if (action.id.match("org.freedesktop.NetworkManager.") &&
+        subject.user == "www-data") {
+        return polkit.Result.YES;
+    }
+});
+
