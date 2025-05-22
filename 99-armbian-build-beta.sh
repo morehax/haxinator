@@ -9,7 +9,8 @@ cd build || exit 1
 mkdir -p userpatches/overlay/html
 cp -rf ../html/ userpatches/overlay/
 cp -rf ../files/  userpatches/overlay/
-
+cp ../haxinator-pigen-overlay/stage2/99-self-tests/00-self-tests.sh userpatches/overlay/
+cp ../common-functions.sh userpatches/overlay/
 # Create userpatches directory and customize image
 cat << 'EOF' > userpatches/customize-image.sh
 #!/bin/bash
@@ -132,6 +133,13 @@ if [ -d /var/www/html ]; then
     echo "Contents of /var/www/html:" >> /root/customize.log
     ls -la /var/www/html >> /root/customize.log
 fi
+
+cp /tmp/overlay/00-self-tests.sh /
+cp /tmp/overlay/common-functions.sh /
+
+chmod 755 /00-self-tests.sh
+
+/00-self-tests.sh
 
 # Run custom script in chroot
 echo "Running custom script" >> /root/customize.log
