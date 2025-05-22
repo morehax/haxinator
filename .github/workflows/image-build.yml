@@ -198,7 +198,7 @@ jobs:
           draft: false
           name: ${{ github.sha }}
           prerelease: ${{ github.ref_type == 'tag' }}
-          tags: ${{ steps.releasetag.outputs.RELEASE_TAG }}
+          tag_name: ${{ steps.releasetag.outputs.RELEASE_TAG }}
       -
         name: Display URL
         run: |
