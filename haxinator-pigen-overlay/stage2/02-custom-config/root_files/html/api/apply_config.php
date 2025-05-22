@@ -80,18 +80,25 @@ try {
         $output = [];
         $retval = 0;
         
-        exec('nmcli connection add type vpn ifname iodine0 con-name iodine-vpn vpn-type iodine', $output, $retval);
+        // Log command output for debugging
+        $command = 'nmcli connection add type vpn ifname iodine0 con-name iodine-vpn vpn-type iodine';
+        exec($command . ' 2>&1', $output, $retval);
+        error_log("Iodine command: $command");
+        error_log("Iodine command output: " . implode("\n", $output));
+        error_log("Iodine command return value: $retval");
+        
         if ($retval !== 0) {
-            throw new Exception('Failed to create Iodine connection');
+            throw new Exception('Failed to create Iodine connection: ' . implode("\n", $output));
         }
         
-        $vpnData = sprintf('topdomain=%s,nameserver=%s,password=%s,mtu=%s,lazy-mode=%s,interval=%s',
-            escapeshellarg($env['IODINE_TOPDOMAIN']),
-            escapeshellarg($env['IODINE_NAMESERVER']),
-            escapeshellarg($env['IODINE_PASS']),
-            escapeshellarg($mtu),
-            escapeshellarg($lazy),
-            escapeshellarg($interval)
+        // For Iodine
+        $vpnData = sprintf('topdomain = %s, nameserver = %s, password = %s, mtu = %s, lazy-mode = %s, interval = %s',
+            $env['IODINE_TOPDOMAIN'],
+            $env['IODINE_NAMESERVER'],
+            $env['IODINE_PASS'],
+            $mtu,
+            $lazy,
+            $interval
         );
         
         exec('nmcli connection modify iodine-vpn vpn.data "' . $vpnData . '"', $output, $retval);
@@ -99,7 +106,7 @@ try {
             throw new Exception('Failed to configure Iodine connection');
         }
         
-        exec('nmcli connection modify iodine-vpn vpn.secrets password="' . escapeshellarg($env['IODINE_PASS']) . '"', $output, $retval);
+        exec('nmcli connection modify iodine-vpn vpn.secrets password="' . $env['IODINE_PASS'] . '"', $output, $retval);
         if ($retval !== 0) {
             throw new Exception('Failed to set Iodine password');
         }
@@ -121,7 +128,8 @@ try {
             throw new Exception('Failed to create Hans connection');
         }
         
-        exec('nmcli connection modify hans-icmp-vpn vpn.data "server=' . escapeshellarg($env['HANS_SERVER']) . ',password=' . escapeshellarg($env['HANS_PASSWORD']) . ',password-flags=1"', $output, $retval);
+        // For Hans
+        exec('nmcli connection modify hans-icmp-vpn vpn.data "server = ' . $env['HANS_SERVER'] . ', password = ' . $env['HANS_PASSWORD'] . ', password-flags = 1"', $output, $retval);
         if ($retval !== 0) {
             throw new Exception('Failed to configure Hans connection');
         }
@@ -148,7 +156,7 @@ try {
         $output = [];
         $retval = 0;
         
-        exec('nmcli con add type wifi ifname wlan0 con-name pi_hotspot autoconnect yes ssid "' . escapeshellarg($env['WIFI_SSID']) . '"', $output, $retval);
+        exec('nmcli con add type wifi ifname wlan0 con-name pi_hotspot autoconnect yes ssid "' . $env['WIFI_SSID'] . '"', $output, $retval);
         if ($retval !== 0) {
             throw new Exception('Failed to create WiFi AP connection');
         }
@@ -157,7 +165,7 @@ try {
             '802-11-wireless.mode ap ' .
             '802-11-wireless.band bg ' .
             'wifi-sec.key-mgmt wpa-psk ' .
-            'wifi-sec.psk "' . escapeshellarg($env['WIFI_PASSWORD']) . '" ' .
+            'wifi-sec.psk "' . $env['WIFI_PASSWORD'] . '" ' .
             'ipv4.addresses 192.168.4.1/24 ' .
             'ipv4.method shared ' .
             'ipv4.never-default yes ' .

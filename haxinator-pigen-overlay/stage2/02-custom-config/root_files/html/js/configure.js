@@ -165,11 +165,19 @@ document.addEventListener('DOMContentLoaded', function() {
                 progressBar.style.width = '100%';
                 status.textContent = 'Upload successful!';
                 status.classList.add('upload-success');
-                setTimeout(() => {
-                    content.style.display = 'block';
-                    progress.style.display = 'none';
-                    input.value = ''; // Reset input
-                }, 2000);
+                
+                // For env-secrets type, reload the page to refresh the status indicators
+                if (type === 'env-secrets') {
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 1500);
+                } else {
+                    setTimeout(() => {
+                        content.style.display = 'block';
+                        progress.style.display = 'none';
+                        input.value = ''; // Reset input
+                    }, 2000);
+                }
             })
             .catch(error => {
                 progressBar.style.width = '100%';
