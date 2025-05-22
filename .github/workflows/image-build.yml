@@ -36,6 +36,7 @@ concurrency:
 jobs:
   lint:
     runs-on: ubuntu-latest
+    timeout-minutes: 2
     steps:
       -
         name: Git Checkout
@@ -119,6 +120,7 @@ jobs:
 
   docker-image-builder:
     runs-on: ubuntu-24.04-arm
+    timeout-minutes: 10
     needs: lint
 
     steps:
@@ -143,6 +145,7 @@ jobs:
 
   rpi-image-builder:
     runs-on: ubuntu-24.04-arm
+    timeout-minutes: 60
     needs: docker-image-builder
 
     steps:
