@@ -2,7 +2,7 @@
 // Include security framework
 require_once __DIR__ . '/security/bootstrap.php';
 
-session_start();
+// Check login status
 if (!isset($_SESSION['logged_in']) || !$_SESSION['logged_in']) {
     header('Location: /index.php');
     exit;

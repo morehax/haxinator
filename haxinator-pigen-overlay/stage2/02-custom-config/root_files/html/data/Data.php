@@ -180,12 +180,14 @@ class Data
                 $fields = explode(':', $stateLine[0]);
                 if (count($fields) >= 3) {
                     $iface_status[$if]['state'] = $fields[1];
-                    if ($fields[2] !== "--") {
+                    if ($fields[2] !== "--" && !empty(trim($fields[2]))) {
                         $iface_status[$if]['connection'] = $fields[2];
                         // Get connection type for active connections
-                        exec("nmcli -t -f TYPE connection show " . escapeshellarg($fields[2]), $typeLine);
+                        exec("nmcli -t -f connection.type connection show " . escapeshellarg($fields[2]), $typeLine);
                         if (!empty($typeLine)) {
-                            $iface_status[$if]['connection_type'] = trim($typeLine[0]);
+                            // Remove the 'connection.type:' prefix from the output
+                            $type = trim(substr($typeLine[0], strpos($typeLine[0], ':') + 1));
+                            $iface_status[$if]['connection_type'] = $type;
                         }
                     }
                 }
