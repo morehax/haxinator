@@ -75,19 +75,27 @@ jobs:
 
           # 2. Flake8
           echo "⎯⎯⎯ Flake8 ⎯⎯⎯"
-          flake8 . --format=sarif --output-file=flake8-report.sarif
+          flake8 . --format=sarif --output-file=python-flake8.sarif
 
           # 3. Pylint
           echo "⎯⎯⎯ Pylint ⎯⎯⎯"
           pylint --recursive=y ./**/*.py --output-format=json > pylint-report.json
           python3 -m lintrunner_adapters to-sarif \
-            pylint-report.json pylint-report.sarif
+            pylint-report.json python-pylint.sarif
 
           # 4. Bandit
           echo "⎯⎯⎯ Bandit ⎯⎯⎯"
-          bandit -r . --format=sarif --output-file=bandit-report.sarif
+          bandit -r . --format=sarif --output-file=python-bandit.sarif
 
           set -e
+      -
+        name: Merge python SARIF
+        uses: microsoft/sarif-actions@v0.1
+        with:
+          command: 'merge ./python-*.sarif python.sarif'
+      -
+        name: Delete individual SARIF files for Python
+        run: rm python-*.sarif
       -
         name: Upload all SARIF reports
         uses: github/codeql-action/upload-sarif@v3
