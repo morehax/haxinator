@@ -30,6 +30,8 @@ concurrency:
 # - Check if building on Mac is faster
 # - Build docs in parallel with building the image to give in assets
 # - Create sha256sum of the files if not already created
+# - Use https://github.com/marketplace/actions/python-lint-code-scanning-action
+# - Use https://github.com/marketplace/actions/bandit-with-sarif-support
 
 jobs:
   lint-sarif:
