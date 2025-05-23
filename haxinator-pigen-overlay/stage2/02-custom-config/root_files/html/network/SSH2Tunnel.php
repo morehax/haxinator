@@ -806,15 +806,15 @@ function getTunnelStatuses() {
 // MAIN LOGIC
 // -----------------------------------------------------------------------------
 
-if (!checkSsh2Extension()) {
-    exit;
-}
-
-if (!checkKeysDirectory()) {
-    // We continue, but key uploads won't work
-}
-
 if (!CLI_MODE) {
+    if (!checkSsh2Extension()) {
+        exit;
+    }
+
+    if (!checkKeysDirectory()) {
+        // We continue, but key uploads won't work
+    }
+
     if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if (isset($_POST['upload_key'])) {
             handleKeyUpload();
