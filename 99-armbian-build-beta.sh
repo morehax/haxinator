@@ -11,6 +11,7 @@ cp -rf ../html/ userpatches/overlay/
 cp -rf ../files/  userpatches/overlay/
 cp ../haxinator-pigen-overlay/stage2/99-self-tests/00-self-tests.sh userpatches/overlay/
 cp ../common-functions.sh userpatches/overlay/
+
 # Create userpatches directory and customize image
 cat << 'EOF' > userpatches/customize-image.sh
 #!/bin/bash
@@ -92,6 +93,12 @@ cp -rf /tmp/overlay/files/hans2/nm-iodine-service.conf /etc/dbus-1/system.d/
 cp -rf /tmp/overlay/files/hans2/99-clean-vpn-routes /etc/NetworkManager/dispatcher.d/99-clean-vpn-routes
 cp -rf /tmp/overlay/files/services/bluetooth_pair.service /etc/systemd/system/
 cp -rf /tmp/overlay/files/services/firstboot.service /lib/systemd/system/
+
+cp -rf /tmp/overlay/files/services/enable-usb-ether.service /etc/systemd/system/
+chmod 0644 /etc/systemd/system/enable-usb-ether.service
+systemctl enable enable-usb-ether.service
+
+
 cp -rf /tmp/overlay/files/10-nmcli-webui.rules-ubuntu /etc/polkit-1/rules.d/10-nmcli-webui.rules
 chown root:root /etc/polkit-1/rules.d/10-nmcli-webui.rules
 chmod 644 /etc/polkit-1/rules.d/10-nmcli-webui.rules
@@ -114,7 +121,7 @@ systemctl enable bluetooth_pair.service || yellow_echo "WARNING: Failed to enabl
 systemctl enable serial-getty@ttyGS0.service || yellow_echo "WARNING: Failed to enable serial-getty@ttyGS0.service"
 #systemctl enable firstboot || yellow_echo "WARNING: Failed to enable firstboot"
 systemctl enable rfcomm || yellow_echo "WARNING: Failed to enable rfcomm"
-systemctl enable shellinabox || yellow_echo "WARNING: Failed to enable shellinabox"
+#systemctl enable shellinabox || yellow_echo "WARNING: Failed to enable shellinabox"
 systemctl disable shellinabox
 
 systemctl mask wpa_supplicant@wlan0.service || yellow_echo "WARNING: Failed to mask wpa_supplicant@wlan0.service"
@@ -136,6 +143,15 @@ fi
 
 cp /tmp/overlay/00-self-tests.sh /
 cp /tmp/overlay/common-functions.sh /
+
+mkdir -p /root
+
+
+cp /tmp/overlay/files/armbian-preset.txt /root/.not_logged_in_yet
+cat /root/.not_logged_in_yet
+
+
+
 
 chmod 755 /00-self-tests.sh
 
