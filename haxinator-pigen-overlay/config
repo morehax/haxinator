@@ -13,7 +13,7 @@ TIMEZONE_DEFAULT=America/New_York
 ENABLE_SSH=1
 PUBKEY_SSH_FIRST_USER="ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIKyuHp29rmbRz7/SqH6lSA+CeVDFlO0DRt3dikGAoryq hax@hax.local"
 STAGE_LIST="stage0 stage1 stage2"
-DEPLOY_COMPRESSION=zip
+DEPLOY_COMPRESSION=none
 ARCH=arm64
 # Append proxy only when requested
 if [[ -n "$BUILD_PROXY" ]]; then
