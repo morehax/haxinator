@@ -1,0 +1,311 @@
+#!/usr/bin/env bash
+# =============================================================================
+# Armbian Custom Build Script for the Haxinator 2000!
+# =============================================================================
+#
+# DESCRIPTION:
+#   This script automates the creation of custom Armbian images for various
+#   single-board computers. It clones the official Armbian build system,
+#   applies custom overlays, installs specialized packages, and configures
+#   the system for penetration testing and network security tools.
+#
+# SUPPORTED BOARDS:
+#   • bananapim4zero  - Banana Pi M4 Zero (WiFi overlay enabled)
+#   • orangepizero2w  - Orange Pi Zero 2W (WiFi overlay enabled)  
+#   • rpi4b          - Raspberry Pi 4B (bcm2711 config, no WiFi overlay)
+#
+# REQUIREMENTS:
+#   • check utils/install_something_something.sh
+#
+# OUTPUT:
+#   • Custom Armbian image file (.img)
+#   • Located in: build/output/images/
+#   • Ready to flash to SD card/eMMC
+#
+# NOTES:
+#   • Build process takes 30-60+ minutes depending on hardware
+#   • Requires stable internet connection throughout build
+#   • Each board type has specific hardware optimizations
+#   • WiFi overlays are board-specific for proper hardware support
+#
+# PROJECT: Haxinator - Network Security Testing Platform
+# VERSION: 0.2
+# =============================================================================
+
+set -euo pipefail  
+
+# -----------------------------------------------------------------------------
+# Command line argument parsing
+# -----------------------------------------------------------------------------
+usage() {
+    echo "Usage: $0 <board_type>"
+    echo "Supported board types:"
+    echo "  bananapim4zero - Banana Pi M4 Zero"
+    echo "  orangepizero2w - Orange Pi Zero 2W"
+    echo "  rpi4b          - Raspberry Pi 4B"
+    exit 1
+}
+
+# Check if argument is provided
+if [ $# -eq 0 ]; then
+    echo "Error: No board type specified"
+    usage
+fi
+
+BOARD_TYPE="$1"
+
+# Validate and set board-specific variables
+case "$BOARD_TYPE" in
+    "bananapim4zero")
+        BOARD="bananapim4zero"
+        # Board-specific variables for Banana Pi M4 Zero
+        WIFI_OVERLAY_SECTION='
+# Enable WiFi overlay in armbianEnv.txt only for banana pi m4 zero
+echo "Adding WiFi overlay" >> /root/customize.log
+echo "overlays=bananapi-m4-sdio-wifi-bt" >> /boot/armbianEnv.txt
+echo "extraargs=modules-load=dwc2,g_cdc cfg80211.ieee80211_regdom=GB" >> /boot/armbianEnv.txt'
+        RPI_CONFIG_NEEDED=false
+        ;;
+    "orangepizero2w")
+        BOARD="orangepizero2w"
+        # Board-specific variables for Orange Pi Zero 2W (same overlay as Banana Pi M4 Zero)
+        WIFI_OVERLAY_SECTION='
+# Enable WiFi overlay in armbianEnv.txt for orange pi zero 2w
+echo "Adding WiFi overlay" >> /root/customize.log
+echo "overlays=bananapi-m4-sdio-wifi-bt" >> /boot/armbianEnv.txt
+echo "extraargs=modules-load=dwc2,g_cdc cfg80211.ieee80211_regdom=GB" >> /boot/armbianEnv.txt'
+        RPI_CONFIG_NEEDED=false
+        ;;
+    "rpi4b")
+        BOARD="rpi4b"
+        # Board-specific variables for Raspberry Pi 4B
+        WIFI_OVERLAY_SECTION='
+# Raspberry Pi 4B - no specific WiFi overlay needed in armbianEnv.txt
+echo "Raspberry Pi 4B build - skipping WiFi overlay" >> /root/customize.log'
+        RPI_CONFIG_NEEDED=true
+        ;;
+    *)
+        echo "Error: Unsupported board type '$BOARD_TYPE'"
+        usage
+        ;;
+esac
+
+echo "Building for board: $BOARD"
+
+# -----------------------------------------------------------------------------
+# 1. Clone the Armbian build system
+# -----------------------------------------------------------------------------
+rm -rf build
+git clone --depth 1 https://github.com/armbian/build || exit 1
+cd build || exit 1
+
+# -----------------------------------------------------------------------------
+# 2. Prepare overlay directories and copy resources
+# -----------------------------------------------------------------------------
+mkdir -p userpatches/overlay/html
+cp -rf ../html/  userpatches/overlay/
+cp -rf ../files/ userpatches/overlay/
+cp    ../haxinator-pigen-overlay/stage2/99-self-tests/00-self-tests.sh \
+      userpatches/overlay/
+cp    ../common-functions.sh userpatches/overlay/
+
+# -----------------------------------------------------------------------------
+# 3. Generate the customize-image.sh script that runs inside the rootfs chroot
+# -----------------------------------------------------------------------------
+cat << EOF > userpatches/customize-image.sh
+#!/usr/bin/env bash
+# -------------------------------------------------------------------------
+#  customize-image.sh
+# -------------------------------------------------------------------------
+# Runs inside the target filesystem to install packages, copy resources,
+# enable services, and perform firstboot provisioning tweaks.
+# -------------------------------------------------------------------------
+set -euo pipefail
+
+# --- Logging -----------------------------------------------------------------
+echo "Starting customize-image.sh" > /root/customize.log
+
+# Source common functions early so yellow_echo and friends are available
+source /tmp/overlay/common-functions.sh
+
+# --- Package installation ----------------------------------------------------
+echo "Updating package lists" >> /root/customize.log
+apt-get update
+
+# Base utilities + networking
+echo "Installing packages: vim htop net-tools wireless-tools locate" >> /root/customize.log
+apt-get install -y \\
+    vim htop net-tools wireless-tools locate iodine iptables \\
+    cryptsetup openssl ca-certificates git apache2 php php-ssh2 php-mbstring \\
+    php-curl network-manager-openvpn libapache2-mod-php dnsutils shellinabox \\
+    ssl-cert dnsmasq python3-dbus python3-gi python3-dotenv git make g++ bluez
+
+# --- Sudoers tweaks ----------------------------------------------------------
+echo "www-data ALL=(ALL) NOPASSWD: /sbin/poweroff, /usr/bin/ssh, /bin/kill, /usr/bin/pgrep, /usr/bin/ssh-keygen" | sudo tee -a /etc/sudoers
+
+# --- dnsmasq & NetworkManager -------------------------------------------------
+echo "interface=usb0"                       >> /etc/dnsmasq.conf
+echo "dhcp-range=192.168.8.2,192.168.8.100,12h" >> /etc/dnsmasq.conf
+sed -i 's/managed=false/managed=true/' /etc/NetworkManager/NetworkManager.conf
+
+systemctl disable dnsmasq
+
+# --- Apache (SSL) ------------------------------------------------------------
+a2enmod ssl
+a2ensite default-ssl
+
+if [ \$? -eq 0 ]; then
+  echo "Package installation successful" >> /root/customize.log
+else
+  echo "Package installation failed"     >> /root/customize.log
+fi
+
+# -------------------------------------------------------------------------
+# 4. Overlay resource deployment
+# -------------------------------------------------------------------------
+cp -rf /tmp/overlay/html/*  /var/www/html/
+
+# www-data home directory
+chown -R www-data:www-data   /var/www/
+
+# For my own sanity, will go at some stage
+cp -rf /tmp/overlay/files             /root/
+
+# Install rc.local, responsible for bringing up usb0 night and day.
+install -m 755 /tmp/overlay/files/rc.local /etc/rc.local
+
+# Will oflload this so we dont need to install build-deps, but for now, meh.
+# --- Build & install HANS ----------------------------------------------------
+git clone https://github.com/friedrich/hans.git
+cd hans
+make
+install -m 755 hans /usr/local/bin/hans
+cd ..
+
+# --- NetworkManager helper scripts ------------------------------------------
+install -m 755 /tmp/overlay/files/hans2/hans-service.py   /usr/lib/NetworkManager/hans-service.py
+install -m 755 /tmp/overlay/files/hans2/iodine-service.py /usr/lib/NetworkManager/iodine-service.py
+
+mkdir -p /usr/lib/NetworkManager/VPN
+install -m 644 /tmp/overlay/files/hans2/hans.name   /usr/lib/NetworkManager/VPN/hans.name
+install -m 644 /tmp/overlay/files/hans2/iodine.name /usr/lib/NetworkManager/VPN/iodine.name
+
+mkdir -p /etc/dbus-1/system.d
+install -m 644 /tmp/overlay/files/hans2/nm-hans-service.conf   /etc/dbus-1/system.d/nm-hans-service.conf
+install -m 644 /tmp/overlay/files/hans2/nm-iodine-service.conf /etc/dbus-1/system.d/nm-iodine-service.conf
+
+# This can be cleaned out
+mkdir -p /etc/NetworkManager/dispatcher.d
+install -m 755 /tmp/overlay/files/hans2/99-clean-vpn-routes /etc/NetworkManager/dispatcher.d/99-clean-vpn-routes
+
+# --- Systemd services --------------------------------------------------------
+install -m 644 /tmp/overlay/files/services/bluetooth_pair.service /etc/systemd/system/bluetooth_pair.service
+install -m 644 /tmp/overlay/files/services/firstboot.service      /lib/systemd/system/firstboot.service
+
+# needs cleanup
+#cp -rf /tmp/overlay/files/services/enable-usb-ether.service /etc/systemd/system/
+#chmod 0644 /etc/systemd/system/enable-usb-ether.service
+# systemctl enable enable-usb-ether.service  # (left disabled intentionally)
+
+# for ubuntu noble (polkit syntax changed very recently, has a different format for older / debian systems)
+mkdir -p /etc/polkit-1/rules.d
+install -m 644 /tmp/overlay/files/10-nmcli-webui.rules-ubuntu /etc/polkit-1/rules.d/10-nmcli-webui.rules
+
+mkdir -p /usr/local/bin
+install -m 755 /tmp/overlay/files/bluetooth/auto-pair /usr/local/bin/auto-pair
+install -m 755 /tmp/overlay/files/firstboot.sh       /usr/local/bin/firstboot.sh
+
+# Testing ExpressVPN config
+install -m 644 /tmp/overlay/files/openvpn-udp.ovpn /openvpn-udp.ovpn
+
+# Placeholder for stuff, consider removing
+install -m 755 /tmp/overlay/files/update_me.sh     /update_me.sh
+
+
+# Bluetooth and serial over bluetooth
+install -m 644 /tmp/overlay/files/services/dbus-org.bluez.service /etc/systemd/system/dbus-org.bluez.service
+install -m 644 /tmp/overlay/files/services/rfcomm.service          /etc/systemd/system/rfcomm.service
+
+# Also needs cleanup
+# cp -rf /tmp/overlay/files/services/unblock-wifi.service /etc/systemd/system/
+
+# systemctl enable unblock-wifi.service
+# systemctl enable bluetooth                 || yellow_echo "WARNING: Failed to enable bluetooth"
+systemctl enable bluetooth_pair.service    || yellow_echo "WARNING: Failed to enable bluetooth_pair.service"
+
+
+# Testing this one.
+#systemctl enable serial-getty@ttyGS0.service || yellow_echo "WARNING: Failed to enable serial-getty@ttyGS0.service"
+
+# systemctl enable firstboot || yellow_echo "WARNING: Failed to enable firstboot"
+systemctl enable rfcomm                    || yellow_echo "WARNING: Failed to enable rfcomm"
+systemctl enable shellinabox || yellow_echo "WARNING: Failed to enable shellinabox"
+
+systemctl mask wpa_supplicant@wlan0.service || yellow_echo "WARNING: Failed to mask wpa_supplicant@wlan0.service"
+systemctl enable NetworkManager            || yellow_echo "WARNING: Failed to enable NetworkManager"
+systemctl disable dnsmasq                  || yellow_echo "WARNING: Failed to disable dnsmasq"
+
+apt-get clean
+
+# --- Web directory permissions ----------------------------------------------
+if [ -d /var/www/html ]; then
+    echo "Setting permissions on /var/www/html" >> /root/customize.log
+    chown -R www-data:www-data /var/www/
+    chmod -R 755 /var/www/
+    echo "Contents of /var/www/html:" >> /root/customize.log
+    ls -la /var/www/html >> /root/customize.log
+fi
+
+# --- Self‑test & provisioning ------------------------------------------------
+install -m 755 /tmp/overlay/00-self-tests.sh      /00-self-tests.sh
+install -m 755 /tmp/overlay/common-functions.sh  /common-functions.sh
+
+# Board-specific WiFi overlay configuration
+$WIFI_OVERLAY_SECTION
+
+## This is for all images
+install -m 644 /tmp/overlay/files/armbian-preset.txt /root/.not_logged_in_yet
+
+/00-self-tests.sh
+
+# --- Custom script inside chroot --------------------------------------------
+echo "Running custom script" >> /root/customize.log
+cat << 'SCRIPT' > /tmp/custom-script.sh
+#!/usr/bin/env bash
+echo "Running custom script in chroot" >> /root/customize.log
+touch /root/custom-file
+SCRIPT
+chmod +x /tmp/custom-script.sh
+/tmp/custom-script.sh
+EOF
+
+chmod +x userpatches/customize-image.sh || exit 1
+
+# -----------------------------------------------------------------------------
+# 4. Board-specific configuration changes (outside chroot)
+# -----------------------------------------------------------------------------
+if [ "$RPI_CONFIG_NEEDED" = true ]; then
+    echo "Applying Raspberry Pi specific configuration..."
+    # Enable the correct parameters in cmdline and config.txt files for Raspberry Pi
+    sed -i '/arm_64bit=1/a\                dtoverlay=dwc2,dr_mode=peripheral' config/sources/families/bcm2711.conf
+    sed -i '/cgroup_enable=memory/s|$| modules-load=dwc2,g_cdc cfg80211.ieee80211_regdom=GB|' config/sources/families/bcm2711.conf
+fi
+
+# -----------------------------------------------------------------------------
+# 5. Invoke Armbian compile.sh with desired parameters
+# -----------------------------------------------------------------------------
+echo "Starting build for board: $BOARD"
+
+./compile.sh build \
+  BOARD=$BOARD \
+  BRANCH=current \
+  RELEASE=noble \
+  BUILD_MINIMAL=yes \
+  BUILD_DESKTOP=no \
+  KERNEL_CONFIGURE=no \
+  NETWORKING_STACK="network-manager" \
+  KERNEL_GIT=shallow \
+  FORCE_RECREATE_ROOTFS=yes || exit 1
+
+echo "Build completed"
+
