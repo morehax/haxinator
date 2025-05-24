@@ -1,0 +1,2 @@
+overlays=dwc2 dr_mode=peripheral
+extraargs=modules-load=dwc2,g_cdc cfg80211.ieee80211_regdom=GB dwc2.dr_mode=peripheral

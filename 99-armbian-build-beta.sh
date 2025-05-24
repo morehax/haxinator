@@ -32,6 +32,8 @@ echo "interface=usb0" >> /etc/dnsmasq.conf
 echo "dhcp-range=192.168.8.2,192.168.8.100,12h" >> /etc/dnsmasq.conf
 sed -i 's/managed=false/managed=true/' /etc/NetworkManager/NetworkManager.conf
 
+
+
 systemctl disable dnsmasq
 a2enmod ssl
 a2ensite default-ssl
@@ -42,26 +44,7 @@ else
   echo "Package installation failed" >> /root/customize.log
 fi
 
-# Enable WiFi overlay in armbianEnv.txt if the file exists
-
-
-echo "Adding WiFi overlay" >> /root/customize.log
-
-#echo "dtoverlay=dwc2,dr_mode=peripheral" >> /boot/config.txt
-#sed -i 's/$/ modules-load=dwc2,g_cdc console=ttyGS0,115200 cfg80211.ieee80211_regdom=GB/' /boot/cmdline.txt
-
-
-# echo "overlays=bananapi-m4-sdio-wifi-bt" >> /boot/armbianEnv.txt
-# echo "extraargs=net.ifnames=0 modules_load=g_ether" >> /boot/armbianEnv.txt
-
-    # List available overlays for verification if directory exists
-    if [ -d /boot/dtb/overlays/ ]; then
-        echo "Listing overlays" >> /root/customize.log
-        ls /boot/dtb/overlays/ >> /root/customize.log
-    else
-        echo "Overlay directory not found - this is normal during initial build" >> /root/customize.log
-    fi
-#fi
+### deal with boot and cmdline
 
 # haxinator custoizations
 cp -rf /tmp/overlay/html/* /var/www/html/
@@ -96,7 +79,7 @@ cp -rf /tmp/overlay/files/services/firstboot.service /lib/systemd/system/
 
 cp -rf /tmp/overlay/files/services/enable-usb-ether.service /etc/systemd/system/
 chmod 0644 /etc/systemd/system/enable-usb-ether.service
-systemctl enable enable-usb-ether.service
+#systemctl enable enable-usb-ether.service
 
 
 cp -rf /tmp/overlay/files/10-nmcli-webui.rules-ubuntu /etc/polkit-1/rules.d/10-nmcli-webui.rules
@@ -109,6 +92,9 @@ chmod 755  /usr/local/bin/*.sh
 
 cp -rf /tmp/overlay/files/openvpn-udp.ovpn /
 cp -rf /tmp/overlay/files/update_me.sh /update_me.sh
+
+
+cp /tmp/overlay/files/armbianEnv.txt /boot/
 
 
 cp -rf /tmp/overlay/files/services/dbus-org.bluez.service /etc/systemd/system/
@@ -135,7 +121,6 @@ if [ -d /var/www/html ]; then
     echo "Setting permissions on /var/www/html" >> /root/customize.log
     chown -R www-data:www-data /var/www/
     chmod -R 755 /var/www/
-    
     # Verify contents
     echo "Contents of /var/www/html:" >> /root/customize.log
     ls -la /var/www/html >> /root/customize.log
@@ -146,10 +131,16 @@ cp /tmp/overlay/common-functions.sh /
 
 mkdir -p /root
 
+cp /tmp/overlay/files/enable_usb_ether.sh /root/provisioning.sh
+chmod 755 /root/provisioning.sh
+echo >> reboot /root/provisioning.sh
 
 cp /tmp/overlay/files/armbian-preset.txt /root/.not_logged_in_yet
+echo "CAAAAAAATTTTTTTTTTTTTTTTTTTT"
+
 cat /root/.not_logged_in_yet
 
+chmod 644 /root/.not_logged_in_yet
 
 
 
@@ -171,6 +162,10 @@ EOF
 
 chmod +x userpatches/customize-image.sh || exit 1
 
+echo "=== DEBUG: extension tree BEFORE compile ==="
+find userpatches/extensions -maxdepth 3 -print
+echo "============================================"
+
 # Build minimal CLI image for BPI-M4 Zero, forcing fresh rootfs
 ./compile.sh build \
   BOARD=rpi4b \
@@ -183,3 +178,4 @@ chmod +x userpatches/customize-image.sh || exit 1
   KERNEL_GIT=shallow \
   FORCE_RECREATE_ROOTFS=yes || exit 1
 echo "Build completed"
+
