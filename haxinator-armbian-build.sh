@@ -111,11 +111,12 @@ cd build || exit 1
 # 2. Prepare overlay directories and copy resources
 # -----------------------------------------------------------------------------
 mkdir -p userpatches/overlay/
-cp -rf ../html  userpatches/overlay/
-cp -rf ../files userpatches/overlay/
-cp    ../haxinator-pigen-overlay/stage2/99-self-tests/00-self-tests.sh \
-      userpatches/overlay/
-cp    ../common-functions.sh userpatches/overlay/
+cp -rf ../haxinator-pigen-overlay/stage2/02-custom-config/root_files/files  userpatches/overlay/
+cp -rf ../haxinator-pigen-overlay/stage2/02-custom-config/root_files/html   userpatches/overlay/
+
+cp ../haxinator-pigen-overlay/stage2/99-self-tests/00-self-tests.sh userpatches/overlay/
+cp ../common-functions.sh userpatches/overlay/
+
 
 # -----------------------------------------------------------------------------
 # 3. Generate the customize-image.sh script that runs inside the rootfs chroot
