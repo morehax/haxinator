@@ -1,13 +1,16 @@
 #!/usr/bin/env bash
+# Haxinator - Network Security Testing Platform
+# v.0.2
 # =============================================================================
-# Armbian Custom Build Script for the Haxinator 2000!
+# Armbian Custom Build Script for Haxinator Project
 # =============================================================================
 #
 # DESCRIPTION:
 #   This script automates the creation of custom Armbian images for various
 #   single-board computers. It clones the official Armbian build system,
 #   applies custom overlays, installs specialized packages, and configures
-#   the system for penetration testing and network security tools.
+#   the system for the Haxinator VPN Network Manager system. If Docker
+#   is installed, the (armbian) build script diverts to Docker.
 #
 # SUPPORTED BOARDS:
 #   • bananapim4zero  - Banana Pi M4 Zero (WiFi overlay enabled)
@@ -15,7 +18,8 @@
 #   • rpi4b          - Raspberry Pi 4B (bcm2711 config, no WiFi overlay)
 #
 # REQUIREMENTS:
-#   • check utils/install_something_something.sh
+#   • For native builds - check utils/install_something_something.sh
+#   • For Docker builds - it just does its thing
 #
 # OUTPUT:
 #   • Custom Armbian image file (.img)
@@ -28,31 +32,35 @@
 #   • Each board type has specific hardware optimizations
 #   • WiFi overlays are board-specific for proper hardware support
 #
-# PROJECT: Haxinator - Network Security Testing Platform
-# VERSION: 0.2
 # =============================================================================
 
-set -euo pipefail  
+set -euo pipefail  # Because YOLO is not a deployment strategy
 
 # -----------------------------------------------------------------------------
 # Command line argument parsing
 # -----------------------------------------------------------------------------
 usage() {
     echo "Usage: $0 <board_type>"
+    echo ""
     echo "Supported board types:"
-    echo "  bananapim4zero - Banana Pi M4 Zero"
-    echo "  orangepizero2w - Orange Pi Zero 2W"
-    echo "  rpi4b          - Raspberry Pi 4B"
+    echo "  bananapim4zero - Banana Pi M4 Zero (the tiny yellow friend)"
+    echo "  orangepizero2w - Orange Pi Zero 2W (another tiny friend)"
+    echo "  rpi4b          - Raspberry Pi 4B (the mainstream cousin)"
+    echo ""
+    echo "Pro tip: Typing random board names won't magically create new hardware"
     exit 1
 }
 
-# Check if argument is provided
+# Check if argument is provided (because humans forget things)
 if [ $# -eq 0 ]; then
     echo "Error: No board type specified"
     usage
+elif [ $# -gt 1 ]; then
+    echo "Error: Too many arguments"
+    usage
 fi
 
-BOARD_TYPE="$1"
+BOARD_TYPE="$1"  # Trust, but verify... actually, just verify
 
 # Validate and set board-specific variables
 case "$BOARD_TYPE" in
@@ -102,9 +110,9 @@ cd build || exit 1
 # -----------------------------------------------------------------------------
 # 2. Prepare overlay directories and copy resources
 # -----------------------------------------------------------------------------
-mkdir -p userpatches/overlay/html
-cp -rf ../html/  userpatches/overlay/
-cp -rf ../files/ userpatches/overlay/
+mkdir -p userpatches/overlay/
+cp -rf ../html  userpatches/overlay/
+cp -rf ../files userpatches/overlay/
 cp    ../haxinator-pigen-overlay/stage2/99-self-tests/00-self-tests.sh \
       userpatches/overlay/
 cp    ../common-functions.sh userpatches/overlay/
@@ -163,18 +171,13 @@ fi
 # -------------------------------------------------------------------------
 # 4. Overlay resource deployment
 # -------------------------------------------------------------------------
-cp -rf /tmp/overlay/html/*  /var/www/html/
 
-# www-data home directory
+cp -rf /tmp/overlay/html/*  /var/www/html/
 chown -R www-data:www-data   /var/www/
 
-# For my own sanity, will go at some stage
 cp -rf /tmp/overlay/files             /root/
-
-# Install rc.local, responsible for bringing up usb0 night and day.
 install -m 755 /tmp/overlay/files/rc.local /etc/rc.local
 
-# Will oflload this so we dont need to install build-deps, but for now, meh.
 # --- Build & install HANS ----------------------------------------------------
 git clone https://github.com/friedrich/hans.git
 cd hans
@@ -287,8 +290,12 @@ chmod +x userpatches/customize-image.sh || exit 1
 if [ "$RPI_CONFIG_NEEDED" = true ]; then
     echo "Applying Raspberry Pi specific configuration..."
     # Enable the correct parameters in cmdline and config.txt files for Raspberry Pi
-    sed -i '/arm_64bit=1/a\                dtoverlay=dwc2,dr_mode=peripheral' config/sources/families/bcm2711.conf
-    sed -i '/cgroup_enable=memory/s|$| modules-load=dwc2,g_cdc cfg80211.ieee80211_regdom=GB|' config/sources/families/bcm2711.conf
+    # Use cross-platform sed syntax for macOS/Linux compatibility
+    sed -i.bak '/arm_64bit=1/a\
+dtoverlay=dwc2,dr_mode=peripheral' config/sources/families/bcm2711.conf
+    sed -i.bak '/cgroup_enable=memory/s|$| modules-load=dwc2,g_cdc cfg80211.ieee80211_regdom=GB|' config/sources/families/bcm2711.conf
+    # Clean up backup files
+    rm -f config/sources/families/bcm2711.conf.bak
 fi
 
 # -----------------------------------------------------------------------------
