@@ -47,11 +47,10 @@ usage() {
     echo "  orangepizero2w - Orange Pi Zero 2W (another tiny friend)"
     echo "  rpi4b          - Raspberry Pi 4B (the mainstream cousin)"
     echo ""
-    echo "Pro tip: Typing random board names won't magically create new hardware"
     exit 1
 }
 
-# Check if argument is provided (because humans forget things)
+# Check if argument is provided
 if [ $# -eq 0 ]; then
     echo "Error: No board type specified"
     usage
@@ -60,7 +59,7 @@ elif [ $# -gt 1 ]; then
     usage
 fi
 
-BOARD_TYPE="$1"  # Trust, but verify... actually, just verify
+BOARD_TYPE="$1"
 
 # Validate and set board-specific variables
 case "$BOARD_TYPE" in
@@ -227,22 +226,24 @@ install -m 755 /tmp/overlay/files/update_me.sh     /update_me.sh
 
 
 # Bluetooth and serial over bluetooth
-install -m 644 /tmp/overlay/files/services/dbus-org.bluez.service /etc/systemd/system/dbus-org.bluez.service
-install -m 644 /tmp/overlay/files/services/rfcomm.service          /etc/systemd/system/rfcomm.service
+#install -m 644 /tmp/overlay/files/services/dbus-org.bluez.service /etc/systemd/system/dbus-org.bluez.service
+#install -m 644 /tmp/overlay/files/services/rfcomm.service          /etc/systemd/system/rfcomm.service
 
 # Also needs cleanup
 # cp -rf /tmp/overlay/files/services/unblock-wifi.service /etc/systemd/system/
 
 # systemctl enable unblock-wifi.service
 # systemctl enable bluetooth                 || yellow_echo "WARNING: Failed to enable bluetooth"
-systemctl enable bluetooth_pair.service    || yellow_echo "WARNING: Failed to enable bluetooth_pair.service"
+# systemctl enable bluetooth_pair.service    || yellow_echo "WARNING: Failed to enable bluetooth_pair.service"
 
 
-# Testing this one.
+# Serial over USB ethernet
 systemctl enable serial-getty@ttyGS0.service || yellow_echo "WARNING: Failed to enable serial-getty@ttyGS0.service"
+# Serial over BT
+# systemctl enable serial-getty@rfcomm.service
 
 # systemctl enable firstboot || yellow_echo "WARNING: Failed to enable firstboot"
-systemctl enable rfcomm                    || yellow_echo "WARNING: Failed to enable rfcomm"
+# systemctl enable rfcomm                    || yellow_echo "WARNING: Failed to enable rfcomm"
 systemctl enable shellinabox || yellow_echo "WARNING: Failed to enable shellinabox"
 
 systemctl mask wpa_supplicant@wlan0.service || yellow_echo "WARNING: Failed to mask wpa_supplicant@wlan0.service"
