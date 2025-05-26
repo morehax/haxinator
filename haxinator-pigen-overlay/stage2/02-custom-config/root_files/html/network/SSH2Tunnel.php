@@ -105,6 +105,25 @@ function verifyKeyFilePermissions($keyFile) {
         return ['success' => false, 'message' => 'Key file does not exist'];
     }
 
+    // ── Sanity-check path ───────────────────────────────────────────────
+    $realPath = realpath($keyFile);
+    $allowedDir = realpath($GLOBALS['keysDir']);
+
+    // realpath() can return false (e.g. broken symlink)
+    if ($realPath === false) {
+        return ['success' => false, 'message' => 'Cannot resolve key file path'];
+    }
+
+    // Ensure the key is inside the allowed directory
+    if (strpos($realPath, $allowedDir) !== 0) {
+        return ['success' => false, 'message' => 'Key file outside allowed directory'];
+    }
+
+    // Disallow symlinks for security
+    if (is_link($keyFile)) {
+        return ['success' => false, 'message' => 'Symlinked key files are not allowed'];
+    }
+
     $perms = fileperms($keyFile) & 0777;
     $owner = fileowner($keyFile);
     $group = filegroup($keyFile);
@@ -319,7 +338,9 @@ function handleConnectionDelete() {
     $connections = loadJsonFile($connectionsFile);
 
     if (!isset($connections[$name])) {
-        return ['success' => false, 'message' => "Connection $name not found"];
+        $safeName = htmlspecialchars($name, ENT_QUOTES, 'UTF-8');
+        echo "<p style='color:red;'><strong>ERROR:</strong> Connection <strong>{$safeName}</strong> not found.</p>";
+        return;
     }
 
     unset($connections[$name]);
@@ -576,13 +597,14 @@ function startTunnelProcess($connectionName, $tunnelType, $listenPort, $remoteHo
             $psCheck = shell_exec("ps -p $pid -o pid= 2>/dev/null"); // just get the pid column
             if (trim($psCheck) == $pid) {
                 // Then check if port is listening
-                $netstatCheck = shell_exec("netstat -tln | grep :$listenPort");
-                if (strpos($netstatCheck, ":$listenPort") !== false) {
-                    debugLog("Tunnel verified listening on port $listenPort");
+                $portSafe = (int)$listenPort;
+                $netstatCheck = shell_exec("netstat -tln | grep :$portSafe");
+                if (strpos($netstatCheck, ":$portSafe") !== false) {
+                    debugLog("Tunnel verified listening on port $portSafe");
                     $verified = true;
                     break;
                 }
-                debugLog("Process found but port $listenPort not listening yet...");
+                debugLog("Process found but port $portSafe not listening yet...");
             } else {
                 debugLog("Tunnel process $pid not found at attempt #".($i+1));
             }
@@ -605,7 +627,7 @@ function startTunnelProcess($connectionName, $tunnelType, $listenPort, $remoteHo
             shell_exec("kill -9 $pid 2>/dev/null");
             return [
                 'success' => false,
-                'message' => "Tunnel process running but port $listenPort not listening; forcibly stopped.",
+                'message' => "Tunnel process running but port $portSafe not listening; forcibly stopped.",
                 'pid'     => null
             ];
         }
@@ -721,8 +743,9 @@ function checkTunnelHealth($tunnel) {
         return ['healthy' => false, 'details' => 'Process not running'];
     }
 
-    $netstatCheck = shell_exec("netstat -tln | grep :$listenPort");
-    if (strpos($netstatCheck, ":$listenPort") === false) {
+    $portSafe = (int)$listenPort;
+    $netstatCheck = shell_exec("netstat -tln | grep :$portSafe");
+    if (strpos($netstatCheck, ":$portSafe") === false) {
         return ['healthy' => false, 'details' => 'Port not listening'];
     }
 
@@ -793,7 +816,8 @@ function getTunnelStatuses() {
 
         // Add optional netstat info
         if ($data['isRunning']) {
-            $netstat = shell_exec("netstat -tln | grep :{$data['listenPort']}");
+            $portSafe = (int)$data['listenPort'];
+            $netstat = shell_exec("netstat -tln | grep :$portSafe");
             $data['netstatInfo'] = trim($netstat);
         }
     }

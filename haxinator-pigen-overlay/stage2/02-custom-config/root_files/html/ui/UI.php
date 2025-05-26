@@ -225,10 +225,12 @@ function renderMainPage($message, $error, $wifi_list, $saved_connections, $iface
 
     <div class="nm-main-container mx-auto px-3 px-md-4" style="max-width:1100px; margin-bottom: 40px;">
       <?php if ($message): ?>
-        <div class="alert alert-success"><?= $message ?></div>
+        <?php $safeMessage = strip_tags($message, '<strong><em><br>'); ?>
+        <div class="alert alert-success"><?= $safeMessage ?></div>
       <?php endif; ?>
       <?php if ($error): ?>
-        <div class="alert alert-danger"><?= $error ?></div>
+        <?php $safeError = strip_tags($error, '<strong><em><br>'); ?>
+        <div class="alert alert-danger"><?= $safeError ?></div>
       <?php endif; ?>
 
       <ul class="nav nav-tabs mb-3" id="managerTabs" role="tablist">

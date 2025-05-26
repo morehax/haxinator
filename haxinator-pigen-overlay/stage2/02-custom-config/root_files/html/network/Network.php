@@ -195,18 +195,39 @@ class Network
 
     public function configureInterface($iface, $mode, $postData)
     {
+        // Validate interface name
+        if (!InputValidator::interface($iface)) {
+            return [
+                'error' => "Invalid interface name",
+                'message' => ''
+            ];
+        }
+        
         $connectionName = '';
-        exec("nmcli -t -f NAME,DEVICE connection show", $connLines);
+        $connLines = [];
+        SecureCommand::executeWithOutput("nmcli -t -f NAME,DEVICE connection show", $connLines);
         foreach ($connLines as $line) {
-            list($connName, $dev) = explode(':', $line);
-            if ($dev === $iface) {
-                $connectionName = $connName;
-                break;
+            $parts = explode(':', $line);
+            if (count($parts) >= 2) {
+                list($connName, $dev) = $parts;
+                if ($dev === $iface) {
+                    $connectionName = $connName;
+                    break;
+                }
             }
         }
         if ($connectionName === '' && in_array($iface, ['eth0', 'usb0'])) {
             $connectionName = $iface;
-            exec("nmcli connection add type ethernet ifname $iface con-name $iface autoconnect yes 2>&1");
+            $output = [];
+            $return_code = null;
+            SecureCommand::execute("nmcli connection add type ethernet ifname %s con-name %s autoconnect yes", 
+                                 [$iface, $iface], $output, $return_code);
+            if ($return_code !== 0) {
+                return [
+                    'error' => "Failed to create connection profile: " . implode("\n", $output),
+                    'message' => ''
+                ];
+            }
         }
         if ($connectionName === '') {
             return [
@@ -215,11 +236,20 @@ class Network
             ];
         }
 
-        $conn_arg = escapeshellarg($connectionName);
         if ($mode === 'dhcp') {
-            exec("nmcli connection modify $conn_arg ipv4.method auto ipv4.addresses \"\" ipv4.gateway \"\" ipv4.dns \"\"");
-            exec("nmcli connection down $conn_arg", $outDown, $retDown);
-            exec("nmcli connection up $conn_arg", $outUp, $retUp);
+            $output1 = [];
+            $return_code1 = null;
+            SecureCommand::execute("nmcli connection modify %s ipv4.method auto ipv4.addresses \"\" ipv4.gateway \"\" ipv4.dns \"\"", 
+                                 [$connectionName], $output1, $return_code1);
+            
+            $outDown = [];
+            $retDown = null;
+            SecureCommand::execute("nmcli connection down %s", [$connectionName], $outDown, $retDown);
+            
+            $outUp = [];
+            $retUp = null;
+            SecureCommand::execute("nmcli connection up %s", [$connectionName], $outUp, $retUp);
+            
             return [
                 'message' => ($retDown === 0 && $retUp === 0)
                     ? strtoupper($iface) . " set to DHCP (automatic IP)."
@@ -280,18 +310,20 @@ class Network
             }
 
             // ── Apply settings via nmcli ──────────────────────────────────────
-            $addr_arg = escapeshellarg("$ip/$prefix");
-            $gw_arg   = escapeshellarg($gw);
-            $dns_arg  = escapeshellarg($dns);
+            $output1 = [];
+            $return_code1 = null;
+            SecureCommand::execute("nmcli connection modify %s ipv4.method manual ipv4.addresses %s ipv4.gateway %s ipv4.dns %s",
+                                 [$connectionName, "$ip/$prefix", $gw, $dns], $output1, $return_code1);
 
-            $cmdMod = "nmcli connection modify $conn_arg "
-                    . "ipv4.method manual ipv4.addresses $addr_arg "
-                    . "ipv4.gateway $gw_arg ipv4.dns $dns_arg";
-            exec("$cmdMod 2>&1", $out1, $ret1);
-
-            if ($ret1 === 0) {
-                exec("nmcli connection down $conn_arg", $outDown, $retDown);
-                exec("nmcli connection up   $conn_arg", $outUp, $retUp);
+            if ($return_code1 === 0) {
+                $outDown = [];
+                $retDown = null;
+                SecureCommand::execute("nmcli connection down %s", [$connectionName], $outDown, $retDown);
+                
+                $outUp = [];
+                $retUp = null;
+                SecureCommand::execute("nmcli connection up %s", [$connectionName], $outUp, $retUp);
+                
                 if ($retDown === 0 && $retUp === 0) {
                     return [
                         'message' => strtoupper($iface) . " configured with static IP $ip.",
@@ -306,7 +338,7 @@ class Network
             }
 
             return [
-                'error'   => "Failed to configure static IP: " . htmlspecialchars(implode("\n", $out1)),
+                'error'   => "Failed to configure static IP: " . htmlspecialchars(implode("\n", $output1)),
                 'message' => ''
             ];
         }
@@ -314,12 +346,17 @@ class Network
 
     public function getConnectionDetails($uuid)
     {
-        $escaped = escapeshellarg($uuid);
+        // Validate UUID
+        if (!InputValidator::uuid($uuid)) {
+            return ['error' => 'Invalid UUID format'];
+        }
+        
         $details = [];
         $raw = [];
+        $out = [];
 
         // Get all connection info
-        exec("nmcli -t connection show uuid $escaped", $out);
+        SecureCommand::executeWithOutput("nmcli -t connection show uuid %s", [$uuid], $out);
         foreach ($out as $line) {
             $parts = explode(':', $line, 2);
             if (count($parts) === 2) {
@@ -408,64 +445,111 @@ class Network
 
     public function updateConnection($uuid, $settings)
     {
-        $escaped = escapeshellarg($uuid);
-        $commands = [];
+        // Validate UUID
+        if (!InputValidator::uuid($uuid)) {
+            return [
+                'message' => '',
+                'error' => 'Invalid UUID format'
+            ];
+        }
+        
         $errors = [];
 
         // Update general settings
         if (isset($settings['name'])) {
-            $name = escapeshellarg($settings['name']);
-            $commands[] = "nmcli connection modify uuid $escaped connection.id $name";
+            $output = [];
+            $return_code = null;
+            SecureCommand::execute("nmcli connection modify uuid %s connection.id %s", 
+                                 [$uuid, $settings['name']], $output, $return_code);
+            if ($return_code !== 0) {
+                $errors[] = implode("\n", $output);
+            }
         }
 
         if (isset($settings['autoconnect'])) {
             $autoconnect = $settings['autoconnect'] ? 'yes' : 'no';
-            $commands[] = "nmcli connection modify uuid $escaped connection.autoconnect $autoconnect";
+            $output = [];
+            $return_code = null;
+            SecureCommand::execute("nmcli connection modify uuid %s connection.autoconnect %s", 
+                                 [$uuid, $autoconnect], $output, $return_code);
+            if ($return_code !== 0) {
+                $errors[] = implode("\n", $output);
+            }
         }
 
         if (isset($settings['priority'])) {
             $priority = intval($settings['priority']);
-            $commands[] = "nmcli connection modify uuid $escaped connection.autoconnect-priority $priority";
+            $output = [];
+            $return_code = null;
+            SecureCommand::execute("nmcli connection modify uuid %s connection.autoconnect-priority %s", 
+                                 [$uuid, $priority], $output, $return_code);
+            if ($return_code !== 0) {
+                $errors[] = implode("\n", $output);
+            }
         }
 
         // Update IPv4 settings
         if (isset($settings['ipv4_method'])) {
             if ($settings['ipv4_method'] === 'auto') {
-                $commands[] = "nmcli connection modify uuid $escaped ipv4.method auto ipv4.addresses \"\" ipv4.gateway \"\" ipv4.dns \"\"";
+                $output = [];
+                $return_code = null;
+                SecureCommand::execute("nmcli connection modify uuid %s ipv4.method auto ipv4.addresses \"\" ipv4.gateway \"\" ipv4.dns \"\"", 
+                                     [$uuid], $output, $return_code);
+                if ($return_code !== 0) {
+                    $errors[] = implode("\n", $output);
+                }
             } else if ($settings['ipv4_method'] === 'manual') {
-                $ip = escapeshellarg($settings['ipv4_address']);
-                $gw = escapeshellarg($settings['ipv4_gateway']);
-                $dns = escapeshellarg($settings['ipv4_dns']);
-                $commands[] = "nmcli connection modify uuid $escaped ipv4.method manual ipv4.addresses $ip ipv4.gateway $gw ipv4.dns $dns";
+                $output = [];
+                $return_code = null;
+                SecureCommand::execute("nmcli connection modify uuid %s ipv4.method manual ipv4.addresses %s ipv4.gateway %s ipv4.dns %s", 
+                                     [$uuid, $settings['ipv4_address'], $settings['ipv4_gateway'], $settings['ipv4_dns']], 
+                                     $output, $return_code);
+                if ($return_code !== 0) {
+                    $errors[] = implode("\n", $output);
+                }
             }
         }
 
         // Update WiFi security settings if applicable
         if (isset($settings['wifi_security_type'])) {
-            $security_type = escapeshellarg($settings['wifi_security_type']);
-            $commands[] = "nmcli connection modify uuid $escaped 802-11-wireless-security.key-mgmt $security_type";
+            $output = [];
+            $return_code = null;
+            SecureCommand::execute("nmcli connection modify uuid %s 802-11-wireless-security.key-mgmt %s", 
+                                 [$uuid, $settings['wifi_security_type']], $output, $return_code);
+            if ($return_code !== 0) {
+                $errors[] = implode("\n", $output);
+            }
 
             if (isset($settings['wifi_password'])) {
-                $password = escapeshellarg($settings['wifi_password']);
-                $commands[] = "nmcli connection modify uuid $escaped 802-11-wireless-security.psk $password";
-            }
-        }
-
-        // Execute all commands
-        foreach ($commands as $cmd) {
-            exec($cmd . " 2>&1", $out, $ret);
-            if ($ret !== 0) {
-                $errors[] = implode("\n", $out);
+                $output = [];
+                $return_code = null;
+                SecureCommand::execute("nmcli connection modify uuid %s 802-11-wireless-security.psk %s", 
+                                     [$uuid, $settings['wifi_password']], $output, $return_code);
+                if ($return_code !== 0) {
+                    $errors[] = implode("\n", $output);
+                }
             }
         }
 
         if (empty($errors)) {
-            // Restart the connection if it's active
-            exec("nmcli -t -f NAME,DEVICE connection show --active | grep -q \"$escaped\"", $out, $ret);
-            if ($ret === 0) {
-                exec("nmcli connection down uuid $escaped && nmcli connection up uuid $escaped 2>&1", $out, $ret);
-                if ($ret !== 0) {
-                    $errors[] = "Connection updated but failed to restart: " . implode("\n", $out);
+            // Check if connection is active
+            $active_output = [];
+            $active_return_code = null;
+            SecureCommand::execute("nmcli -t -f NAME,UUID connection show --active | grep -F %s", 
+                                 [$uuid], $active_output, $active_return_code);
+            
+            if ($active_return_code === 0) {
+                // Restart the connection
+                $down_output = [];
+                $down_return_code = null;
+                SecureCommand::execute("nmcli connection down uuid %s", [$uuid], $down_output, $down_return_code);
+                
+                $up_output = [];
+                $up_return_code = null;
+                SecureCommand::execute("nmcli connection up uuid %s", [$uuid], $up_output, $up_return_code);
+                
+                if ($up_return_code !== 0) {
+                    $errors[] = "Connection updated but failed to restart: " . implode("\n", $up_output);
                 }
             }
         }
