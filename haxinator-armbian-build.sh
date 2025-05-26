@@ -71,7 +71,7 @@ case "$BOARD_TYPE" in
 # Enable WiFi overlay in armbianEnv.txt only for banana pi m4 zero
 echo "Adding WiFi overlay" >> /root/customize.log
 echo "overlays=bananapi-m4-sdio-wifi-bt" >> /boot/armbianEnv.txt
-echo "extraargs=modules-load=dwc2,g_cdc cfg80211.ieee80211_regdom=GB" >> /boot/armbianEnv.txt'
+echo "extraargs=modules-load=dwc2,g_cdc cfg80211.ieee80211_regdom=GB console=ttyGS0,115200" >> /boot/armbianEnv.txt'
         RPI_CONFIG_NEEDED=false
         ;;
     "orangepizero2w")
@@ -81,7 +81,7 @@ echo "extraargs=modules-load=dwc2,g_cdc cfg80211.ieee80211_regdom=GB" >> /boot/a
 # Enable WiFi overlay in armbianEnv.txt for orange pi zero 2w
 echo "Adding WiFi overlay" >> /root/customize.log
 echo "overlays=bananapi-m4-sdio-wifi-bt" >> /boot/armbianEnv.txt
-echo "extraargs=modules-load=dwc2,g_cdc cfg80211.ieee80211_regdom=GB" >> /boot/armbianEnv.txt'
+echo "extraargs=modules-load=dwc2,g_cdc cfg80211.ieee80211_regdom=GB console=ttyGS0,115200" >> /boot/armbianEnv.txt'
         RPI_CONFIG_NEEDED=false
         ;;
     "rpi4b")
@@ -239,7 +239,7 @@ systemctl enable bluetooth_pair.service    || yellow_echo "WARNING: Failed to en
 
 
 # Testing this one.
-#systemctl enable serial-getty@ttyGS0.service || yellow_echo "WARNING: Failed to enable serial-getty@ttyGS0.service"
+systemctl enable serial-getty@ttyGS0.service || yellow_echo "WARNING: Failed to enable serial-getty@ttyGS0.service"
 
 # systemctl enable firstboot || yellow_echo "WARNING: Failed to enable firstboot"
 systemctl enable rfcomm                    || yellow_echo "WARNING: Failed to enable rfcomm"
@@ -294,7 +294,7 @@ if [ "$RPI_CONFIG_NEEDED" = true ]; then
     # Use cross-platform sed syntax for macOS/Linux compatibility
     sed -i.bak '/arm_64bit=1/a\
 dtoverlay=dwc2,dr_mode=peripheral' config/sources/families/bcm2711.conf
-    sed -i.bak '/cgroup_enable=memory/s|$| modules-load=dwc2,g_cdc cfg80211.ieee80211_regdom=GB|' config/sources/families/bcm2711.conf
+    sed -i.bak '/cgroup_enable=memory/s|$| modules-load=dwc2,g_cdc cfg80211.ieee80211_regdom=GB console=ttyGS0,115200|' config/sources/families/bcm2711.conf
     # Clean up backup files
     rm -f config/sources/families/bcm2711.conf.bak
 fi
