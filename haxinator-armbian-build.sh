@@ -65,30 +65,17 @@ BOARD_TYPE="$1"
 case "$BOARD_TYPE" in
     "bananapim4zero")
         BOARD="bananapim4zero"
-        # Board-specific variables for Banana Pi M4 Zero
-        WIFI_OVERLAY_SECTION='
-# Enable WiFi overlay in armbianEnv.txt only for banana pi m4 zero
-echo "Adding WiFi overlay" >> /root/customize.log
-echo "overlays=bananapi-m4-sdio-wifi-bt" >> /boot/armbianEnv.txt
-echo "extraargs=modules-load=dwc2,g_cdc cfg80211.ieee80211_regdom=GB console=ttyGS0,115200" >> /boot/armbianEnv.txt'
+        NEEDS_BOOT_CMD_FIX=true
         RPI_CONFIG_NEEDED=false
         ;;
     "orangepizero2w")
         BOARD="orangepizero2w"
-        # Board-specific variables for Orange Pi Zero 2W (same overlay as Banana Pi M4 Zero)
-        WIFI_OVERLAY_SECTION='
-# Enable WiFi overlay in armbianEnv.txt for orange pi zero 2w
-echo "Adding WiFi overlay" >> /root/customize.log
-echo "overlays=bananapi-m4-sdio-wifi-bt" >> /boot/armbianEnv.txt
-echo "extraargs=modules-load=dwc2,g_cdc cfg80211.ieee80211_regdom=GB console=ttyGS0,115200" >> /boot/armbianEnv.txt'
+        NEEDS_BOOT_CMD_FIX=true
         RPI_CONFIG_NEEDED=false
         ;;
     "rpi4b")
         BOARD="rpi4b"
-        # Board-specific variables for Raspberry Pi 4B
-        WIFI_OVERLAY_SECTION='
-# Raspberry Pi 4B - no specific WiFi overlay needed in armbianEnv.txt
-echo "Raspberry Pi 4B build - skipping WiFi overlay" >> /root/customize.log'
+        NEEDS_BOOT_CMD_FIX=false
         RPI_CONFIG_NEEDED=true
         ;;
     *)
@@ -129,6 +116,9 @@ cat << EOF > userpatches/customize-image.sh
 # enable services, and perform firstboot provisioning tweaks.
 # -------------------------------------------------------------------------
 set -euo pipefail
+
+# Board type passed from main script
+BOARD="$BOARD"
 
 # --- Logging -----------------------------------------------------------------
 echo "Starting customize-image.sh" > /root/customize.log
@@ -273,8 +263,23 @@ fi
 install -m 755 /tmp/overlay/00-self-tests.sh      /00-self-tests.sh
 install -m 755 /tmp/overlay/common-functions.sh  /common-functions.sh
 
-# Board-specific WiFi overlay configuration
-$WIFI_OVERLAY_SECTION
+# Board-specific boot configuration
+if [ "\$BOARD" = "bananapim4zero" ] || [ "\$BOARD" = "orangepizero2w" ]; then
+    echo "Applying board-specific modifications for \$BOARD" >> /root/customize.log
+    
+    # Add WiFi overlay to armbianEnv.txt
+    echo "overlays=bananapi-m4-sdio-wifi-bt" >> /boot/armbianEnv.txt
+    echo "Added WiFi overlay to armbianEnv.txt" >> /root/customize.log
+    
+    # Modify boot.cmd for console and module loading
+    sed -i 's/console=ttyS0,115200/console=ttyGS0,115200 modules-load=dwc2,g_cdc cfg80211.ieee80211_regdom=GB/' /boot/boot.cmd
+    
+    # Rebuild boot.scr from modified boot.cmd
+    mkimage -C none -A arm -T script -d /boot/boot.cmd /boot/boot.scr
+    echo "boot.cmd modifications completed" >> /root/customize.log
+else
+    echo "No board-specific modifications needed for \$BOARD" >> /root/customize.log
+fi
 
 ## This is for all images
 install -m 644 /tmp/overlay/files/armbian-preset.txt /root/.not_logged_in_yet
