@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Haxinator - Network Security Testing Platform
-# v.0.2
+# v.0.2a  (only the two sed commands have been fixed for macOS + Linux)
 # =============================================================================
 # Armbian Custom Build Script for Haxinator Project
 # =============================================================================
@@ -15,7 +15,7 @@
 # SUPPORTED BOARDS:
 #   • bananapim4zero  - Banana Pi M4 Zero (WiFi overlay enabled)
 #   • orangepizero2w  - Orange Pi Zero 2W (WiFi overlay enabled)  
-#   • rpi4b          - Raspberry Pi 4B (bcm2711 config, no WiFi overlay)
+#   • rpi4b          - Raspberry Pi 5,4B,Zero W2 (and possibly others)
 #
 # REQUIREMENTS:
 #   • For native builds - check utils/install_something_something.sh
@@ -43,9 +43,9 @@ usage() {
     echo "Usage: $0 <board_type>"
     echo ""
     echo "Supported board types:"
-    echo "  bananapim4zero - Banana Pi M4 Zero (the tiny yellow friend)"
-    echo "  orangepizero2w - Orange Pi Zero 2W (another tiny friend)"
-    echo "  rpi4b          - Raspberry Pi 4B (the mainstream cousin)"
+    echo "  bananapim4zero - Banana Pi M4 Zero"
+    echo "  orangepizero2w - Orange Pi Zero 2W"
+    echo "  rpi4b          - Raspberry Pi 5,4B,Zero W2 (and possibly others)"
     echo ""
     exit 1
 }
@@ -146,7 +146,7 @@ apt-get install -y \\
     vim htop net-tools wireless-tools locate iodine iptables \\
     cryptsetup openssl ca-certificates git apache2 php php-ssh2 php-mbstring \\
     php-curl network-manager-openvpn libapache2-mod-php dnsutils shellinabox \\
-    ssl-cert dnsmasq python3-dbus python3-gi python3-dotenv git make g++ bluez
+    ssl-cert dnsmasq python3-dbus python3-gi python3-dotenv git make g++ bluez bluez-tools
 
 # --- Sudoers tweaks ----------------------------------------------------------
 echo "www-data ALL=(ALL) NOPASSWD: /sbin/poweroff, /usr/bin/ssh, /bin/kill, /usr/bin/pgrep, /usr/bin/ssh-keygen" | sudo tee -a /etc/sudoers
@@ -157,10 +157,18 @@ echo "dhcp-range=192.168.8.2,192.168.8.100,12h" >> /etc/dnsmasq.conf
 sed -i 's/managed=false/managed=true/' /etc/NetworkManager/NetworkManager.conf
 
 systemctl disable dnsmasq
+#systemctl disable systemd-resolved
+systemctl disable wpa_supplicant
 
 # --- Apache (SSL) ------------------------------------------------------------
 a2enmod ssl
 a2ensite default-ssl
+
+# --- Use the ssl-cert for shellinabox
+#mv /var/lib/shellinabox/certificate.pem /var/lib/shellinabox/certificate.pem.bak
+#bash -c 'cat /etc/ssl/certs/ssl-cert-snakeoil.pem /etc/ssl/private/ssl-cert-snakeoil.key > /var/lib/shellinabox/certificate.pem'
+#chown shellinabox:shellinabox /var/lib/shellinabox/certificate.pem
+#chmod 600 /var/lib/shellinabox/certificate.pem
 
 if [ \$? -eq 0 ]; then
   echo "Package installation successful" >> /root/customize.log
@@ -233,9 +241,9 @@ install -m 755 /tmp/overlay/files/update_me.sh     /update_me.sh
 # cp -rf /tmp/overlay/files/services/unblock-wifi.service /etc/systemd/system/
 
 # systemctl enable unblock-wifi.service
-# systemctl enable bluetooth                 || yellow_echo "WARNING: Failed to enable bluetooth"
+# systemctl enable bluetooth.service                 || yellow_echo "WARNING: Failed to enable bluetooth"
 # systemctl enable bluetooth_pair.service    || yellow_echo "WARNING: Failed to enable bluetooth_pair.service"
-
+# systemctl enable dbus-org.bluez.service
 
 # Serial over USB ethernet
 systemctl enable serial-getty@ttyGS0.service || yellow_echo "WARNING: Failed to enable serial-getty@ttyGS0.service"
@@ -261,7 +269,7 @@ if [ -d /var/www/html ]; then
     ls -la /var/www/html >> /root/customize.log
 fi
 
-# --- Self‑test & provisioning ------------------------------------------------
+# --- Self-test & provisioning ------------------------------------------------
 install -m 755 /tmp/overlay/00-self-tests.sh      /00-self-tests.sh
 install -m 755 /tmp/overlay/common-functions.sh  /common-functions.sh
 
@@ -292,12 +300,8 @@ chmod +x userpatches/customize-image.sh || exit 1
 if [ "$RPI_CONFIG_NEEDED" = true ]; then
     echo "Applying Raspberry Pi specific configuration..."
     # Enable the correct parameters in cmdline and config.txt files for Raspberry Pi
-    # Use cross-platform sed syntax for macOS/Linux compatibility
-    sed -i.bak '/arm_64bit=1/a\
-dtoverlay=dwc2,dr_mode=peripheral' config/sources/families/bcm2711.conf
-    sed -i.bak '/cgroup_enable=memory/s|$| modules-load=dwc2,g_cdc cfg80211.ieee80211_regdom=GB console=ttyGS0,115200|' config/sources/families/bcm2711.conf
-    # Clean up backup files
-    rm -f config/sources/families/bcm2711.conf.bak
+    patch config/sources/families/bcm2711.conf < ../haxinator-pigen-overlay/stage2/02-custom-config/root_files/files/bcm2711.patch 
+
 fi
 
 # -----------------------------------------------------------------------------
