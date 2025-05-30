@@ -1,0 +1,21 @@
+/* Login Page specific styles */
+* { margin: 0; padding: 0; }
+body { background: #000; }
+canvas#c {
+  display: block;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 0;
+}
+.card {
+  position: relative;
+  z-index: 2;
+  background: rgba(255, 255, 255, 0.93);
+}
+.login-container {
+  position: relative;
+  z-index: 2;
+} 

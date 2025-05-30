@@ -34,7 +34,7 @@
 #
 # =============================================================================
 
-set -euo pipefail  # Because YOLO is not a deployment strategy
+set -euo pipefail
 
 # -----------------------------------------------------------------------------
 # Command line argument parsing
@@ -98,7 +98,7 @@ cd build || exit 1
 # -----------------------------------------------------------------------------
 mkdir -p userpatches/overlay/
 cp -rf ../haxinator-pigen-overlay/stage2/02-custom-config/root_files/files  userpatches/overlay/
-cp -rf ../haxinator-pigen-overlay/stage2/02-custom-config/root_files/html   userpatches/overlay/
+cp -rf ../haxinator-pigen-overlay/stage2/02-custom-config/root_files/html2   userpatches/overlay/html
 
 cp ../haxinator-pigen-overlay/stage2/99-self-tests/00-self-tests.sh userpatches/overlay/
 cp ../common-functions.sh userpatches/overlay/
@@ -153,12 +153,6 @@ systemctl disable wpa_supplicant
 # --- Apache (SSL) ------------------------------------------------------------
 a2enmod ssl
 a2ensite default-ssl
-
-# --- Use the ssl-cert for shellinabox
-#mv /var/lib/shellinabox/certificate.pem /var/lib/shellinabox/certificate.pem.bak
-#bash -c 'cat /etc/ssl/certs/ssl-cert-snakeoil.pem /etc/ssl/private/ssl-cert-snakeoil.key > /var/lib/shellinabox/certificate.pem'
-#chown shellinabox:shellinabox /var/lib/shellinabox/certificate.pem
-#chmod 600 /var/lib/shellinabox/certificate.pem
 
 if [ \$? -eq 0 ]; then
   echo "Package installation successful" >> /root/customize.log
@@ -242,6 +236,7 @@ systemctl enable serial-getty@ttyGS0.service || yellow_echo "WARNING: Failed to 
 
 # systemctl enable firstboot || yellow_echo "WARNING: Failed to enable firstboot"
 # systemctl enable rfcomm                    || yellow_echo "WARNING: Failed to enable rfcomm"
+
 systemctl enable shellinabox || yellow_echo "WARNING: Failed to enable shellinabox"
 
 systemctl mask wpa_supplicant@wlan0.service || yellow_echo "WARNING: Failed to mask wpa_supplicant@wlan0.service"
@@ -284,6 +279,9 @@ fi
 ## This is for all images
 install -m 644 /tmp/overlay/files/armbian-preset.txt /root/.not_logged_in_yet
 
+# Clean up default Apache page
+rm -rf /var/www/html/index.html
+
 /00-self-tests.sh
 
 # --- Custom script inside chroot --------------------------------------------
@@ -291,7 +289,10 @@ echo "Running custom script" >> /root/customize.log
 cat << 'SCRIPT' > /tmp/custom-script.sh
 #!/usr/bin/env bash
 echo "Running custom script in chroot" >> /root/customize.log
-touch /root/custom-file
+mv /var/lib/shellinabox/certificate.pem /var/lib/shellinabox/certificate.pem.bak
+cat /etc/ssl/certs/ssl-cert-snakeoil.pem /etc/ssl/private/ssl-cert-snakeoil.key > /var/lib/shellinabox/certificate.pem
+chown shellinabox:shellinabox /var/lib/shellinabox/certificate.pem
+chmod 600 /var/lib/shellinabox/certificate.pem
 SCRIPT
 chmod +x /tmp/custom-script.sh
 /tmp/custom-script.sh
