@@ -18,3 +18,9 @@ docs/changelog.md
 
 # NodeJS
 node_modules/
+
+# PHP
+vendor
+
+# CodeQL
+codeql-bundle-linux64.tar.gz

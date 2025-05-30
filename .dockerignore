@@ -11,3 +11,4 @@ node_modules/**
 .bandit.yaml
 .pylintrc
 .stylelintrc.json
+codeql-bundle-linux64.tar.gz

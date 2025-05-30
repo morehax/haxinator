@@ -24,7 +24,8 @@
 		"ghcr.io/devcontainers/features/node:1": {},
 		"ghcr.io/michidk/devcontainers-features/typos:1": {},
 		"ghcr.io/devcontainers-extra/features/bandit:2": {},
-		"ghcr.io/devcontainers-extra/features/flake8:2": {}
+		"ghcr.io/devcontainers-extra/features/flake8:2": {},
+		"ghcr.io/devcontainers-extra/features/checkov:1": {}
 	},
 	"customizations": {
 		"vscode": {
