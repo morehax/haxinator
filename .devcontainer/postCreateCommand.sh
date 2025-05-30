@@ -13,7 +13,7 @@ npm install --save-dev stylelint stylelint-config-standard
 npm install --save-dev stylelint-config-standard-scss
 npm install --save-dev markdownlint-cli2-formatter-sarif
 npm install -g @microsoft/sarif-multitool
-
+npm install -g @devcontainers/cli
 
 python3 -m pip install \
             flake8 flake8-sarif \
