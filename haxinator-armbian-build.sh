@@ -136,10 +136,11 @@ apt-get install -y \\
     vim htop net-tools wireless-tools locate iodine iptables \\
     cryptsetup openssl ca-certificates git apache2 php php-ssh2 php-mbstring \\
     php-curl network-manager-openvpn libapache2-mod-php dnsutils shellinabox \\
-    ssl-cert dnsmasq python3-dbus python3-gi python3-dotenv git make g++ bluez bluez-tools
+    ssl-cert dnsmasq python3-dbus python3-gi python3-dotenv git make g++ bluez bluez-tools python3-dnspython
 
 # --- Sudoers tweaks ----------------------------------------------------------
-echo "www-data ALL=(ALL) NOPASSWD: /sbin/poweroff, /usr/bin/ssh, /bin/kill, /usr/bin/pgrep, /usr/bin/ssh-keygen" | sudo tee -a /etc/sudoers
+echo "www-data ALL=(ALL) NOPASSWD: /sbin/poweroff, /usr/bin/ssh, /bin/kill, /usr/bin/pgrep, /usr/bin/ssh-keygen, /usr/bin/python3" | sudo tee -a /etc/sudoers
+usermod -aG netdev www-data
 
 # --- dnsmasq & NetworkManager -------------------------------------------------
 echo "interface=usb0"                       >> /etc/dnsmasq.conf
