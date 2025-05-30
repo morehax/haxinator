@@ -35,8 +35,11 @@ jobs:
       -
         name: Lint devcontainer.json
         run: |
-          npm install -g @devcontainers/cli
-          devcontainer validate .devcontainer/devcontainer.json
+          python3 -m pip install json-spec
+          # TODO: Use submodule
+          git clone https://github.com/devcontainers/spec/
+          cd spec/schemas
+          json validate --schema-file=devContainer.schema.json --document-file=../../.devcontainer/devcontainer.json
 
   devcontainer:
     runs-on: ubuntu-24.04
