@@ -18,6 +18,10 @@ RUN if [ -n "$APT_PROXY" ]; then \
     echo "Acquire::http::Proxy \"$APT_PROXY\";" > /etc/apt/apt.conf.d/01proxy; \
     fi
 
+# Add unsafe-io to speed up package installation
+# hadolint ignore=DL3059
+RUN echo "force-unsafe-io" > /etc/dpkg/dpkg.cfg.d/force-unsafe-io
+
 # Update and install dependencies
 # hadolint ignore=DL3015,DL3008
 RUN apt-get update && apt-get upgrade -y && \
