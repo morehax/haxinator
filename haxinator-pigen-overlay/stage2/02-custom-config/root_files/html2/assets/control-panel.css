@@ -408,6 +408,7 @@ body {
     background: rgba(255, 255, 255, 0.1);
     backdrop-filter: blur(10px);
     border-radius: 0.5rem 0.5rem 0 0;
+    overflow: hidden; /* Ensures child elements respect container borders */
 }
 
 .cp-nav .nav-link {
@@ -419,12 +420,29 @@ body {
     font-weight: 600;
     transition: all 0.2s ease;
     backdrop-filter: blur(5px);
+    position: relative;
+}
+
+/* First tab gets left rounded corner */
+.cp-nav .nav-item:first-child .nav-link {
+    border-radius: 0.5rem 0 0 0;
+}
+
+/* Last tab gets right rounded corner */
+.cp-nav .nav-item:last-child .nav-link {
+    border-radius: 0 0.5rem 0 0;
+}
+
+/* If there's only one tab, it gets both corners */
+.cp-nav .nav-item:only-child .nav-link {
+    border-radius: 0.5rem 0.5rem 0 0;
 }
 
 .cp-nav .nav-link:hover {
     color: rgba(255, 255, 255, 1);
     background: rgba(255, 255, 255, 0.15);
     border-bottom-color: rgba(255, 255, 255, 0.4);
+    /* Preserve border-radius on hover */
 }
 
 .cp-nav .nav-link.active {
@@ -432,6 +450,25 @@ body {
     border-bottom-color: #ffffff;
     background: rgba(255, 255, 255, 0.2);
     backdrop-filter: blur(15px);
+    /* Preserve border-radius on active state */
+}
+
+/* Ensure border-radius is maintained for first tab on hover/active */
+.cp-nav .nav-item:first-child .nav-link:hover,
+.cp-nav .nav-item:first-child .nav-link.active {
+    border-radius: 0.5rem 0 0 0;
+}
+
+/* Ensure border-radius is maintained for last tab on hover/active */
+.cp-nav .nav-item:last-child .nav-link:hover,
+.cp-nav .nav-item:last-child .nav-link.active {
+    border-radius: 0 0.5rem 0 0;
+}
+
+/* Ensure border-radius is maintained for only child on hover/active */
+.cp-nav .nav-item:only-child .nav-link:hover,
+.cp-nav .nav-item:only-child .nav-link.active {
+    border-radius: 0.5rem 0.5rem 0 0;
 }
 
 .cp-nav .nav-link i {
@@ -441,7 +478,8 @@ body {
 .cp-content {
     background: var(--cp-content-bg);
     border: 1px solid var(--cp-border);
-    border-radius: 0.5rem;
+    border-radius: 0 0 0.5rem 0.5rem; /* Only bottom corners rounded */
+    border-top: none; /* Seamless connection with tabs */
     min-height: 600px;
 }
 
