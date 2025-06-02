@@ -65,7 +65,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
     // ───────────── list connections ─────────────
     if ($act === 'list_conns') {
         nm_exec('nmcli -t -f NAME,UUID,TYPE,DEVICE,AUTOCONNECT connection show', [], $rows, $rc);
-        if ($rc !== 0) bad('nmcli error');
+        if ($rc !== 0) bad('Failed to retrieve network connections');
         $list = [];
         foreach ($rows as $ln) {
             if ($ln==='') continue;
@@ -84,7 +84,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
     // ───────────── up / down / delete ─────────────
     if (in_array($act, ['up_conn','down_conn','del_conn'], true)) {
         $uuid = $_POST['uuid'] ?? '';
-        if (!preg_match($re_uuid, $uuid)) bad('Bad UUID');
+        if (!preg_match($re_uuid, $uuid)) bad('Invalid connection identifier');
         $cmdMap = [
             'up_conn'   => 'nmcli connection up uuid %s',
             'down_conn' => 'nmcli connection down uuid %s',
@@ -100,49 +100,183 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
     // ─────────── get details ───────────
     if ($act==='get_conn_details') {
         $uuid=$_POST['uuid']??'';
-        if(!preg_match($re_uuid,$uuid)) bad('Bad UUID');
+        if(!preg_match($re_uuid,$uuid)) bad('Invalid connection identifier');
         
-        // Curated list of commonly editable fields (avoids read-only and problematic fields)
-        $editableFields = [
-            'connection.id',
-            'connection.autoconnect',
-            'connection.autoconnect-priority',
-            '802-11-wireless.ssid',
-            '802-11-wireless.mode',
-            '802-11-wireless-security.key-mgmt',
-            '802-11-wireless-security.psk',
-            '802-3-ethernet.mtu',
-            'ipv4.method',
-            'ipv4.addresses',
-            'ipv4.gateway',
-            'ipv4.dns',
-            'ipv6.method',
-            'ipv6.addresses',
-            'ipv6.gateway',
-            'ipv6.dns'
+        // First, get connection type
+        nm_exec('nmcli -t -f connection.type connection show uuid %s', [$uuid], $typeOut, $typeRc);
+        if($typeRc!==0) bad('Failed to get connection type');
+        $connType = 'default';
+        foreach($typeOut as $line) {
+            if(str_contains($line, 'connection.type:')) {
+                $rawType = trim(explode(':', $line, 2)[1]);
+                // Map connection types to our field categories
+                switch($rawType) {
+                    case '802-11-wireless':
+                        $connType = 'wifi';
+                        break;
+                    case 'vpn':
+                        $connType = 'vpn';
+                        break;
+                    case 'ethernet':
+                    case '802-3-ethernet':
+                        $connType = 'ethernet';
+                        break;
+                    default:
+                        $connType = 'default';
+                }
+                break;
+            }
+        }
+        
+        // Type-specific field mappings
+        $editableFieldsByType = [
+            'vpn' => [
+                'connection.id',
+                'connection.autoconnect', 
+                'connection.autoconnect-priority',
+                'connection.interface-name',
+                'vpn.data',
+                'ipv4.method',
+                'ipv4.never-default',
+                'ipv4.addresses',
+                'ipv4.dns',
+                'ipv6.method'
+            ],
+            'wifi' => [
+                'connection.id',
+                'connection.autoconnect',
+                'connection.autoconnect-priority',
+                '802-11-wireless.ssid',
+                '802-11-wireless.mode', 
+                '802-11-wireless.band',
+                '802-11-wireless.channel',
+                '802-11-wireless.hidden',
+                '802-11-wireless-security.key-mgmt',
+                '802-11-wireless-security.psk',
+                '802-11-wireless-security.auth-alg',
+                'ipv4.method',
+                'ipv4.addresses',
+                'ipv4.gateway',
+                'ipv4.dns',
+                'ipv6.method',
+                'ipv6.addresses',
+                'ipv6.gateway',
+                'ipv6.dns'
+            ],
+            'ethernet' => [
+                'connection.id',
+                'connection.autoconnect',
+                'connection.autoconnect-priority',
+                'connection.interface-name',
+                '802-3-ethernet.mtu',
+                '802-3-ethernet.duplex',
+                '802-3-ethernet.speed',
+                'ipv4.method',
+                'ipv4.addresses',
+                'ipv4.gateway',
+                'ipv4.dns',
+                'ipv6.method',
+                'ipv6.addresses',
+                'ipv6.gateway',
+                'ipv6.dns'
+            ],
+            'default' => [
+                'connection.id',
+                'connection.autoconnect',
+                'connection.autoconnect-priority',
+                'ipv4.method',
+                'ipv4.addresses',
+                'ipv4.gateway',
+                'ipv4.dns',
+                'ipv6.method'
+            ]
         ];
+        
+        // Select appropriate fields for this connection type
+        $editableFields = $editableFieldsByType[$connType] ?? $editableFieldsByType['default'];
         $fieldsStr = implode(',', $editableFields);
         
         nm_exec('nmcli -t -s --fields %s connection show uuid %s', [$fieldsStr, $uuid], $out, $rc);
-        if($rc!==0) bad('nmcli error');
+        if($rc!==0) bad('Failed to retrieve connection details');
         $rows=[];
         foreach($out as $ln){
             if(!str_contains($ln,':')) continue;
-            [$k,$v]=explode(':',$ln,2); $rows[]=['key'=>trim($k), 'val'=>trim($v)];
+            [$k,$v]=explode(':',$ln,2);
+            $key = trim($k);
+            $val = trim($v);
+            
+            // Special handling for vpn.data - break it into more manageable parts
+            if($key === 'vpn.data' && $connType === 'vpn') {
+                // Parse vpn.data into individual components for better editing
+                $vpnPairs = [];
+                if($val !== '--' && $val !== '') {
+                    // Split on comma, but be careful with quoted values
+                    $parts = preg_split('/,\s*(?=\w+\s*=)/', $val);
+                    foreach($parts as $part) {
+                        if(str_contains($part, '=')) {
+                            [$subKey, $subVal] = explode('=', trim($part), 2);
+                            $subKey = trim($subKey);
+                            $subVal = trim($subVal, " '\"");
+                            $vpnPairs[] = ['key' => "vpn.data.$subKey", 'val' => $subVal];
+                        }
+                    }
+                }
+                // If we have parsed pairs, use them; otherwise show the raw field
+                if(!empty($vpnPairs)) {
+                    $rows = array_merge($rows, $vpnPairs);
+                } else {
+                    $rows[] = ['key'=>$key, 'val'=>$val];
+                }
+            } else {
+                $rows[]=['key'=>$key, 'val'=>$val];
+            }
         }
-        json_out(['details'=>$rows]);
+        json_out(['details'=>$rows, 'type'=>$connType]);
     }
 
     // ─────────── save details ───────────
     if ($act==='save_conn_details') {
         $uuid=$_POST['uuid']??''; $rows=json_decode($_POST['rows']??'[]',true);
-        if(!preg_match($re_uuid,$uuid)) bad('Bad UUID');
-        if(!is_array($rows)) bad('Bad rows');
+        if(!preg_match($re_uuid,$uuid)) bad('Invalid connection identifier');
+        if(!is_array($rows)) bad('Invalid configuration data provided');
+        
+        // Group vpn.data.* fields and handle them specially
+        $vpnDataParts = [];
+        $regularFields = [];
         
         foreach($rows as $r){
             if(!isset($r['key'],$r['val'])) continue;
+            
+            if(str_starts_with($r['key'], 'vpn.data.')) {
+                // Extract the sub-key from vpn.data.subkey
+                $subKey = substr($r['key'], 9); // Remove 'vpn.data.'
+                $vpnDataParts[$subKey] = $r['val'];
+            } else {
+                $regularFields[] = $r;
+            }
+        }
+        
+        // If we have vpn.data parts, reconstruct the full vpn.data field
+        if(!empty($vpnDataParts)) {
+            $vpnDataString = '';
+            foreach($vpnDataParts as $key => $val) {
+                if($vpnDataString !== '') $vpnDataString .= ', ';
+                // Quote values that contain spaces or special characters
+                if(preg_match('/[\s,=]/', $val)) {
+                    $vpnDataString .= "$key = '$val'";
+                } else {
+                    $vpnDataString .= "$key = $val";
+                }
+            }
+            // Add the reconstructed vpn.data to regular fields
+            $regularFields[] = ['key' => 'vpn.data', 'val' => $vpnDataString];
+        }
+        
+        // Apply all field modifications
+        foreach($regularFields as $r){
+            if(!isset($r['key'],$r['val'])) continue;
             nm_exec('nmcli connection modify uuid %s %s %s',[$uuid,$r['key'],$r['val']],$o,$rc);
-            if($rc!==0) bad('Error: '.implode('\n',$o));
+            if($rc!==0) bad('Error modifying ' . $r['key'] . ': '.implode('\n',$o));
         }
         json_out(['success'=>true]);
     }
@@ -258,7 +392,18 @@ async function load(){
 async function act(a,u,confirmDel=false){
   if(confirmDel && !confirm('Delete connection?')) return;
   const d=await api(a,{uuid:u});
-  if(d.error) toast(d.error,false); else { toast('OK'); load(); }
+  if(d.error) {
+    toast(d.error,false);
+  } else { 
+    // More descriptive success messages
+    const messages = {
+      'up_conn': 'Connection activated successfully',
+      'down_conn': 'Connection deactivated successfully', 
+      'del_conn': 'Connection deleted successfully'
+    };
+    toast(messages[a] || 'Operation completed successfully');
+    load();
+  }
 }
 
 document.getElementById('refreshBtn').addEventListener('click',load);
@@ -290,7 +435,7 @@ function openEdit(uuid){
   if(!modal){
     document.body.insertAdjacentHTML('beforeend',`
     <div class="modal fade cp-modal-responsive" id="editModal" tabindex="-1"><div class="modal-dialog modal-lg"><div class="modal-content">
-      <div class="modal-header"><h5 class="modal-title">Edit Connection</h5><button class="btn-close" data-bs-dismiss="modal"></button></div>
+      <div class="modal-header"><h5 class="modal-title" id="editModalTitle">Edit Connection</h5><button class="btn-close" data-bs-dismiss="modal"></button></div>
       <div class="modal-body"><div id="editBody" class="text-center p-4"><div class="spinner-border"></div></div></div>
       <div class="modal-footer"><button class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button><button class="btn btn-primary" id="saveEditBtn">Save</button></div>
     </div></div></div>`);
@@ -298,24 +443,113 @@ function openEdit(uuid){
   }
   const mInst=new bootstrap.Modal(modal); mInst.show();
   const bodyDiv=document.getElementById('editBody');
+  const titleEl=document.getElementById('editModalTitle');
   bodyDiv.innerHTML='<div class="spinner-border"></div>';
 
   api('get_conn_details',{uuid}).then(d=>{
     if(d.error){ bodyDiv.innerHTML='<p class="text-danger">'+d.error+'</p>'; return; }
-    const tbl=document.createElement('table'); tbl.className='table table-sm';
-    d.details.forEach(row=>{
+    
+    // Update modal title with connection type
+    const connType = d.type || 'Unknown';
+    titleEl.textContent = `Edit ${connType.charAt(0).toUpperCase() + connType.slice(1)} Connection`;
+    
+    const tbl=document.createElement('table'); 
+    tbl.className='table table-sm';
+    
+    // Group VPN data fields for better organization
+    const vpnDataFields = [];
+    const wifiSecurityFields = [];
+    const wifiBasicFields = [];
+    const networkFields = [];
+    const otherFields = [];
+    
+    d.details.forEach(row => {
+      if(row.key.startsWith('vpn.data.')) {
+        vpnDataFields.push(row);
+      } else if(row.key.startsWith('802-11-wireless-security.')) {
+        wifiSecurityFields.push(row);
+      } else if(row.key.startsWith('802-11-wireless.')) {
+        wifiBasicFields.push(row);
+      } else if(row.key.startsWith('ipv4.') || row.key.startsWith('ipv6.')) {
+        networkFields.push(row);
+      } else {
+        otherFields.push(row);
+      }
+    });
+    
+    // Add basic connection fields first
+    otherFields.forEach(row=>{
       const tr=document.createElement('tr');
-      tr.innerHTML=`<td class='text-nowrap'>${row.key}</td><td><input type='text' class='form-control form-control-sm' value="${row.val.replace(/"/g,'&quot;')}"></td>`;
+      tr.innerHTML=`<td class='text-nowrap fw-semibold'>${row.key}</td><td><input type='text' class='form-control form-control-sm' value="${row.val.replace(/"/g,'&quot;')}"></td>`;
       tbl.append(tr);
     });
+    
+    // Add WiFi basic settings with separator if they exist
+    if(wifiBasicFields.length > 0) {
+      const separatorTr = document.createElement('tr');
+      separatorTr.innerHTML = `<td colspan="2" class="bg-light text-muted fw-semibold p-2 border-top"><i class="bi bi-wifi me-2"></i>WiFi Settings</td>`;
+      tbl.append(separatorTr);
+      
+      wifiBasicFields.forEach(row=>{
+        const tr=document.createElement('tr');
+        tr.innerHTML=`<td class='text-nowrap fw-semibold ps-3'>${row.key}</td><td><input type='text' class='form-control form-control-sm' value="${row.val.replace(/"/g,'&quot;')}"></td>`;
+        tbl.append(tr);
+      });
+    }
+    
+    // Add WiFi security settings with separator if they exist  
+    if(wifiSecurityFields.length > 0) {
+      const separatorTr = document.createElement('tr');
+      separatorTr.innerHTML = `<td colspan="2" class="bg-light text-muted fw-semibold p-2 border-top"><i class="bi bi-shield-lock me-2"></i>WiFi Security</td>`;
+      tbl.append(separatorTr);
+      
+      wifiSecurityFields.forEach(row=>{
+        const tr=document.createElement('tr');
+        tr.innerHTML=`<td class='text-nowrap fw-semibold ps-3'>${row.key}</td><td><input type='text' class='form-control form-control-sm' value="${row.val.replace(/"/g,'&quot;')}"></td>`;
+        tbl.append(tr);
+      });
+    }
+    
+    // Add network configuration with separator if they exist
+    if(networkFields.length > 0) {
+      const separatorTr = document.createElement('tr');
+      separatorTr.innerHTML = `<td colspan="2" class="bg-light text-muted fw-semibold p-2 border-top"><i class="bi bi-ethernet me-2"></i>Network Configuration</td>`;
+      tbl.append(separatorTr);
+      
+      networkFields.forEach(row=>{
+        const tr=document.createElement('tr');
+        tr.innerHTML=`<td class='text-nowrap fw-semibold ps-3'>${row.key}</td><td><input type='text' class='form-control form-control-sm' value="${row.val.replace(/"/g,'&quot;')}"></td>`;
+        tbl.append(tr);
+      });
+    }
+    
+    // Add VPN data fields with a separator if they exist
+    if(vpnDataFields.length > 0) {
+      const separatorTr = document.createElement('tr');
+      separatorTr.innerHTML = `<td colspan="2" class="bg-light text-muted fw-semibold p-2 border-top"><i class="bi bi-shield-lock me-2"></i>VPN Configuration</td>`;
+      tbl.append(separatorTr);
+      
+      vpnDataFields.forEach(row=>{
+        const tr=document.createElement('tr');
+        const friendlyKey = row.key.replace('vpn.data.', '');
+        tr.innerHTML=`<td class='text-nowrap fw-semibold ps-3'>${friendlyKey}</td><td><input type='text' class='form-control form-control-sm' value="${row.val.replace(/"/g,'&quot;')}"></td>`;
+        tr.dataset.originalKey = row.key; // Store original key for saving
+        tbl.append(tr);
+      });
+    }
+    
     bodyDiv.innerHTML=''; bodyDiv.append(tbl);
 
     document.getElementById('saveEditBtn').onclick=async()=>{
       const inputs=[...tbl.querySelectorAll('tr')].map(tr=>{
-        return {key:tr.children[0].textContent.trim(), val:tr.children[1].firstChild.value};
-      });
+        if(tr.children.length !== 2 || !tr.children[1].firstChild) return null;
+        const key = tr.dataset.originalKey || tr.children[0].textContent.trim();
+        const val = tr.children[1].firstChild.value;
+        return {key, val};
+      }).filter(Boolean);
+      
       const d2=await api('save_conn_details',{uuid, rows:JSON.stringify(inputs)});
-      if(d2.error) toast(d2.error,false); else { toast('Saved'); mInst.hide(); load(); }
+      if(d2.error) toast(d2.error,false); else { toast('Connection settings saved successfully'); mInst.hide(); load(); }
     };
   });
 }

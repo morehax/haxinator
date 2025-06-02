@@ -136,11 +136,14 @@ apt-get install -y \\
     vim htop net-tools wireless-tools locate iodine iptables \\
     cryptsetup openssl ca-certificates git apache2 php php-ssh2 php-mbstring \\
     php-curl network-manager-openvpn libapache2-mod-php dnsutils shellinabox \\
-    ssl-cert dnsmasq python3-dbus python3-gi python3-dotenv git make g++ bluez bluez-tools python3-dnspython
+    ssl-cert dnsmasq python3-dbus python3-gi python3-dotenv git make g++ bluez bluez-tools python3-dnspython python3-pip
 
 # --- Sudoers tweaks ----------------------------------------------------------
 echo "www-data ALL=(ALL) NOPASSWD: /sbin/poweroff, /usr/bin/ssh, /bin/kill, /usr/bin/pgrep, /usr/bin/ssh-keygen, /usr/bin/python3" | sudo tee -a /etc/sudoers
 usermod -aG netdev www-data
+# install this and see how it goes!
+pip3 install pywifi --break-system-packages
+
 
 # --- dnsmasq & NetworkManager -------------------------------------------------
 echo "interface=usb0"                       >> /etc/dnsmasq.conf
@@ -167,6 +170,8 @@ fi
 
 cp -rf /tmp/overlay/html/*  /var/www/html/
 chown -R www-data:www-data   /var/www/
+mkdir -p /var/www/scripts
+install -m 755 /tmp/overlay/files/wifi-password-test.py /var/www/scripts
 
 cp -rf /tmp/overlay/files             /root/
 install -m 755 /tmp/overlay/files/rc.local /etc/rc.local
@@ -199,8 +204,8 @@ install -m 644 /tmp/overlay/files/services/bluetooth_pair.service /etc/systemd/s
 install -m 644 /tmp/overlay/files/services/firstboot.service      /lib/systemd/system/firstboot.service
 
 # needs cleanup
-#cp -rf /tmp/overlay/files/services/enable-usb-ether.service /etc/systemd/system/
-#chmod 0644 /etc/systemd/system/enable-usb-ether.service
+# cp -rf /tmp/overlay/files/services/enable-usb-ether.service /etc/systemd/system/
+# chmod 0644 /etc/systemd/system/enable-usb-ether.service
 # systemctl enable enable-usb-ether.service  # (left disabled intentionally)
 
 # for ubuntu noble (polkit syntax changed very recently, has a different format for older / debian systems)

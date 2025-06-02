@@ -31,6 +31,7 @@ function discoverModules(): array {
         'wifi' => ['title' => 'Wi-Fi', 'icon' => 'wifi'],
         'network' => ['title' => 'Network', 'icon' => 'diagram-3'], 
         'ssh_tunnel' => ['title' => 'SSH', 'icon' => 'key'],
+        'scripts' => ['title' => 'Scripts', 'icon' => 'code-slash'],
         'terminal' => ['title' => 'Terminal', 'icon' => 'terminal'],
         'configure' => ['title' => 'Configure', 'icon' => 'gear']
     ];
