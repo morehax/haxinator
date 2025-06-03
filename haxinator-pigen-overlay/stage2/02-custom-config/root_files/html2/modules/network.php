@@ -279,6 +279,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
         ]);
     }
 
+    // ───────────── simple connection listing (restored from backup) ─────────────
+    if ($act === 'list_conns') {
+        nm_exec('nmcli -t -f NAME,UUID,TYPE,DEVICE,AUTOCONNECT connection show', [], $rows, $rc);
+        if ($rc !== 0) bad('Failed to retrieve network connections');
+        $list = [];
+        foreach ($rows as $ln) {
+            if ($ln==='') continue;
+            [$name,$uuid,$type,$dev,$auto] = explode(':', $ln)+array_fill(0,5,'');
+            $list[] = [
+                'name'  => $name,
+                'uuid'  => $uuid,
+                'type'  => $type,
+                'device'=> $dev,
+                'auto'  => $auto,
+            ];
+        }
+        json_out(['conns'=>$list]);
+    }
+
     // ───────────── interface actions ─────────────
     if ($act === 'disconnect_interface') {
         $iface = $_POST['interface'] ?? '';
@@ -347,8 +366,62 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
             }
         }
         
-        // Get basic connection details
-        nm_exec('nmcli -t -s connection show uuid %s', [$uuid], $out, $rc);
+        // Define editable fields by connection type
+        $editableFieldsByType = [
+            'wifi' => [
+                'connection.id',
+                'connection.autoconnect',
+                'connection.autoconnect-priority',
+                '802-11-wireless.ssid',
+                '802-11-wireless.mode',
+                '802-11-wireless.band',
+                '802-11-wireless.channel',
+                '802-11-wireless-security.key-mgmt',
+                '802-11-wireless-security.psk',
+                '802-11-wireless-security.auth-alg',
+                'ipv4.method',
+                'ipv4.addresses',
+                'ipv4.gateway',
+                'ipv4.dns',
+                'ipv6.method'
+            ],
+            'vpn' => [
+                'connection.id',
+                'connection.autoconnect',
+                'connection.autoconnect-priority',
+                'vpn.service-type',
+                'vpn.data',
+                'ipv4.method',
+                'ipv4.dns',
+                'ipv6.method'
+            ],
+            'ethernet' => [
+                'connection.id',
+                'connection.autoconnect',
+                'connection.autoconnect-priority',
+                'ipv4.method',
+                'ipv4.addresses',
+                'ipv4.gateway',  
+                'ipv4.dns',
+                'ipv6.method'
+            ],
+            'default' => [
+                'connection.id',
+                'connection.autoconnect',
+                'connection.autoconnect-priority',
+                'ipv4.method',
+                'ipv4.addresses',
+                'ipv4.gateway',
+                'ipv4.dns',
+                'ipv6.method'
+            ]
+        ];
+        
+        // Select appropriate fields for this connection type
+        $editableFields = $editableFieldsByType[$connType] ?? $editableFieldsByType['default'];
+        $fieldsStr = implode(',', $editableFields);
+        
+        nm_exec('nmcli -t -s --fields %s connection show uuid %s', [$fieldsStr, $uuid], $out, $rc);
         if ($rc !== 0) bad('Failed to retrieve connection details');
         
         $details = [];
@@ -358,13 +431,104 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
             $key = trim($k);
             $val = trim($v);
             
-            // Filter to show only relevant fields
-            if (preg_match('/^(connection\.|ipv4\.|ipv6\.|802-11-wireless\.|vpn\.)/', $key)) {
-                $details[] = ['key' => $key, 'val' => $val];
+            // Special handling for vpn.data - break it into more manageable parts
+            if ($key === 'vpn.data' && $connType === 'vpn') {
+                // Parse vpn.data into individual components for better editing
+                $vpnPairs = [];
+                if ($val !== '--' && $val !== '') {
+                    // Enhanced parsing for VPN data to handle special cases like HANS
+                    // First, check if this looks like HANS format (contains password-flags)
+                    if (str_contains($val, 'password-flags')) {
+                        // For HANS VPN, password-flags is a configuration parameter, not a separate field
+                        // Pattern: "server=X, password=Y, password-flags=Z"
+                        if (preg_match('/server\s*=\s*([^,]+)/', $val, $serverMatch) &&
+                            preg_match('/password\s*=\s*([^,]+)(?=,\s*password-flags)/', $val, $passwordMatch) &&
+                            preg_match('/password-flags\s*=\s*(\d+)/', $val, $flagsMatch)) {
+                            
+                            $vpnPairs[] = ['key' => 'vpn.data.server', 'val' => trim($serverMatch[1])];
+                            $vpnPairs[] = ['key' => 'vpn.data.password', 'val' => trim($passwordMatch[1])];
+                            $vpnPairs[] = ['key' => 'vpn.data.password-flags', 'val' => trim($flagsMatch[1])];
+                        } else {
+                            // Fallback to basic parsing if pattern doesn't match
+                            $pairs = preg_split('/,\s*(?=\w+\s*=)/', $val);
+                            foreach ($pairs as $pair) {
+                                if (preg_match('/^(\w+(?:-\w+)*)\s*=\s*(.*)$/', trim($pair), $matches)) {
+                                    $subKey = trim($matches[1]);
+                                    $subVal = trim($matches[2], " '\"");
+                                    $vpnPairs[] = ['key' => "vpn.data.$subKey", 'val' => $subVal];
+                                }
+                            }
+                        }
+                    } else {
+                        // Standard parsing for other VPN types (OpenVPN, etc.)
+                        $pairs = preg_split('/,\s*(?=\w+\s*=)/', $val);
+                        foreach ($pairs as $pair) {
+                            if (preg_match('/^(\w+(?:-\w+)*)\s*=\s*(.*)$/', trim($pair), $matches)) {
+                                $subKey = trim($matches[1]);
+                                $subVal = trim($matches[2], " '\"");
+                                $vpnPairs[] = ['key' => "vpn.data.$subKey", 'val' => $subVal];
+                            }
+                        }
+                    }
+                }
+                
+                // Add individual VPN data fields instead of the combined field
+                $details = array_merge($details, $vpnPairs);
+            } else {
+                $details[] = ['key' => $key, 'val' => $val === '--' ? '' : $val];
             }
         }
         
         json_out(['details' => $details, 'type' => $connType]);
+    }
+
+    // ─────────── save connection details ───────────
+    if ($act === 'save_conn_details') {
+        $uuid = $_POST['uuid'] ?? '';
+        $rows = json_decode($_POST['rows'] ?? '[]', true);
+        if (!preg_match($re_uuid, $uuid)) bad('Invalid connection identifier');
+        if (!is_array($rows)) bad('Invalid configuration data provided');
+        
+        // Group vpn.data.* fields and handle them specially
+        $vpnDataParts = [];
+        $regularFields = [];
+        
+        foreach ($rows as $r) {
+            if (!isset($r['key'], $r['val'])) continue;
+            
+            if (str_starts_with($r['key'], 'vpn.data.')) {
+                // Extract the sub-key from vpn.data.subkey
+                $subKey = substr($r['key'], 9); // Remove 'vpn.data.'
+                $vpnDataParts[$subKey] = $r['val'];
+            } else {
+                $regularFields[] = $r;
+            }
+        }
+        
+        // If we have vpn.data parts, reconstruct the full vpn.data field
+        if (!empty($vpnDataParts)) {
+            $vpnDataString = '';
+            foreach ($vpnDataParts as $key => $val) {
+                if ($vpnDataString !== '') $vpnDataString .= ', ';
+                // Quote values that contain spaces or special characters
+                if (preg_match('/[\s,=]/', $val)) {
+                    $vpnDataString .= "$key = '$val'";
+                } else {
+                    $vpnDataString .= "$key = $val";
+                }
+            }
+            // Add the reconstructed vpn.data to regular fields
+            $regularFields[] = ['key' => 'vpn.data', 'val' => $vpnDataString];
+        }
+        
+        // Apply all field modifications
+        foreach ($regularFields as $r) {
+            if (!isset($r['key'], $r['val'])) continue;
+            nm_exec('nmcli connection modify uuid %s %s %s', [$uuid, $r['key'], $r['val']], $o, $rc);
+            if ($rc !== 0) bad('Error modifying ' . $r['key'] . ': ' . implode('\n', $o));
+        }
+        
+        json_out(['success' => true, 'message' => 'Connection updated successfully']);
     }
 
     // ─────────── interface statistics ───────────
@@ -539,6 +703,43 @@ $csrf = csrf();
               <th class="cp-col-md">IP Address</th>
               <th class="cp-col-lg">Traffic</th>
               <th class="cp-col-lg">Connection</th>
+              <th style="width:18%">Actions</th>
+              <th class="d-table-cell d-sm-none" style="width:1%">
+                <i class="bi bi-info-circle" title="Tap row for details"></i>
+              </th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Section 3: Simple Connection Management (Restored from Backup) -->
+<div class="cp-interface-section" style="display: none;" id="simpleConnectionSection">
+  <div class="card cp-interface-card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+      <h5 class="mb-0">
+        <i class="bi bi-list-ul me-2"></i>Simple Connection Management
+      </h5>
+      <div class="d-flex gap-2">
+        <button class="btn btn-sm btn-outline-secondary" id="toggleViewBtn">Switch View</button>
+        <button class="btn btn-sm btn-primary" id="refreshConnBtn">
+          <i class="bi bi-arrow-clockwise"></i> Refresh
+        </button>
+      </div>
+    </div>
+    <div class="card-body p-0">
+      <div class="cp-table-responsive">
+        <table class="table table-sm table-hover align-middle mb-0" id="connTable">
+          <thead class="table-light">
+            <tr>
+              <th>Name</th>
+              <th class="cp-col-sm">UUID</th>
+              <th class="cp-col-md">Type</th>
+              <th class="cp-col-lg">Device</th>
+              <th class="cp-col-md">Auto</th>
               <th style="width:18%">Actions</th>
               <th class="d-table-cell d-sm-none" style="width:1%">
                 <i class="bi bi-info-circle" title="Tap row for details"></i>
@@ -748,7 +949,7 @@ function renderAvailableConnections(connections) {
           <button class='btn btn-sm btn-outline-warning w-100' onclick="deactivateConnection('${conn.uuid}')">
             <i class='bi bi-stop me-1'></i>Disconnect
           </button>
-          <button class='btn btn-sm btn-outline-secondary w-100' onclick="editConnection('${conn.uuid}')">
+          <button class='btn btn-sm btn-outline-secondary w-100' onclick="openEdit('${conn.uuid}')">
             <i class='bi bi-pencil-square me-1'></i>Edit
           </button>
           <button class='btn btn-sm btn-outline-danger w-100' onclick="deleteConnection('${conn.uuid}')">
@@ -759,7 +960,7 @@ function renderAvailableConnections(connections) {
           <button class='btn btn-sm btn-outline-warning me-1' title='Disconnect' onclick="deactivateConnection('${conn.uuid}')">
             <i class='bi bi-stop'></i>
           </button>
-          <button class='btn btn-sm btn-outline-secondary me-1' title='Edit' onclick="editConnection('${conn.uuid}')">
+          <button class='btn btn-sm btn-outline-secondary me-1' title='Edit' onclick="openEdit('${conn.uuid}')">
             <i class='bi bi-pencil-square'></i>
           </button>
           <button class='btn btn-sm btn-outline-danger' title='Delete' onclick="deleteConnection('${conn.uuid}')">
@@ -774,7 +975,7 @@ function renderAvailableConnections(connections) {
           <button class='btn btn-sm btn-outline-success w-100' onclick="activateConnection('${conn.uuid}')">
             <i class='bi bi-play me-1'></i>Connect
           </button>
-          <button class='btn btn-sm btn-outline-secondary w-100' onclick="editConnection('${conn.uuid}')">
+          <button class='btn btn-sm btn-outline-secondary w-100' onclick="openEdit('${conn.uuid}')">
             <i class='bi bi-pencil-square me-1'></i>Edit
           </button>
           <button class='btn btn-sm btn-outline-danger w-100' onclick="deleteConnection('${conn.uuid}')">
@@ -785,7 +986,7 @@ function renderAvailableConnections(connections) {
           <button class='btn btn-sm btn-outline-success me-1' title='Connect' onclick="activateConnection('${conn.uuid}')">
             <i class='bi bi-play'></i>
           </button>
-          <button class='btn btn-sm btn-outline-secondary me-1' title='Edit' onclick="editConnection('${conn.uuid}')">
+          <button class='btn btn-sm btn-outline-secondary me-1' title='Edit' onclick="openEdit('${conn.uuid}')">
             <i class='bi bi-pencil-square'></i>
           </button>
           <button class='btn btn-sm btn-outline-danger' title='Delete' onclick="deleteConnection('${conn.uuid}')">
@@ -990,9 +1191,129 @@ async function showInterfaceStats(iface) {
   new bootstrap.Modal(modal).show();
 }
 
-function editConnection(uuid) {
-  // Use existing edit modal pattern (simplified for now)
-  toast('Connection editing - feature coming soon!', true);
+function openEdit(uuid){
+  // Build modal skeleton if not present
+  let modal=document.getElementById('editModal');
+  if(!modal){
+    document.body.insertAdjacentHTML('beforeend',`
+    <div class="modal fade cp-modal-responsive" id="editModal" tabindex="-1"><div class="modal-dialog modal-lg"><div class="modal-content">
+      <div class="modal-header"><h5 class="modal-title" id="editModalTitle">Edit Connection</h5><button class="btn-close" data-bs-dismiss="modal"></button></div>
+      <div class="modal-body"><div id="editBody" class="text-center p-4"><div class="spinner-border"></div></div></div>
+      <div class="modal-footer"><button class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button><button class="btn btn-primary" id="saveEditBtn">Save</button></div>
+    </div></div></div>`);
+    modal=document.getElementById('editModal');
+  }
+  const mInst=new bootstrap.Modal(modal); mInst.show();
+  const bodyDiv=document.getElementById('editBody');
+  const titleEl=document.getElementById('editModalTitle');
+  bodyDiv.innerHTML='<div class="spinner-border"></div>';
+
+  api('get_conn_details',{uuid}).then(d=>{
+    if(d.error){ bodyDiv.innerHTML='<p class="text-danger">'+d.error+'</p>'; return; }
+    
+    // Update modal title with connection type
+    const connType = d.type || 'Unknown';
+    titleEl.textContent = `Edit ${connType.charAt(0).toUpperCase() + connType.slice(1)} Connection`;
+    
+    const tbl=document.createElement('table'); 
+    tbl.className='table table-sm';
+    
+    // Group VPN data fields for better organization
+    const vpnDataFields = [];
+    const wifiSecurityFields = [];
+    const wifiBasicFields = [];
+    const networkFields = [];
+    const otherFields = [];
+    
+    d.details.forEach(row => {
+      if(row.key.startsWith('vpn.data.')) {
+        vpnDataFields.push(row);
+      } else if(row.key.startsWith('802-11-wireless-security.')) {
+        wifiSecurityFields.push(row);
+      } else if(row.key.startsWith('802-11-wireless.')) {
+        wifiBasicFields.push(row);
+      } else if(row.key.startsWith('ipv4.') || row.key.startsWith('ipv6.')) {
+        networkFields.push(row);
+      } else {
+        otherFields.push(row);
+      }
+    });
+    
+    // Add basic connection fields first
+    otherFields.forEach(row=>{
+      const tr=document.createElement('tr');
+      tr.innerHTML=`<td class='text-nowrap fw-semibold'>${row.key}</td><td><input type='text' class='form-control form-control-sm' value="${row.val.replace(/"/g,'&quot;')}"></td>`;
+      tbl.append(tr);
+    });
+    
+    // Add WiFi basic settings with separator if they exist
+    if(wifiBasicFields.length > 0) {
+      const separatorTr = document.createElement('tr');
+      separatorTr.innerHTML = `<td colspan="2" class="bg-light text-muted fw-semibold p-2 border-top"><i class="bi bi-wifi me-2"></i>WiFi Settings</td>`;
+      tbl.append(separatorTr);
+      
+      wifiBasicFields.forEach(row=>{
+        const tr=document.createElement('tr');
+        tr.innerHTML=`<td class='text-nowrap fw-semibold ps-3'>${row.key}</td><td><input type='text' class='form-control form-control-sm' value="${row.val.replace(/"/g,'&quot;')}"></td>`;
+        tbl.append(tr);
+      });
+    }
+    
+    // Add WiFi security settings with separator if they exist  
+    if(wifiSecurityFields.length > 0) {
+      const separatorTr = document.createElement('tr');
+      separatorTr.innerHTML = `<td colspan="2" class="bg-light text-muted fw-semibold p-2 border-top"><i class="bi bi-shield-lock me-2"></i>WiFi Security</td>`;
+      tbl.append(separatorTr);
+      
+      wifiSecurityFields.forEach(row=>{
+        const tr=document.createElement('tr');
+        tr.innerHTML=`<td class='text-nowrap fw-semibold ps-3'>${row.key}</td><td><input type='text' class='form-control form-control-sm' value="${row.val.replace(/"/g,'&quot;')}"></td>`;
+        tbl.append(tr);
+      });
+    }
+    
+    // Add network configuration with separator if they exist
+    if(networkFields.length > 0) {
+      const separatorTr = document.createElement('tr');
+      separatorTr.innerHTML = `<td colspan="2" class="bg-light text-muted fw-semibold p-2 border-top"><i class="bi bi-ethernet me-2"></i>Network Configuration</td>`;
+      tbl.append(separatorTr);
+      
+      networkFields.forEach(row=>{
+        const tr=document.createElement('tr');
+        tr.innerHTML=`<td class='text-nowrap fw-semibold ps-3'>${row.key}</td><td><input type='text' class='form-control form-control-sm' value="${row.val.replace(/"/g,'&quot;')}"></td>`;
+        tbl.append(tr);
+      });
+    }
+    
+    // Add VPN data fields with a separator if they exist
+    if(vpnDataFields.length > 0) {
+      const separatorTr = document.createElement('tr');
+      separatorTr.innerHTML = `<td colspan="2" class="bg-light text-muted fw-semibold p-2 border-top"><i class="bi bi-shield-lock me-2"></i>VPN Configuration</td>`;
+      tbl.append(separatorTr);
+      
+      vpnDataFields.forEach(row=>{
+        const tr=document.createElement('tr');
+        const friendlyKey = row.key.replace('vpn.data.', '');
+        tr.innerHTML=`<td class='text-nowrap fw-semibold ps-3'>${friendlyKey}</td><td><input type='text' class='form-control form-control-sm' value="${row.val.replace(/"/g,'&quot;')}"></td>`;
+        tr.dataset.originalKey = row.key; // Store original key for saving
+        tbl.append(tr);
+      });
+    }
+    
+    bodyDiv.innerHTML=''; bodyDiv.append(tbl);
+
+    document.getElementById('saveEditBtn').onclick=async()=>{
+      const inputs=[...tbl.querySelectorAll('tr')].map(tr=>{
+        if(tr.children.length !== 2 || !tr.children[1].firstChild) return null;
+        const key = tr.dataset.originalKey || tr.children[0].textContent.trim();
+        const val = tr.children[1].firstChild.value;
+        return {key, val};
+      }).filter(Boolean);
+      
+      const d2=await api('save_conn_details',{uuid, rows:JSON.stringify(inputs)});
+      if(d2.error) toast(d2.error,false); else { toast('Connection settings saved successfully'); mInst.hide(); loadUnifiedView(); }
+    };
+  });
 }
 
 async function showConnectionInfo(uuid) {
@@ -1075,9 +1396,127 @@ document.addEventListener('click', e => {
 // Event handlers
 document.getElementById('refreshBtn').addEventListener('click', loadUnifiedView);
 
+// Event handlers for restored simple connection management
+document.getElementById('refreshConnBtn').addEventListener('click', load);
+document.getElementById('toggleViewBtn').addEventListener('click', function() {
+  const isUnified = document.getElementById('simpleConnectionSection').style.display === 'none';
+  if (isUnified) {
+    switchToSimpleView();
+  } else {
+    switchToUnifiedView();
+  }
+});
+
 // Initial load
 loadUnifiedView();
 
 // Auto-refresh every 30 seconds
 setInterval(loadUnifiedView, 30000);
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// RESTORED FUNCTIONS FROM BACKUP (Simple Connection Management)
+// ═══════════════════════════════════════════════════════════════════════════════
+
+function render(conns) {
+  const tb = document.querySelector('#connTable tbody');
+  tb.innerHTML = '';
+  conns.forEach((c, idx) => {
+    // Mobile-friendly action buttons
+    const mobileActions = `
+      <div class="cp-btn-group-mobile">
+        <button class='btn btn-sm btn-outline-secondary w-100' title='Edit' onclick="openEdit('${c.uuid}')">
+          <i class='bi bi-pencil-square me-1'></i>Edit
+        </button>
+        <button class='btn btn-sm btn-outline-success w-100' title='Up' onclick="act('up_conn','${c.uuid}')">
+          <i class='bi bi-play me-1'></i>Up
+        </button>
+        <button class='btn btn-sm btn-outline-secondary w-100' title='Down' onclick="act('down_conn','${c.uuid}')">
+          <i class='bi bi-stop me-1'></i>Down
+        </button>
+        <button class='btn btn-sm btn-outline-danger w-100' title='Delete' onclick="act('del_conn','${c.uuid}',true)">
+          <i class='bi bi-trash me-1'></i>Delete
+        </button>
+      </div>
+      <div class="cp-btn-group-desktop">
+        <button class='btn btn-sm btn-outline-secondary me-1' title='Edit' onclick="openEdit('${c.uuid}')">
+          <i class='bi bi-pencil-square'></i>
+        </button>
+        <button class='btn btn-sm btn-outline-success me-1' title='Up' onclick="act('up_conn','${c.uuid}')">
+          <i class='bi bi-play'></i>
+        </button>
+        <button class='btn btn-sm btn-outline-secondary me-1' title='Down' onclick="act('down_conn','${c.uuid}')">
+          <i class='bi bi-stop'></i>
+        </button>
+        <button class='btn btn-sm btn-outline-danger' title='Delete' onclick="act('del_conn','${c.uuid}',true)">
+          <i class='bi bi-trash'></i>
+        </button>
+      </div>
+    `;
+
+    const tr = document.createElement('tr');
+    tr.className = 'cp-table-row';
+    tr.dataset.row = idx;
+    tr.innerHTML = `<td class="fw-semibold">${c.name || ''}</td><td class="cp-col-sm"><code>${c.uuid}</code></td><td class="cp-col-md">${c.type}</td>` +
+                   `<td class="cp-col-lg">${c.device}</td><td class="cp-col-md">${c.auto}</td>` +
+                   `<td>${mobileActions}</td>` +
+                   `<td class="d-table-cell d-sm-none">
+                     <button class="cp-expand-btn" data-row="${idx}">
+                       <i class="bi bi-chevron-down"></i>
+                     </button>
+                   </td>`;
+    tb.append(tr);
+
+    // Add mobile details row (hidden by default)
+    const detailsRow = document.createElement('tr');
+    detailsRow.className = 'cp-mobile-details d-sm-none';
+    detailsRow.id = `details-${idx}`;
+    detailsRow.style.display = 'none';
+    detailsRow.innerHTML = `<td colspan="7" class="p-3">
+       <div class="cp-details-grid">
+         <div class="cp-detail-item"><div class="cp-detail-label">UUID:</div><div><code class="cp-code-text">${c.uuid}</code></div></div>
+         <div class="cp-detail-item"><div class="cp-detail-label">Type:</div><div>${c.type}</div></div>
+         <div class="cp-detail-item"><div class="cp-detail-label">Device:</div><div>${c.device}</div></div>
+         <div class="cp-detail-item"><div class="cp-detail-label">Auto:</div><div>${c.auto}</div></div>
+       </div>
+     </td>`;
+    tb.append(detailsRow);
+  });
+}
+
+async function load() {
+  const d = await api('list_conns');
+  if (d.error) toast(d.error, false); else render(d.conns);
+}
+
+async function act(a, u, confirmDel = false) {
+  if (confirmDel && !confirm('Delete connection?')) return;
+  const d = await api(a, { uuid: u });
+  if (d.error) {
+    toast(d.error, false);
+  } else {
+    // More descriptive success messages
+    const messages = {
+      'up_conn': 'Connection activated successfully',
+      'down_conn': 'Connection deactivated successfully',
+      'del_conn': 'Connection deleted successfully'
+    };
+    toast(messages[a] || 'Operation completed successfully');
+    load();
+  }
+}
+
+// View switching functionality
+function switchToUnifiedView() {
+  document.getElementById('simpleConnectionSection').style.display = 'none';
+  document.querySelectorAll('.cp-interface-section:not(#simpleConnectionSection)').forEach(el => el.style.display = 'block');
+  document.getElementById('toggleViewBtn').textContent = 'Switch to Simple';
+  loadUnifiedView();
+}
+
+function switchToSimpleView() {
+  document.querySelectorAll('.cp-interface-section:not(#simpleConnectionSection)').forEach(el => el.style.display = 'none');
+  document.getElementById('simpleConnectionSection').style.display = 'block';
+  document.getElementById('toggleViewBtn').textContent = 'Switch to Unified';
+  load();
+}
 </script>
