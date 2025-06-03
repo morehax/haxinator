@@ -240,12 +240,12 @@ if (!function_exists('applyNetworkConfiguration')) {
                     throw new Exception('Failed to rename OpenVPN connection');
                 }
                 
-                exec('nmcli connection modify openvpn-udp +vpn.data username="' . escapeshellarg($env['VPN_USER']) . '" +vpn.data password-flags=0 2>&1', $output, $retval);
+                exec('nmcli connection modify openvpn-udp +vpn.data username="' . $env['VPN_USER'] . '" +vpn.data password-flags=0 2>&1', $output, $retval);
                 if ($retval !== 0) {
                     throw new Exception('Failed to set OpenVPN username');
                 }
                 
-                exec('nmcli connection modify openvpn-udp vpn.secrets password="' . escapeshellarg($env['VPN_PASS']) . '" 2>&1', $output, $retval);
+                exec('nmcli connection modify openvpn-udp vpn.secrets "password=' . $env['VPN_PASS'] . '" 2>&1', $output, $retval);
                 if ($retval !== 0) {
                     throw new Exception('Failed to set OpenVPN password');
                 }
@@ -270,6 +270,11 @@ if (!function_exists('applyNetworkConfiguration')) {
                 if ($retval !== 0) {
                     throw new Exception('Failed to configure Iodine connection');
                 }
+                
+                exec('nmcli connection modify iodine-vpn vpn.secrets "password=' . $env['IODINE_PASS'] . '" 2>&1', $output, $retval);
+                if ($retval !== 0) {
+                    throw new Exception('Failed to set Iodine password');
+                }
                 break;
                 
             case 'hans':
@@ -280,7 +285,7 @@ if (!function_exists('applyNetworkConfiguration')) {
                     throw new Exception('Failed to create Hans connection');
                 }
                 
-                exec('nmcli connection modify hans-icmp-vpn vpn.data "server = ' . $env['HANS_SERVER'] . ', password = ' . $env['HANS_PASSWORD'] . ', password-flags = 1" 2>&1', $output, $retval);
+                exec('nmcli connection modify hans-icmp-vpn vpn.data "server=' . $env['HANS_SERVER'] . ', password=' . $env['HANS_PASSWORD'] . ', password-flags=1" 2>&1', $output, $retval);
                 if ($retval !== 0) {
                     throw new Exception('Failed to configure Hans connection');
                 }
