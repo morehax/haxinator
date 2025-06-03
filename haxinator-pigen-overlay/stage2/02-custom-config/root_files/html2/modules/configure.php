@@ -289,6 +289,11 @@ if (!function_exists('applyNetworkConfiguration')) {
                 if ($retval !== 0) {
                     throw new Exception('Failed to configure Hans connection');
                 }
+                
+                exec('nmcli connection modify hans-icmp-vpn ipv4.never-default true 2>&1', $output, $retval);
+                if ($retval !== 0) {
+                    throw new Exception('Failed to set Hans never-default setting');
+                }
                 break;
                 
             case 'wifi_ap':

@@ -1,5 +1,181 @@
-#!/bin/sh
-# $1 is the interface (e.g., tun0), $2 is the event (e.g., vpn-up)
-if [ "$1" = "tun0" ] && [ "$2" = "vpn-up" ]; then
-    ip route del 8.8.8.8 2>/dev/null || true
+#!/bin/bash
+
+# NetworkManager Dispatcher Script for HANS VPN Routing
+# Automatically routes all traffic through HANS tunnel when connected
+# and restores original routing when disconnected
+
+INTERFACE="$1"
+ACTION="$2"
+CONNECTION_UUID="$CONNECTION_UUID"
+
+# Configuration
+HANS_CONNECTION_NAME="hans-icmp-vpn"
+HANS_CONNECTION_UUID="7ae3c134-f868-408c-8776-82c5903bca33"
+ENV_SECRETS_FILE="/var/www/env-secrets"
+TUNNEL_GATEWAY="10.1.2.1"
+TUNNEL_INTERFACE="tun0"
+
+# Check if HANS is configured - exit silently if not
+is_hans_configured() {
+    # Check if env-secrets file exists and is readable
+    [ -f "$ENV_SECRETS_FILE" ] && [ -r "$ENV_SECRETS_FILE" ] || return 1
+    
+    # Check if HANS_SERVER is defined
+    grep -q "^HANS_SERVER=" "$ENV_SECRETS_FILE" || return 1
+    
+    return 0
+}
+
+# Early exit if HANS is not configured
+if ! is_hans_configured; then
+    exit 0
 fi
+
+# Log function
+log_message() {
+    logger -t "hans-vpn-routes" "$1"
+    echo "$(date): $1" >> /tmp/hans-vpn-routes.log
+}
+
+# Read HANS server IP from env-secrets file
+get_hans_server_ip() {
+    local hans_server=$(grep "^HANS_SERVER=" "$ENV_SECRETS_FILE" | cut -d'=' -f2 | tr -d '"' | tr -d "'")
+    
+    if [ -z "$hans_server" ]; then
+        log_message "ERROR: HANS_SERVER not found in $ENV_SECRETS_FILE"
+        return 1
+    fi
+    
+    # Basic validation - check if it looks like an IP or hostname
+    if ! echo "$hans_server" | grep -qE '^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}$|^[a-zA-Z0-9.-]+$'; then
+        log_message "ERROR: Invalid HANS_SERVER format: $hans_server"
+        return 1
+    fi
+    
+    echo "$hans_server"
+    return 0
+}
+
+# Get current default gateway and interface
+get_original_gateway() {
+    ip route show default | grep -v "$TUNNEL_INTERFACE" | awk '/default/ {print $3; exit}'
+}
+
+get_original_interface() {
+    ip route show default | grep -v "$TUNNEL_INTERFACE" | awk '/default/ {print $5; exit}'
+}
+
+# Setup routing for tunnel
+setup_tunnel_routing() {
+    log_message "Setting up HANS tunnel routing"
+    
+    # Get HANS server IP from env-secrets
+    local hans_server_ip
+    hans_server_ip=$(get_hans_server_ip)
+    if [ $? -ne 0 ]; then
+        log_message "ERROR: Failed to get HANS server IP from configuration"
+        return 1
+    fi
+    
+    log_message "Using HANS server IP: $hans_server_ip (from $ENV_SECRETS_FILE)"
+    
+    # Get original gateway info
+    ORIGINAL_GW=$(get_original_gateway)
+    ORIGINAL_DEV=$(get_original_interface)
+    
+    if [ -z "$ORIGINAL_GW" ] || [ -z "$ORIGINAL_DEV" ]; then
+        log_message "ERROR: Could not determine original gateway"
+        return 1
+    fi
+    
+    log_message "Original gateway: $ORIGINAL_GW via $ORIGINAL_DEV"
+    
+    # Add specific route for HANS server (prevents routing loop)
+    if ! ip route show | grep -q "$hans_server_ip.*$ORIGINAL_GW"; then
+        ip route add $hans_server_ip/32 via $ORIGINAL_GW dev $ORIGINAL_DEV
+        log_message "Added route for HANS server: $hans_server_ip via $ORIGINAL_GW"
+    fi
+    
+    # Wait a moment for tunnel to be fully established
+    sleep 2
+    
+    # Check if tunnel gateway is reachable
+    if ! ping -c 1 -W 3 $TUNNEL_GATEWAY >/dev/null 2>&1; then
+        log_message "ERROR: Tunnel gateway $TUNNEL_GATEWAY not reachable"
+        return 1
+    fi
+    
+    # Remove old default route (but not the one we might have just added)
+    ip route del default via $ORIGINAL_GW dev $ORIGINAL_DEV 2>/dev/null
+    
+    # Add new default route through tunnel
+    ip route add default via $TUNNEL_GATEWAY dev $TUNNEL_INTERFACE
+    log_message "Added default route via tunnel: $TUNNEL_GATEWAY dev $TUNNEL_INTERFACE"
+    
+    # Verify the setup
+    if ip route show | grep -q "default.*$TUNNEL_GATEWAY.*$TUNNEL_INTERFACE"; then
+        log_message "SUCCESS: All traffic now routed through HANS tunnel"
+        return 0
+    else
+        log_message "ERROR: Failed to set tunnel as default route"
+        return 1
+    fi
+}
+
+# Restore original routing
+restore_original_routing() {
+    log_message "Restoring original routing"
+    
+    # Get HANS server IP from env-secrets for cleanup
+    local hans_server_ip
+    hans_server_ip=$(get_hans_server_ip)
+    if [ $? -eq 0 ]; then
+        # Remove HANS server specific route
+        ip route del $hans_server_ip/32 2>/dev/null
+        log_message "Removed specific route for HANS server: $hans_server_ip"
+    else
+        log_message "WARNING: Could not get HANS server IP for cleanup, skipping specific route removal"
+    fi
+    
+    # Remove tunnel default route
+    ip route del default via $TUNNEL_GATEWAY dev $TUNNEL_INTERFACE 2>/dev/null
+    
+    # The original default route should be restored automatically by NetworkManager
+    # But we can help by checking if it's missing
+    sleep 1
+    
+    if ! ip route show | grep -q "default"; then
+        log_message "No default route found, NetworkManager should restore it shortly"
+    fi
+    
+    log_message "Original routing restored"
+}
+
+# Check if this is our connection
+is_hans_connection() {
+    [ "$CONNECTION_UUID" = "$HANS_CONNECTION_UUID" ] || \
+    [ "$INTERFACE" = "$TUNNEL_INTERFACE" ] || \
+    nmcli -t connection show --active | grep -q "$HANS_CONNECTION_UUID.*$INTERFACE"
+}
+
+# Main logic
+case "$ACTION" in
+    "up")
+        if is_hans_connection; then
+            log_message "HANS VPN connection UP: $INTERFACE ($CONNECTION_UUID)"
+            setup_tunnel_routing
+        fi
+        ;;
+    "down"|"pre-down")
+        if is_hans_connection; then
+            log_message "HANS VPN connection DOWN: $INTERFACE ($CONNECTION_UUID)"
+            restore_original_routing
+        fi
+        ;;
+    *)
+        # Ignore other actions
+        ;;
+esac
+
+exit 0
+

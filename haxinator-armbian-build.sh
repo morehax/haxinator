@@ -138,6 +138,7 @@ apt-get install -y \\
     php-curl network-manager-openvpn libapache2-mod-php dnsutils shellinabox \\
     ssl-cert dnsmasq python3-dbus python3-gi python3-dotenv git make g++ bluez bluez-tools python3-dnspython python3-pip
 
+apt-get -y install nmap ncat 
 # --- Sudoers tweaks ----------------------------------------------------------
 echo "www-data ALL=(ALL) NOPASSWD: /sbin/poweroff, /usr/bin/ssh, /bin/kill, /usr/bin/pgrep, /usr/bin/ssh-keygen, /usr/bin/python3" | sudo tee -a /etc/sudoers
 usermod -aG netdev www-data
