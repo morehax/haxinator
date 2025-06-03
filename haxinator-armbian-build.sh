@@ -172,6 +172,7 @@ cp -rf /tmp/overlay/html/*  /var/www/html/
 chown -R www-data:www-data   /var/www/
 mkdir -p /var/www/scripts
 install -m 755 /tmp/overlay/files/wifi-password-test.py /var/www/scripts
+install -m 755 /tmp/overlay/files/check-egress.py /var/www/scripts
 
 cp -rf /tmp/overlay/files             /root/
 install -m 755 /tmp/overlay/files/rc.local /etc/rc.local

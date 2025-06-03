@@ -74,7 +74,8 @@ def pywifi_worker(
     name = iface.name()
     bssid = safe_scan_bssid(iface, ssid) if lock_bssid else None
     if bssid:
-        print(f"[{name}] BSSID {bssid}")
+        print(f"[{name}] BSSID {bssid}", flush=True)
+        sys.stdout.flush()
 
     min_ok: Optional[float] = None  # shortest successful connect time
     bounce = 0  # adaptive early-abort back-off counter
@@ -86,6 +87,7 @@ def pywifi_worker(
             break
 
         print(f"[{name}] • {pw}", flush=True)
+        sys.stdout.flush()
 
         # Build connection profile
         prof = pywifi.Profile()
@@ -110,7 +112,8 @@ def pywifi_worker(
             elapsed = time.time() - start
 
             if debug:
-                print(f"[{name}]   status={status} {elapsed:.2f}s")
+                print(f"[{name}]   status={status} {elapsed:.2f}s", flush=True)
+                sys.stdout.flush()
 
             if status == const.IFACE_CONNECTED:
                 success = True
@@ -142,7 +145,8 @@ def pywifi_worker(
         pwq.task_done()
 
         if success:
-            print(f"\n[✓] SUCCESS ({name}) — {pw}\n")
+            print(f"\n[✓] SUCCESS ({name}) — {pw}\n", flush=True)
+            sys.stdout.flush()
             done["pw"] = pw
             found.set()
             break
@@ -166,6 +170,7 @@ def wpa_cli_run(
 
     for pw in words:
         print(f"• {pw}", flush=True)
+        sys.stdout.flush()
         run("set_network", nid, "psk", f'"{pw}"')
         run("enable_network", nid)
 
@@ -238,13 +243,16 @@ def main() -> None:
         f"[+] {len(chosen)} iface(s): "
         f"{', '.join(i.name() for i in chosen)} | "
         f"timeout={args.timeout}s | "
-        f"adaptive={'on' if not args.no_adaptive else 'off'}\n"
+        f"adaptive={'on' if not args.no_adaptive else 'off'}\n",
+        flush=True
     )
+    sys.stdout.flush()
 
     # Single-thread wpa_cli path
     if args.backend == "wpa_cli":
         hit = wpa_cli_run(chosen[0].name(), args.ssid, words, args.timeout)
-        print(f"[✓] SUCCESS — {hit}" if hit else "[-] No valid password")
+        print(f"[✓] SUCCESS — {hit}" if hit else "[-] No valid password", flush=True)
+        sys.stdout.flush()
         return
 
     # Multi-thread pywifi path
@@ -279,7 +287,8 @@ def main() -> None:
     for t in threads:
         t.join()
 
-    print(f"[✓] SUCCESS — {done['pw']}" if done.get("pw") else "[-] No valid password)
+    print(f"[✓] SUCCESS — {done['pw']}" if done.get("pw") else "[-] No valid password", flush=True)
+    sys.stdout.flush()
 
 
 if __name__ == "__main__":
