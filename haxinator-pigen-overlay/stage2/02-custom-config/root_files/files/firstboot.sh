@@ -90,7 +90,7 @@ if check_required_vars "IODINE_TOPDOMAIN" "IODINE_NAMESERVER" "IODINE_PASS"; the
         nmcli connection delete "$IODINE_CONN_NAME"
     fi
 
-    nmcli connection add type vpn ifname iodine0 con-name "$IODINE_CONN_NAME" vpn-type iodine
+    nmcli connection add type vpn ifname dns0 con-name "$IODINE_CONN_NAME" vpn-type iodine
     nmcli connection modify "$IODINE_CONN_NAME" vpn.data \
         "topdomain=${IODINE_TOPDOMAIN}, nameserver=${IODINE_NAMESERVER}, password=${IODINE_PASS}, mtu=${IODINE_MTU}, lazy-mode=${IODINE_LAZY}, interval=${IODINE_INTERVAL}"
     nmcli connection modify "$IODINE_CONN_NAME" vpn.secrets "password=${IODINE_PASS}"

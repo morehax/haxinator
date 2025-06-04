@@ -81,7 +81,7 @@ try {
         $retval = 0;
         
         // Log command output for debugging
-        $command = 'nmcli connection add type vpn ifname iodine0 con-name iodine-vpn vpn-type iodine';
+        $command = 'nmcli connection add type vpn ifname dns0 con-name iodine-vpn vpn-type iodine';
         exec($command . ' 2>&1', $output, $retval);
         error_log("Iodine command: $command");
         error_log("Iodine command output: " . implode("\n", $output));

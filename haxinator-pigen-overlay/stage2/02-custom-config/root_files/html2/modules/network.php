@@ -101,7 +101,7 @@ function getNetworkInterfaces(): array {
                     $friendly_type = 'Wi-Fi';
                     break;
                 case 'ethernet':
-                case '802-3-ethernet':
+                case '802-3-etherlet':
                     $icon = 'ethernet';
                     $friendly_type = 'Ethernet';
                     break;
@@ -366,62 +366,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
             }
         }
         
-        // Define editable fields by connection type
-        $editableFieldsByType = [
-            'wifi' => [
-                'connection.id',
-                'connection.autoconnect',
-                'connection.autoconnect-priority',
-                '802-11-wireless.ssid',
-                '802-11-wireless.mode',
-                '802-11-wireless.band',
-                '802-11-wireless.channel',
-                '802-11-wireless-security.key-mgmt',
-                '802-11-wireless-security.psk',
-                '802-11-wireless-security.auth-alg',
-                'ipv4.method',
-                'ipv4.addresses',
-                'ipv4.gateway',
-                'ipv4.dns',
-                'ipv6.method'
-            ],
-            'vpn' => [
-                'connection.id',
-                'connection.autoconnect',
-                'connection.autoconnect-priority',
-                'vpn.service-type',
-                'vpn.data',
-                'ipv4.method',
-                'ipv4.dns',
-                'ipv6.method'
-            ],
-            'ethernet' => [
-                'connection.id',
-                'connection.autoconnect',
-                'connection.autoconnect-priority',
-                'ipv4.method',
-                'ipv4.addresses',
-                'ipv4.gateway',  
-                'ipv4.dns',
-                'ipv6.method'
-            ],
-            'default' => [
-                'connection.id',
-                'connection.autoconnect',
-                'connection.autoconnect-priority',
-                'ipv4.method',
-                'ipv4.addresses',
-                'ipv4.gateway',
-                'ipv4.dns',
-                'ipv6.method'
-            ]
-        ];
-        
-        // Select appropriate fields for this connection type
-        $editableFields = $editableFieldsByType[$connType] ?? $editableFieldsByType['default'];
-        $fieldsStr = implode(',', $editableFields);
-        
-        nm_exec('nmcli -t -s --fields %s connection show uuid %s', [$fieldsStr, $uuid], $out, $rc);
+        // Fetch ALL available fields - no filtering (Option A approach)
+        nm_exec('nmcli -t -s connection show uuid %s', [$uuid], $out, $rc);
         if ($rc !== 0) bad('Failed to retrieve connection details');
         
         $details = [];
@@ -433,44 +379,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
             
             // Special handling for vpn.data - break it into more manageable parts
             if ($key === 'vpn.data' && $connType === 'vpn') {
-                // Parse vpn.data into individual components for better editing
-                $vpnPairs = [];
-                if ($val !== '--' && $val !== '') {
-                    // Enhanced parsing for VPN data to handle special cases like HANS
-                    // First, check if this looks like HANS format (contains password-flags)
-                    if (str_contains($val, 'password-flags')) {
-                        // For HANS VPN, password-flags is a configuration parameter, not a separate field
-                        // Pattern: "server=X, password=Y, password-flags=Z"
-                        if (preg_match('/server\s*=\s*([^,]+)/', $val, $serverMatch) &&
-                            preg_match('/password\s*=\s*([^,]+)(?=,\s*password-flags)/', $val, $passwordMatch) &&
-                            preg_match('/password-flags\s*=\s*(\d+)/', $val, $flagsMatch)) {
-                            
-                            $vpnPairs[] = ['key' => 'vpn.data.server', 'val' => trim($serverMatch[1])];
-                            $vpnPairs[] = ['key' => 'vpn.data.password', 'val' => trim($passwordMatch[1])];
-                            $vpnPairs[] = ['key' => 'vpn.data.password-flags', 'val' => trim($flagsMatch[1])];
-                        } else {
-                            // Fallback to basic parsing if pattern doesn't match
-                            $pairs = preg_split('/,\s*(?=\w+\s*=)/', $val);
-                            foreach ($pairs as $pair) {
-                                if (preg_match('/^(\w+(?:-\w+)*)\s*=\s*(.*)$/', trim($pair), $matches)) {
-                                    $subKey = trim($matches[1]);
-                                    $subVal = trim($matches[2], " '\"");
-                                    $vpnPairs[] = ['key' => "vpn.data.$subKey", 'val' => $subVal];
-                                }
-                            }
-                        }
-                    } else {
-                        // Standard parsing for other VPN types (OpenVPN, etc.)
-                        $pairs = preg_split('/,\s*(?=\w+\s*=)/', $val);
-                        foreach ($pairs as $pair) {
-                            if (preg_match('/^(\w+(?:-\w+)*)\s*=\s*(.*)$/', trim($pair), $matches)) {
-                                $subKey = trim($matches[1]);
-                                $subVal = trim($matches[2], " '\"");
-                                $vpnPairs[] = ['key' => "vpn.data.$subKey", 'val' => $subVal];
-                            }
-                        }
+                // Get the VPN service type to determine parsing strategy
+                $serviceType = '';
+                foreach ($out as $serviceLine) {
+                    if (str_contains($serviceLine, 'vpn.service-type:')) {
+                        $serviceType = trim(explode(':', $serviceLine, 2)[1]);
+                        break;
                     }
                 }
+                
+                // Parse VPN data based on service type
+                $vpnPairs = parseVpnData($val, $serviceType);
                 
                 // Add individual VPN data fields instead of the combined field
                 $details = array_merge($details, $vpnPairs);
@@ -579,6 +498,125 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
     bad('Unknown action');
 }
 
+// Type-specific VPN data parsing functions
+function parseVpnData($vpnData, $serviceType) {
+    if ($vpnData === '--' || $vpnData === '') {
+        return [];
+    }
+    
+    switch ($serviceType) {
+        case 'org.freedesktop.NetworkManager.hans':
+            return parseHansVpnData($vpnData);
+        case 'org.freedesktop.NetworkManager.iodine':
+            return parseIodineVpnData($vpnData);
+        case 'org.freedesktop.NetworkManager.openvpn':
+            return parseOpenVpnData($vpnData);
+        default:
+            return parseGenericVpnData($vpnData);
+    }
+}
+
+function parseHansVpnData($vpnData) {
+    $vpnPairs = [];
+    
+    // HANS specific parsing - handles password-flags specially
+    if (str_contains($vpnData, 'password-flags')) {
+        // Pattern: "server=X, password=Y, password-flags=Z"
+        if (preg_match('/server\s*=\s*([^,]+)/', $vpnData, $serverMatch) &&
+            preg_match('/password\s*=\s*([^,]+)(?=,\s*password-flags)/', $vpnData, $passwordMatch) &&
+            preg_match('/password-flags\s*=\s*(\d+)/', $vpnData, $flagsMatch)) {
+            
+            $vpnPairs[] = ['key' => 'vpn.data.server', 'val' => trim($serverMatch[1])];
+            $vpnPairs[] = ['key' => 'vpn.data.password', 'val' => trim($passwordMatch[1])];
+            $vpnPairs[] = ['key' => 'vpn.data.password-flags', 'val' => trim($flagsMatch[1])];
+        } else {
+            // Fallback to generic parsing
+            return parseGenericVpnData($vpnData);
+        }
+    } else {
+        // Standard HANS parsing without password-flags
+        return parseGenericVpnData($vpnData);
+    }
+    
+    return $vpnPairs;
+}
+
+function parseIodineVpnData($vpnData) {
+    $vpnPairs = [];
+    
+    // Iodine specific parsing - handles multi-word values like "4 w"
+    // Pattern: "key = value, key = value" but values can contain spaces
+    
+    // First, handle special cases with quotes or multi-word values
+    $patterns = [
+        '/interval\s*=\s*([^,]+?)(?=,\s*\w+\s*=|$)/' => 'interval',
+        '/lazy-mode\s*=\s*([^,]+?)(?=,\s*\w+\s*=|$)/' => 'lazy-mode',
+        '/mtu\s*=\s*([^,]+?)(?=,\s*\w+\s*=|$)/' => 'mtu',
+        '/nameserver\s*=\s*([^,]+?)(?=,\s*\w+\s*=|$)/' => 'nameserver',
+        '/password\s*=\s*([^,]+?)(?=,\s*\w+\s*=|$)/' => 'password',
+        '/topdomain\s*=\s*([^,]+?)(?=,\s*\w+\s*=|$)/' => 'topdomain'
+    ];
+    
+    foreach ($patterns as $pattern => $fieldName) {
+        if (preg_match($pattern, $vpnData, $matches)) {
+            $value = trim($matches[1]);
+            $vpnPairs[] = ['key' => "vpn.data.$fieldName", 'val' => $value];
+        }
+    }
+    
+    return $vpnPairs;
+}
+
+function parseOpenVpnData($vpnData) {
+    $vpnPairs = [];
+    
+    // OpenVPN specific parsing - handles comma-separated key=value pairs with escaped colons
+    // Format: "key = value, key = value, key = value..."
+    
+    if ($vpnData === '--' || $vpnData === '') {
+        return [];
+    }
+    
+    // Split on commas but be careful about escaped content
+    // Use a more sophisticated approach to handle escaped colons properly
+    $rawPairs = preg_split('/,\s*(?=\w+(?:-\w+)*\s*=)/', $vpnData);
+    
+    foreach ($rawPairs as $pair) {
+        $pair = trim($pair);
+        if (empty($pair)) continue;
+        
+        // Match key = value pattern allowing for various key formats and values
+        if (preg_match('/^(\w+(?:-\w+)*)\s*=\s*(.*)$/', $pair, $matches)) {
+            $key = trim($matches[1]);
+            $value = trim($matches[2]);
+            
+            // Unescape colons in the value
+            $value = str_replace('\\:', ':', $value);
+            
+            // Add to the VPN data array
+            $vpnPairs[] = ['key' => "vpn.data.$key", 'val' => $value];
+        }
+    }
+    
+    return $vpnPairs;
+}
+
+function parseGenericVpnData($vpnData) {
+    $vpnPairs = [];
+    
+    // Generic parsing for unknown VPN types
+    $pairs = preg_split('/,\s*(?=\w+\s*=)/', $vpnData);
+    foreach ($pairs as $pair) {
+        if (preg_match('/^(\w+(?:-\w+)*)\s*=\s*(.*)$/', trim($pair), $matches)) {
+            $subKey = trim($matches[1]);
+            $subVal = trim($matches[2], " '\"");
+            $vpnPairs[] = ['key' => "vpn.data.$subKey", 'val' => $subVal];
+        }
+    }
+    
+    return $vpnPairs;
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 //  EMBEDDED PAGE (Bootstrap UI)
 // ─────────────────────────────────────────────────────────────────────────────
@@ -642,6 +680,19 @@ $csrf = csrf();
 .cp-section-badge {
     font-size: 0.75rem;
     font-weight: 600;
+}
+
+/* Override disconnect button colors for better aesthetics */
+.btn-outline-warning[onclick*="disconnectInterface"],
+.btn-outline-warning[onclick*="deactivateConnection"] {
+    border-color: #dc3545;
+    color: #dc3545;
+}
+.btn-outline-warning[onclick*="disconnectInterface"]:hover,
+.btn-outline-warning[onclick*="deactivateConnection"]:hover {
+    background-color: #dc3545;
+    border-color: #dc3545;
+    color: white;
 }
 </style>
 
@@ -1215,164 +1266,593 @@ function openEdit(uuid){
     const connType = d.type || 'Unknown';
     titleEl.textContent = `Edit ${connType.charAt(0).toUpperCase() + connType.slice(1)} Connection`;
     
-    const tbl=document.createElement('table'); 
-    tbl.className='table table-sm';
+    // Check if this is a HANS ICMP VPN connection
+    const isHansVpn = d.type === 'vpn' && d.details.some(row => 
+      row.key === 'vpn.service-type' && row.val.includes('hans'));
     
-    // Group VPN data fields for better organization
-    const vpnDataFields = [];
-    const wifiSecurityFields = [];
-    const wifiBasicFields = [];
-    const networkFields = [];
-    const otherFields = [];
+    // Check if this is an Iodine DNS VPN connection
+    const isIodineVpn = d.type === 'vpn' && d.details.some(row => 
+      row.key === 'vpn.service-type' && row.val.includes('iodine'));
     
-    d.details.forEach(row => {
-      if(row.key.startsWith('vpn.data.')) {
-        vpnDataFields.push(row);
-      } else if(row.key.startsWith('802-11-wireless-security.')) {
-        wifiSecurityFields.push(row);
-      } else if(row.key.startsWith('802-11-wireless.')) {
-        wifiBasicFields.push(row);
-      } else if(row.key.startsWith('ipv4.') || row.key.startsWith('ipv6.')) {
-        networkFields.push(row);
-      } else {
-        otherFields.push(row);
-      }
-    });
+    // Check if this is an OpenVPN connection
+    const isOpenVpn = d.type === 'vpn' && d.details.some(row => 
+      row.key === 'vpn.service-type' && row.val.includes('openvpn'));
     
-    // Add basic connection fields first
-    otherFields.forEach(row=>{
-      const tr=document.createElement('tr');
-      tr.innerHTML=`<td class='text-nowrap fw-semibold'>${row.key}</td><td><input type='text' class='form-control form-control-sm' value="${row.val.replace(/"/g,'&quot;')}"></td>`;
-      tbl.append(tr);
-    });
+    // Check if this is a WiFi connection
+    const isWifi = d.type === 'wifi' || d.details.some(row => 
+      row.key === 'connection.type' && row.val === '802-11-wireless');
     
-    // Add WiFi basic settings with separator if they exist
-    if(wifiBasicFields.length > 0) {
-      const separatorTr = document.createElement('tr');
-      separatorTr.innerHTML = `<td colspan="2" class="bg-light text-muted fw-semibold p-2 border-top"><i class="bi bi-wifi me-2"></i>WiFi Settings</td>`;
-      tbl.append(separatorTr);
-      
-      wifiBasicFields.forEach(row=>{
-        const tr=document.createElement('tr');
-        tr.innerHTML=`<td class='text-nowrap fw-semibold ps-3'>${row.key}</td><td><input type='text' class='form-control form-control-sm' value="${row.val.replace(/"/g,'&quot;')}"></td>`;
-        tbl.append(tr);
-      });
+    // Check if this is an Ethernet connection
+    const isEthernet = d.type === 'ethernet' || d.details.some(row => 
+      row.key === 'connection.type' && row.val === '802-3-ethernet');
+    
+    if (isHansVpn) {
+      // Render tabbed interface for HANS VPN
+      renderHansVpnTabs(d, bodyDiv, uuid);
+    } else if (isIodineVpn) {
+      // Render tabbed interface for Iodine VPN
+      renderIodineVpnTabs(d, bodyDiv, uuid);
+    } else if (isOpenVpn) {
+      // Render tabbed interface for OpenVPN
+      renderOpenVpnTabs(d, bodyDiv, uuid);
+    } else if (isWifi) {
+      // Render tabbed interface for WiFi connections
+      renderWifiTabs(d, bodyDiv, uuid);
+    } else if (isEthernet) {
+      // Render tabbed interface for Ethernet connections (including USB ethernet)
+      renderEthernetTabs(d, bodyDiv, uuid);
+    } else {
+      // Use existing table interface for all other connection types
+      renderTableInterface(d, bodyDiv, uuid);
     }
-    
-    // Add WiFi security settings with separator if they exist  
-    if(wifiSecurityFields.length > 0) {
-      const separatorTr = document.createElement('tr');
-      separatorTr.innerHTML = `<td colspan="2" class="bg-light text-muted fw-semibold p-2 border-top"><i class="bi bi-shield-lock me-2"></i>WiFi Security</td>`;
-      tbl.append(separatorTr);
-      
-      wifiSecurityFields.forEach(row=>{
-        const tr=document.createElement('tr');
-        tr.innerHTML=`<td class='text-nowrap fw-semibold ps-3'>${row.key}</td><td><input type='text' class='form-control form-control-sm' value="${row.val.replace(/"/g,'&quot;')}"></td>`;
-        tbl.append(tr);
-      });
-    }
-    
-    // Add network configuration with separator if they exist
-    if(networkFields.length > 0) {
-      const separatorTr = document.createElement('tr');
-      separatorTr.innerHTML = `<td colspan="2" class="bg-light text-muted fw-semibold p-2 border-top"><i class="bi bi-ethernet me-2"></i>Network Configuration</td>`;
-      tbl.append(separatorTr);
-      
-      networkFields.forEach(row=>{
-        const tr=document.createElement('tr');
-        tr.innerHTML=`<td class='text-nowrap fw-semibold ps-3'>${row.key}</td><td><input type='text' class='form-control form-control-sm' value="${row.val.replace(/"/g,'&quot;')}"></td>`;
-        tbl.append(tr);
-      });
-    }
-    
-    // Add VPN data fields with a separator if they exist
-    if(vpnDataFields.length > 0) {
-      const separatorTr = document.createElement('tr');
-      separatorTr.innerHTML = `<td colspan="2" class="bg-light text-muted fw-semibold p-2 border-top"><i class="bi bi-shield-lock me-2"></i>VPN Configuration</td>`;
-      tbl.append(separatorTr);
-      
-      vpnDataFields.forEach(row=>{
-        const tr=document.createElement('tr');
-        const friendlyKey = row.key.replace('vpn.data.', '');
-        tr.innerHTML=`<td class='text-nowrap fw-semibold ps-3'>${friendlyKey}</td><td><input type='text' class='form-control form-control-sm' value="${row.val.replace(/"/g,'&quot;')}"></td>`;
-        tr.dataset.originalKey = row.key; // Store original key for saving
-        tbl.append(tr);
-      });
-    }
-    
-    bodyDiv.innerHTML=''; bodyDiv.append(tbl);
-
-    document.getElementById('saveEditBtn').onclick=async()=>{
-      const inputs=[...tbl.querySelectorAll('tr')].map(tr=>{
-        if(tr.children.length !== 2 || !tr.children[1].firstChild) return null;
-        const key = tr.dataset.originalKey || tr.children[0].textContent.trim();
-        const val = tr.children[1].firstChild.value;
-        return {key, val};
-      }).filter(Boolean);
-      
-      const d2=await api('save_conn_details',{uuid, rows:JSON.stringify(inputs)});
-      if(d2.error) toast(d2.error,false); else { toast('Connection settings saved successfully'); mInst.hide(); loadUnifiedView(); }
-    };
   });
 }
 
-async function showConnectionInfo(uuid) {
-  const result = await api('get_conn_details', { uuid: uuid });
-  if (result.error) {
-    toast(result.error, false);
-    return;
-  }
+// Static field configuration for HANS ICMP VPN
+const hansVpnFields = {
+  general: [
+    { key: 'connection.id', label: 'Connection Name', type: 'text', required: true },
+    { key: 'connection.autoconnect', label: 'Auto Connect', type: 'select', options: ['yes', 'no'] },
+    { key: 'connection.autoconnect-priority', label: 'Priority', type: 'number' },
+    { key: 'connection.interface-name', label: 'Interface Name', type: 'text' }
+  ],
+  vpn: [
+    { key: 'vpn.data.server', label: 'Server IP/Hostname', type: 'text', required: true },
+    { key: 'vpn.data.password', label: 'Password', type: 'password', required: true },
+    { key: 'vpn.data.password-flags', label: 'Password Flags', type: 'select', options: ['0', '1', '2'] }
+  ],
+  network: [
+    // Essential IPv4 Configuration
+    { key: 'ipv4.method', label: 'IPv4 Method', type: 'select', options: ['auto', 'manual', 'disabled', 'link-local'] },
+    { key: 'ipv4.never-default', label: 'Never Default Route', type: 'select', options: ['yes', 'no'] },
+    { key: 'ipv4.addresses', label: 'Static IP Addresses', type: 'text' },
+    { key: 'ipv4.gateway', label: 'Gateway', type: 'text' },
+    { key: 'ipv4.dns', label: 'DNS Servers', type: 'text' },
+    { key: 'ipv4.dns-search', label: 'DNS Search Domains', type: 'text' },
+    { key: 'ipv4.ignore-auto-routes', label: 'Ignore Auto Routes', type: 'select', options: ['yes', 'no'] },
+    { key: 'ipv4.ignore-auto-dns', label: 'Ignore Auto DNS', type: 'select', options: ['yes', 'no'] },
+    { key: 'ipv4.may-fail', label: 'May Fail', type: 'select', options: ['yes', 'no'] },
+    
+    // Essential IPv6 Configuration  
+    { key: 'ipv6.method', label: 'IPv6 Method', type: 'select', options: ['auto', 'manual', 'disabled', 'link-local'] },
+    { key: 'ipv6.addresses', label: 'IPv6 Addresses', type: 'text' },
+    { key: 'ipv6.gateway', label: 'IPv6 Gateway', type: 'text' },
+    { key: 'ipv6.dns', label: 'IPv6 DNS Servers', type: 'text' },
+    { key: 'ipv6.dns-search', label: 'IPv6 DNS Search', type: 'text' },
+    { key: 'ipv6.never-default', label: 'IPv6 Never Default', type: 'select', options: ['yes', 'no'] },
+    { key: 'ipv6.ignore-auto-routes', label: 'IPv6 Ignore Auto Routes', type: 'select', options: ['yes', 'no'] },
+    { key: 'ipv6.ignore-auto-dns', label: 'IPv6 Ignore Auto DNS', type: 'select', options: ['yes', 'no'] },
+    { key: 'ipv6.may-fail', label: 'IPv6 May Fail', type: 'select', options: ['yes', 'no'] }
+  ],
+  proxy: [
+    { key: 'proxy.method', label: 'Proxy Method', type: 'select', options: ['none', 'auto', 'manual'] },
+    { key: 'proxy.pac-url', label: 'PAC URL', type: 'text' }
+  ]
+};
+
+// Static field configuration for Iodine DNS VPN
+const iodineVpnFields = {
+  general: [
+    { key: 'connection.id', label: 'Connection Name', type: 'text', required: true },
+    { key: 'connection.autoconnect', label: 'Auto Connect', type: 'select', options: ['yes', 'no'] },
+    { key: 'connection.autoconnect-priority', label: 'Priority', type: 'number' },
+    { key: 'connection.interface-name', label: 'Interface Name', type: 'text' }
+  ],
+  vpn: [
+    { key: 'vpn.data.nameserver', label: 'Name Server IP/Hostname', type: 'text', required: true },
+    { key: 'vpn.data.topdomain', label: 'Top Domain', type: 'text', required: true },
+    { key: 'vpn.data.password', label: 'Password', type: 'password', required: true },
+    { key: 'vpn.data.interval', label: 'Polling Interval', type: 'text' },
+    { key: 'vpn.data.lazy-mode', label: 'Lazy Mode', type: 'select', options: ['true', 'false'] },
+    { key: 'vpn.data.mtu', label: 'MTU Size', type: 'number' }
+  ],
+  network: [
+    // Essential IPv4 Configuration
+    { key: 'ipv4.method', label: 'IPv4 Method', type: 'select', options: ['auto', 'manual', 'disabled', 'link-local'] },
+    { key: 'ipv4.never-default', label: 'Never Default Route', type: 'select', options: ['yes', 'no'] },
+    { key: 'ipv4.addresses', label: 'Static IP Addresses', type: 'text' },
+    { key: 'ipv4.gateway', label: 'Gateway', type: 'text' },
+    { key: 'ipv4.dns', label: 'DNS Servers', type: 'text' },
+    { key: 'ipv4.dns-search', label: 'DNS Search Domains', type: 'text' },
+    { key: 'ipv4.ignore-auto-routes', label: 'Ignore Auto Routes', type: 'select', options: ['yes', 'no'] },
+    { key: 'ipv4.ignore-auto-dns', label: 'Ignore Auto DNS', type: 'select', options: ['yes', 'no'] },
+    { key: 'ipv4.may-fail', label: 'May Fail', type: 'select', options: ['yes', 'no'] },
+    
+    // Essential IPv6 Configuration  
+    { key: 'ipv6.method', label: 'IPv6 Method', type: 'select', options: ['auto', 'manual', 'disabled', 'link-local'] },
+    { key: 'ipv6.addresses', label: 'IPv6 Addresses', type: 'text' },
+    { key: 'ipv6.gateway', label: 'IPv6 Gateway', type: 'text' },
+    { key: 'ipv6.dns', label: 'IPv6 DNS Servers', type: 'text' },
+    { key: 'ipv6.dns-search', label: 'IPv6 DNS Search', type: 'text' },
+    { key: 'ipv6.never-default', label: 'IPv6 Never Default', type: 'select', options: ['yes', 'no'] },
+    { key: 'ipv6.ignore-auto-routes', label: 'IPv6 Ignore Auto Routes', type: 'select', options: ['yes', 'no'] },
+    { key: 'ipv6.ignore-auto-dns', label: 'IPv6 Ignore Auto DNS', type: 'select', options: ['yes', 'no'] },
+    { key: 'ipv6.may-fail', label: 'IPv6 May Fail', type: 'select', options: ['yes', 'no'] }
+  ],
+  proxy: [
+    { key: 'proxy.method', label: 'Proxy Method', type: 'select', options: ['none', 'auto', 'manual'] },
+    { key: 'proxy.pac-url', label: 'PAC URL', type: 'text' }
+  ]
+};
+
+// Static field configuration for OpenVPN
+const openVpnFields = {
+  general: [
+    { key: 'connection.id', label: 'Connection Name', type: 'text', required: true },
+    { key: 'connection.autoconnect', label: 'Auto Connect', type: 'select', options: ['yes', 'no'] },
+    { key: 'connection.autoconnect-priority', label: 'Priority', type: 'number' },
+    { key: 'connection.interface-name', label: 'Interface Name', type: 'text' }
+  ],
+  openvpn: [
+    { key: 'vpn.data.username', label: 'Username', type: 'text', required: true },
+    { key: 'vpn.secrets', label: 'Password', type: 'password', required: true },
+    { key: 'vpn.data.remote', label: 'Remote Server', type: 'text', required: true },
+    { key: 'vpn.data.connection-type', label: 'Connection Type', type: 'select', options: ['password', 'password-tls', 'tls', 'static-key'] },
+    { key: 'vpn.data.ca', label: 'CA Certificate Path', type: 'text' },
+    { key: 'vpn.data.cert', label: 'Client Certificate Path', type: 'text' },
+    { key: 'vpn.data.key', label: 'Private Key Path', type: 'text' },
+    { key: 'vpn.data.ta', label: 'TLS Auth Key Path', type: 'text' },
+    { key: 'vpn.data.ta-dir', label: 'TLS Auth Direction', type: 'select', options: ['0', '1'] }
+  ],
+  advanced: [
+    { key: 'vpn.data.cipher', label: 'Cipher', type: 'select', options: ['AES-256-GCM', 'AES-256-CBC', 'AES-128-GCM', 'AES-128-CBC', 'CHACHA20-POLY1305'] },
+    { key: 'vpn.data.auth', label: 'HMAC Authentication', type: 'select', options: ['SHA1', 'SHA256', 'SHA384', 'SHA512', 'MD5'] },
+    { key: 'vpn.data.dev', label: 'Device Type', type: 'select', options: ['tun', 'tap'] },
+    { key: 'vpn.data.tunnel-mtu', label: 'Tunnel MTU', type: 'number' },
+    { key: 'vpn.data.fragment-size', label: 'Fragment Size', type: 'number' },
+    { key: 'vpn.data.mssfix', label: 'MSS Fix', type: 'number' },
+    { key: 'vpn.data.comp-lzo', label: 'LZO Compression', type: 'select', options: ['adaptive', 'yes', 'no', 'no-by-default'] },
+    { key: 'vpn.data.remote-random', label: 'Randomize Remote Hosts', type: 'select', options: ['yes', 'no'] },
+    { key: 'vpn.data.verify-x509-name', label: 'X.509 Name Verification', type: 'text' },
+    { key: 'vpn.data.ns-cert-type', label: 'NS Certificate Type', type: 'select', options: ['server', 'client'] }
+  ],
+  network: [
+    // Essential IPv4 Configuration
+    { key: 'ipv4.method', label: 'IPv4 Method', type: 'select', options: ['auto', 'manual', 'disabled', 'link-local'] },
+    { key: 'ipv4.never-default', label: 'Never Default Route', type: 'select', options: ['yes', 'no'] },
+    { key: 'ipv4.addresses', label: 'Static IP Addresses', type: 'text' },
+    { key: 'ipv4.gateway', label: 'Gateway', type: 'text' },
+    { key: 'ipv4.dns', label: 'DNS Servers', type: 'text' },
+    { key: 'ipv4.dns-search', label: 'DNS Search Domains', type: 'text' },
+    { key: 'ipv4.ignore-auto-routes', label: 'Ignore Auto Routes', type: 'select', options: ['yes', 'no'] },
+    { key: 'ipv4.ignore-auto-dns', label: 'Ignore Auto DNS', type: 'select', options: ['yes', 'no'] },
+    { key: 'ipv4.may-fail', label: 'May Fail', type: 'select', options: ['yes', 'no'] },
+    
+    // Essential IPv6 Configuration  
+    { key: 'ipv6.method', label: 'IPv6 Method', type: 'select', options: ['auto', 'manual', 'disabled', 'link-local'] },
+    { key: 'ipv6.addresses', label: 'IPv6 Addresses', type: 'text' },
+    { key: 'ipv6.gateway', label: 'IPv6 Gateway', type: 'text' },
+    { key: 'ipv6.dns', label: 'IPv6 DNS Servers', type: 'text' },
+    { key: 'ipv6.dns-search', label: 'IPv6 DNS Search', type: 'text' },
+    { key: 'ipv6.never-default', label: 'IPv6 Never Default', type: 'select', options: ['yes', 'no'] },
+    { key: 'ipv6.ignore-auto-routes', label: 'IPv6 Ignore Auto Routes', type: 'select', options: ['yes', 'no'] },
+    { key: 'ipv6.ignore-auto-dns', label: 'IPv6 Ignore Auto DNS', type: 'select', options: ['yes', 'no'] },
+    { key: 'ipv6.may-fail', label: 'IPv6 May Fail', type: 'select', options: ['yes', 'no'] }
+  ],
+  proxy: [
+    { key: 'proxy.method', label: 'Proxy Method', type: 'select', options: ['none', 'auto', 'manual'] },
+    { key: 'proxy.pac-url', label: 'PAC URL', type: 'text' }
+  ]
+};
+
+// Static field configuration for WiFi (802-11-wireless) connections
+const wifiFields = {
+  general: [
+    { key: 'connection.id', label: 'Connection Name', type: 'text', required: true },
+    { key: 'connection.autoconnect', label: 'Auto Connect', type: 'select', options: ['yes', 'no'] },
+    { key: 'connection.autoconnect-priority', label: 'Priority', type: 'number' },
+    { key: 'connection.interface-name', label: 'Interface Name', type: 'text' }
+  ],
+  wifi: [
+    { key: '802-11-wireless.ssid', label: 'SSID (Network Name)', type: 'text', required: true },
+    { key: '802-11-wireless.mode', label: 'Mode', type: 'select', options: ['infrastructure', 'ap', 'adhoc', 'monitor'] },
+    { key: '802-11-wireless.band', label: 'Band', type: 'select', options: ['a', 'bg'] },
+    { key: '802-11-wireless.channel', label: 'Channel', type: 'number' },
+    { key: '802-11-wireless.bssid', label: 'BSSID (Access Point MAC)', type: 'text' },
+    { key: '802-11-wireless.mac-address', label: 'Device MAC Address', type: 'text' },
+    { key: '802-11-wireless.cloned-mac-address', label: 'Cloned MAC Address', type: 'text' },
+    { key: '802-11-wireless.hidden', label: 'Hidden Network', type: 'select', options: ['yes', 'no'] },
+    { key: '802-11-wireless.mtu', label: 'MTU', type: 'text' }
+  ],
+  security: [
+    { key: '802-11-wireless-security.key-mgmt', label: 'Security Type', type: 'select', options: ['none', 'wpa-psk', 'wpa-eap', 'wep', 'sae'] },
+    { key: '802-11-wireless-security.psk', label: 'Password (WPA/WPA2)', type: 'password' },
+    { key: '802-11-wireless-security.psk-flags', label: 'Password Flags', type: 'select', options: ['0', '1', '2'] },
+    { key: '802-11-wireless-security.auth-alg', label: 'Authentication Algorithm', type: 'select', options: ['open', 'shared', 'leap'] },
+    { key: '802-11-wireless-security.proto', label: 'WPA Protocol', type: 'select', options: ['wpa', 'rsn'] },
+    { key: '802-11-wireless-security.pairwise', label: 'Pairwise Ciphers', type: 'select', options: ['tkip', 'ccmp'] },
+    { key: '802-11-wireless-security.group', label: 'Group Ciphers', type: 'select', options: ['wep40', 'wep104', 'tkip', 'ccmp'] },
+    { key: '802-11-wireless-security.pmf', label: 'Protected Management Frames', type: 'select', options: ['0', '1', '2'] },
+    { key: '802-11-wireless-security.wep-key0', label: 'WEP Key 0', type: 'password' },
+    { key: '802-11-wireless-security.wep-tx-keyidx', label: 'WEP TX Key Index', type: 'select', options: ['0', '1', '2', '3'] }
+  ],
+  network: [
+    // Essential IPv4 Configuration
+    { key: 'ipv4.method', label: 'IPv4 Method', type: 'select', options: ['auto', 'manual', 'disabled', 'link-local', 'shared'] },
+    { key: 'ipv4.never-default', label: 'Never Default Route', type: 'select', options: ['yes', 'no'] },
+    { key: 'ipv4.addresses', label: 'Static IP Addresses', type: 'text' },
+    { key: 'ipv4.gateway', label: 'Gateway', type: 'text' },
+    { key: 'ipv4.dns', label: 'DNS Servers', type: 'text' },
+    { key: 'ipv4.dns-search', label: 'DNS Search Domains', type: 'text' },
+    { key: 'ipv4.ignore-auto-routes', label: 'Ignore Auto Routes', type: 'select', options: ['yes', 'no'] },
+    { key: 'ipv4.ignore-auto-dns', label: 'Ignore Auto DNS', type: 'select', options: ['yes', 'no'] },
+    { key: 'ipv4.may-fail', label: 'May Fail', type: 'select', options: ['yes', 'no'] },
+    
+    // Essential IPv6 Configuration  
+    { key: 'ipv6.method', label: 'IPv6 Method', type: 'select', options: ['auto', 'manual', 'disabled', 'link-local', 'ignore'] },
+    { key: 'ipv6.addresses', label: 'IPv6 Addresses', type: 'text' },
+    { key: 'ipv6.gateway', label: 'IPv6 Gateway', type: 'text' },
+    { key: 'ipv6.dns', label: 'IPv6 DNS Servers', type: 'text' },
+    { key: 'ipv6.dns-search', label: 'IPv6 DNS Search', type: 'text' },
+    { key: 'ipv6.never-default', label: 'IPv6 Never Default', type: 'select', options: ['yes', 'no'] },
+    { key: 'ipv6.ignore-auto-routes', label: 'IPv6 Ignore Auto Routes', type: 'select', options: ['yes', 'no'] },
+    { key: 'ipv6.ignore-auto-dns', label: 'IPv6 Ignore Auto DNS', type: 'select', options: ['yes', 'no'] },
+    { key: 'ipv6.may-fail', label: 'IPv6 May Fail', type: 'select', options: ['yes', 'no'] }
+  ],
+  advanced: [
+    { key: '802-11-wireless.powersave', label: 'Power Save', type: 'select', options: ['0', '1', '2', '3'] },
+    { key: '802-11-wireless.mac-address-randomization', label: 'MAC Randomization', type: 'select', options: ['default', 'never', 'always'] },
+    { key: '802-11-wireless.wake-on-wlan', label: 'Wake on WLAN', type: 'text' },
+    { key: '802-11-wireless.ap-isolation', label: 'AP Isolation', type: 'select', options: ['-1', '0', '1'] },
+    { key: 'proxy.method', label: 'Proxy Method', type: 'select', options: ['none', 'auto', 'manual'] },
+    { key: 'proxy.pac-url', label: 'PAC URL', type: 'text' }
+  ]
+};
+
+// Static field configuration for Ethernet (802-3-ethernet) connections including USB ethernet
+const ethernetFields = {
+  general: [
+    { key: 'connection.id', label: 'Connection Name', type: 'text', required: true },
+    { key: 'connection.autoconnect', label: 'Auto Connect', type: 'select', options: ['yes', 'no'] },
+    { key: 'connection.autoconnect-priority', label: 'Priority', type: 'number' },
+    { key: 'connection.interface-name', label: 'Interface Name', type: 'text' }
+  ],
+  ethernet: [
+    { key: '802-3-ethernet.speed', label: 'Link Speed (Mbps)', type: 'select', options: ['0', '10', '100', '1000', '2500', '5000', '10000'] },
+    { key: '802-3-ethernet.duplex', label: 'Duplex Mode', type: 'select', options: ['half', 'full'] },
+    { key: '802-3-ethernet.auto-negotiate', label: 'Auto Negotiate', type: 'select', options: ['yes', 'no'] },
+    { key: '802-3-ethernet.port', label: 'Port Type', type: 'select', options: ['tp', 'aui', 'bnc', 'mii'] },
+    { key: '802-3-ethernet.mac-address', label: 'Device MAC Address', type: 'text' },
+    { key: '802-3-ethernet.cloned-mac-address', label: 'Cloned MAC Address', type: 'text' },
+    { key: '802-3-ethernet.mtu', label: 'MTU', type: 'text' },
+    { key: '802-3-ethernet.wake-on-lan', label: 'Wake on LAN', type: 'select', options: ['default', 'ignore', 'none', 'phy', 'unicast', 'multicast', 'broadcast', 'arp', 'magic'] },
+    { key: '802-3-ethernet.wake-on-lan-password', label: 'WoL Password', type: 'password' },
+    { key: '802-3-ethernet.accept-all-mac-addresses', label: 'Accept All MAC Addresses', type: 'select', options: ['-1', '0', '1'] }
+  ],
+  network: [
+    // Essential IPv4 Configuration
+    { key: 'ipv4.method', label: 'IPv4 Method', type: 'select', options: ['auto', 'manual', 'disabled', 'link-local', 'shared'] },
+    { key: 'ipv4.never-default', label: 'Never Default Route', type: 'select', options: ['yes', 'no'] },
+    { key: 'ipv4.addresses', label: 'Static IP Addresses', type: 'text' },
+    { key: 'ipv4.gateway', label: 'Gateway', type: 'text' },
+    { key: 'ipv4.dns', label: 'DNS Servers', type: 'text' },
+    { key: 'ipv4.dns-search', label: 'DNS Search Domains', type: 'text' },
+    { key: 'ipv4.ignore-auto-routes', label: 'Ignore Auto Routes', type: 'select', options: ['yes', 'no'] },
+    { key: 'ipv4.ignore-auto-dns', label: 'Ignore Auto DNS', type: 'select', options: ['yes', 'no'] },
+    { key: 'ipv4.may-fail', label: 'May Fail', type: 'select', options: ['yes', 'no'] },
+    
+    // Essential IPv6 Configuration  
+    { key: 'ipv6.method', label: 'IPv6 Method', type: 'select', options: ['auto', 'manual', 'disabled', 'link-local', 'ignore'] },
+    { key: 'ipv6.addresses', label: 'IPv6 Addresses', type: 'text' },
+    { key: 'ipv6.gateway', label: 'IPv6 Gateway', type: 'text' },
+    { key: 'ipv6.dns', label: 'IPv6 DNS Servers', type: 'text' },
+    { key: 'ipv6.dns-search', label: 'IPv6 DNS Search', type: 'text' },
+    { key: 'ipv6.never-default', label: 'IPv6 Never Default', type: 'select', options: ['yes', 'no'] },
+    { key: 'ipv6.ignore-auto-routes', label: 'IPv6 Ignore Auto Routes', type: 'select', options: ['yes', 'no'] },
+    { key: 'ipv6.ignore-auto-dns', label: 'IPv6 Ignore Auto DNS', type: 'select', options: ['yes', 'no'] },
+    { key: 'ipv6.may-fail', label: 'IPv6 May Fail', type: 'select', options: ['yes', 'no'] }
+  ],
+  advanced: [
+    { key: 'ipv4.dhcp-client-id', label: 'DHCP Client ID', type: 'text' },
+    { key: 'ipv4.dhcp-hostname', label: 'DHCP Hostname', type: 'text' },
+    { key: 'ipv4.dhcp-send-hostname', label: 'Send Hostname via DHCP', type: 'select', options: ['yes', 'no'] },
+    { key: 'ipv4.dhcp-timeout', label: 'DHCP Timeout', type: 'number' },
+    { key: 'ipv4.route-metric', label: 'Route Metric', type: 'number' },
+    { key: 'ipv6.dhcp-hostname', label: 'IPv6 DHCP Hostname', type: 'text' },
+    { key: 'ipv6.dhcp-send-hostname', label: 'Send IPv6 Hostname via DHCP', type: 'select', options: ['yes', 'no'] },
+    { key: 'ipv6.dhcp-timeout', label: 'IPv6 DHCP Timeout', type: 'number' },
+    { key: 'proxy.method', label: 'Proxy Method', type: 'select', options: ['none', 'auto', 'manual'] },
+    { key: 'proxy.pac-url', label: 'PAC URL', type: 'text' }
+  ]
+};
+
+function renderHansVpnTabs(data, container, uuid) {
+  // Create field lookup map
+  const fieldMap = new Map();
+  data.details.forEach(row => fieldMap.set(row.key, row.val));
   
-  // Create modal if it doesn't exist
-  let modal = document.getElementById('infoModal');
-  if (!modal) {
-    document.body.insertAdjacentHTML('beforeend', `
-      <div class="modal fade cp-modal-responsive" id="infoModal" tabindex="-1">
-        <div class="modal-dialog modal-lg">
-          <div class="modal-content">
-            <div class="modal-header">
-              <h5 class="modal-title" id="infoModalTitle">Connection Information</h5>
-              <button class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body" id="infoModalBody"></div>
-            <div class="modal-footer">
-              <button class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-            </div>
+  // Calculate readonly fields count dynamically
+  const editableKeys = new Set([
+    ...hansVpnFields.general.map(f => f.key),
+    ...hansVpnFields.vpn.map(f => f.key), 
+    ...hansVpnFields.network.map(f => f.key),
+    ...hansVpnFields.proxy.map(f => f.key)
+  ]);
+  const readonlyCount = data.details.filter(field => !editableKeys.has(field.key)).length;
+  
+  // Create tabbed interface
+  container.innerHTML = `
+    <ul class="nav nav-tabs" id="hansVpnTabs" role="tablist">
+      <li class="nav-item" role="presentation">
+        <button class="nav-link active" id="general-tab" data-bs-toggle="tab" data-bs-target="#general" 
+                type="button" role="tab" aria-controls="general" aria-selected="true">
+          <i class="bi bi-gear me-1"></i>General
+        </button>
+      </li>
+      <li class="nav-item" role="presentation">
+        <button class="nav-link" id="vpn-tab" data-bs-toggle="tab" data-bs-target="#vpn" 
+                type="button" role="tab" aria-controls="vpn" aria-selected="false">
+          <i class="bi bi-shield-lock me-1"></i>VPN Settings
+        </button>
+      </li>
+      <li class="nav-item" role="presentation">
+        <button class="nav-link" id="network-tab" data-bs-toggle="tab" data-bs-target="#network" 
+                type="button" role="tab" aria-controls="network" aria-selected="false">
+          <i class="bi bi-ethernet me-1"></i>Network
+        </button>
+      </li>
+      <li class="nav-item" role="presentation">
+        <button class="nav-link" id="proxy-tab" data-bs-toggle="tab" data-bs-target="#proxy" 
+                type="button" role="tab" aria-controls="proxy" aria-selected="false">
+          <i class="bi bi-globe me-1"></i>Proxy
+        </button>
+      </li>
+    </ul>
+    <div class="tab-content mt-3" id="hansVpnTabContent">
+      <div class="tab-pane fade show active" id="general" role="tabpanel" aria-labelledby="general-tab">
+        ${renderFieldGroup(hansVpnFields.general, fieldMap)}
+      </div>
+      <div class="tab-pane fade" id="vpn" role="tabpanel" aria-labelledby="vpn-tab">
+        ${renderFieldGroup(hansVpnFields.vpn, fieldMap)}
+      </div>
+      <div class="tab-pane fade" id="network" role="tabpanel" aria-labelledby="network-tab">
+        <div class="row">
+          <div class="col-12">
+            <h6 class="text-muted mb-3"><i class="bi bi-network-wired me-2"></i>IPv4 & IPv6 Configuration</h6>
+            ${renderFieldGroup(hansVpnFields.network, fieldMap)}
           </div>
         </div>
       </div>
-    `);
-    modal = document.getElementById('infoModal');
-  }
-  
-  const title = document.getElementById('infoModalTitle');
-  const body = document.getElementById('infoModalBody');
-  
-  const connType = result.type || 'Unknown';
-  title.textContent = `Connection Information - ${connType.charAt(0).toUpperCase() + connType.slice(1)}`;
-  
-  // Display read-only connection details
-  let content = `
-    <div class="alert alert-info">
-      <i class="bi bi-info-circle me-2"></i>
-      This is an auto-created interface connection managed by the system.
+      <div class="tab-pane fade" id="proxy" role="tabpanel" aria-labelledby="proxy-tab">
+        ${renderFieldGroup(hansVpnFields.proxy, fieldMap)}
+      </div>
     </div>
-    <table class="table table-sm">
+    
+    <!-- Additional Info Section -->
+    <div class="mt-4">
+      <div class="d-flex align-items-center mb-2">
+        <button class="btn btn-outline-secondary btn-sm" type="button" data-bs-toggle="collapse" 
+                data-bs-target="#additionalInfo" aria-expanded="false" aria-controls="additionalInfo">
+          <i class="bi bi-info-circle me-1"></i>Additional Information <span class="badge bg-secondary ms-1">${readonlyCount}</span>
+          <i class="bi bi-chevron-down ms-1"></i>
+        </button>
+      </div>
+      <div class="collapse" id="additionalInfo">
+        <div class="card card-body">
+          <h6 class="text-muted mb-3">Read-only System Information</h6>
+          ${renderReadOnlyFields(data.details, editableKeys)}
+        </div>
+      </div>
+    </div>
   `;
   
-  result.details.forEach(detail => {
-    content += `
-      <tr>
-        <td class="text-nowrap fw-semibold" style="width: 30%;">${detail.key}</td>
-        <td><code class="cp-code-text">${detail.val || '--'}</code></td>
-      </tr>
+  // Setup save handler for tabbed interface
+  document.getElementById('saveEditBtn').onclick = async () => {
+    const inputs = collectHansVpnInputs();
+    const d2 = await api('save_conn_details', {uuid, rows: JSON.stringify(inputs)});
+    if(d2.error) toast(d2.error, false); 
+    else { 
+      toast('Connection settings saved successfully'); 
+      mInst.hide(); 
+      loadUnifiedView(); 
+    }
+  };
+}
+
+function renderFieldGroup(fields, fieldMap) {
+  return fields.map(field => {
+    const value = fieldMap.get(field.key) || '';
+    const escaped = value.replace(/"/g, '&quot;');
+    const required = field.required ? 'required' : '';
+    
+    let input = '';
+    switch (field.type) {
+      case 'select':
+        input = `<select class="form-control form-control-sm" data-field="${field.key}" ${required}>
+          ${field.options.map(opt => 
+            `<option value="${opt}" ${value === opt ? 'selected' : ''}>${opt}</option>`
+          ).join('')}
+        </select>`;
+        break;
+      case 'password':
+        input = `<input type="password" class="form-control form-control-sm" 
+                       data-field="${field.key}" value="${escaped}" ${required}>`;
+        break;
+      case 'number':
+        input = `<input type="number" class="form-control form-control-sm" 
+                       data-field="${field.key}" value="${escaped}" ${required}>`;
+        break;
+      default:
+        input = `<input type="text" class="form-control form-control-sm" 
+                       data-field="${field.key}" value="${escaped}" ${required}>`;
+    }
+    
+    return `
+      <div class="mb-3">
+        <label class="form-label fw-semibold">${field.label}</label>
+        ${input}
+      </div>
     `;
+  }).join('');
+}
+
+function renderReadOnlyFields(allFields, editableKeys = null) {
+  // If editableKeys not provided, calculate from context (for backward compatibility)
+  if (!editableKeys) {
+    editableKeys = new Set([
+      ...hansVpnFields.general.map(f => f.key),
+      ...hansVpnFields.vpn.map(f => f.key), 
+      ...hansVpnFields.network.map(f => f.key),
+      ...hansVpnFields.proxy.map(f => f.key)
+    ]);
+  }
+  
+  // Show all fields that are NOT in editable categories
+  const readonlyFields = allFields.filter(field => !editableKeys.has(field.key));
+  
+  return `
+    <div class="row">
+      ${readonlyFields.map(field => `
+        <div class="col-md-6 mb-2">
+          <div class="d-flex">
+            <div class="text-muted fw-semibold me-2" style="min-width: 180px;">${field.key}:</div>
+            <div><code class="cp-code-text">${field.val || '--'}</code></div>
+          </div>
+        </div>
+      `).join('')}
+    </div>
+  `;
+}
+
+function collectHansVpnInputs() {
+  const inputs = [];
+  const allFields = [...hansVpnFields.general, ...hansVpnFields.vpn, ...hansVpnFields.network, ...hansVpnFields.proxy];
+  
+  allFields.forEach(field => {
+    const element = document.querySelector(`[data-field="${field.key}"]`);
+    if (element) {
+      inputs.push({
+        key: field.key,
+        val: element.value
+      });
+    }
   });
   
-  content += '</table>';
-  body.innerHTML = content;
+  return inputs;
+}
+
+function renderTableInterface(data, container, uuid) {
+  // Existing table interface code (unchanged)
+  const tbl=document.createElement('table'); 
+  tbl.className='table table-sm';
   
-  new bootstrap.Modal(modal).show();
+  // Group VPN data fields for better organization
+  const vpnDataFields = [];
+  const wifiSecurityFields = [];
+  const wifiBasicFields = [];
+  const networkFields = [];
+  const otherFields = [];
+  
+  data.details.forEach(row => {
+    if(row.key.startsWith('vpn.data.')) {
+      vpnDataFields.push(row);
+    } else if(row.key.startsWith('802-11-wireless-security.')) {
+      wifiSecurityFields.push(row);
+    } else if(row.key.startsWith('802-11-wireless.')) {
+      wifiBasicFields.push(row);
+    } else if(row.key.startsWith('ipv4.') || row.key.startsWith('ipv6.')) {
+      networkFields.push(row);
+    } else {
+      otherFields.push(row);
+    }
+  });
+  
+  // Add basic connection fields first
+  otherFields.forEach(row=>{
+    const tr=document.createElement('tr');
+    tr.innerHTML=`<td class='text-nowrap fw-semibold'>${row.key}</td><td><input type='text' class='form-control form-control-sm' value="${row.val.replace(/"/g,'&quot;')}"></td>`;
+    tbl.append(tr);
+  });
+  
+  // Add WiFi basic settings with separator if they exist
+  if(wifiBasicFields.length > 0) {
+    const separatorTr = document.createElement('tr');
+    separatorTr.innerHTML = `<td colspan="2" class="bg-light text-muted fw-semibold p-2 border-top"><i class="bi bi-wifi me-2"></i>WiFi Settings</td>`;
+    tbl.append(separatorTr);
+    
+    wifiBasicFields.forEach(row=>{
+      const tr=document.createElement('tr');
+      tr.innerHTML=`<td class='text-nowrap fw-semibold ps-3'>${row.key}</td><td><input type='text' class='form-control form-control-sm' value="${row.val.replace(/"/g,'&quot;')}"></td>`;
+      tbl.append(tr);
+    });
+  }
+  
+  // Add WiFi security settings with separator if they exist  
+  if(wifiSecurityFields.length > 0) {
+    const separatorTr = document.createElement('tr');
+    separatorTr.innerHTML = `<td colspan="2" class="bg-light text-muted fw-semibold p-2 border-top"><i class="bi bi-shield-lock me-2"></i>WiFi Security</td>`;
+    tbl.append(separatorTr);
+    
+    wifiSecurityFields.forEach(row=>{
+      const tr=document.createElement('tr');
+      tr.innerHTML=`<td class='text-nowrap fw-semibold ps-3'>${row.key}</td><td><input type='text' class='form-control form-control-sm' value="${row.val.replace(/"/g,'&quot;')}"></td>`;
+      tbl.append(tr);
+    });
+  }
+  
+  // Add network configuration with separator if they exist
+  if(networkFields.length > 0) {
+    const separatorTr = document.createElement('tr');
+    separatorTr.innerHTML = `<td colspan="2" class="bg-light text-muted fw-semibold p-2 border-top"><i class="bi bi-ethernet me-2"></i>Network Configuration</td>`;
+    tbl.append(separatorTr);
+    
+    networkFields.forEach(row=>{
+      const tr=document.createElement('tr');
+      tr.innerHTML=`<td class='text-nowrap fw-semibold ps-3'>${row.key}</td><td><input type='text' class='form-control form-control-sm' value="${row.val.replace(/"/g,'&quot;')}"></td>`;
+      tbl.append(tr);
+    });
+  }
+  
+  // Add VPN data fields with a separator if they exist
+  if(vpnDataFields.length > 0) {
+    const separatorTr = document.createElement('tr');
+    separatorTr.innerHTML = `<td colspan="2" class="bg-light text-muted fw-semibold p-2 border-top"><i class="bi bi-shield-lock me-2"></i>VPN Configuration</td>`;
+    tbl.append(separatorTr);
+    
+    vpnDataFields.forEach(row=>{
+      const tr=document.createElement('tr');
+      const friendlyKey = row.key.replace('vpn.data.', '');
+      tr.innerHTML=`<td class='text-nowrap fw-semibold ps-3'>${friendlyKey}</td><td><input type='text' class='form-control form-control-sm' value="${row.val.replace(/"/g,'&quot;')}"></td>`;
+      tr.dataset.originalKey = row.key; // Store original key for saving
+      tbl.append(tr);
+    });
+  }
+  
+  container.innerHTML=''; 
+  container.append(tbl);
+
+  // Setup save handler for table interface
+  document.getElementById('saveEditBtn').onclick=async()=>{
+    const inputs=[...tbl.querySelectorAll('tr')].map(tr=>{
+      if(tr.children.length !== 2 || !tr.children[1].firstChild) return null;
+      const key = tr.dataset.originalKey || tr.children[0].textContent.trim();
+      const val = tr.children[1].firstChild.value;
+      return {key, val};
+    }).filter(Boolean);
+    
+    const d2=await api('save_conn_details',{uuid, rows:JSON.stringify(inputs)});
+    if(d2.error) toast(d2.error,false); else { toast('Connection settings saved successfully'); mInst.hide(); loadUnifiedView(); }
+  };
 }
 
 // Event delegation for mobile details expansion
@@ -1518,5 +1998,514 @@ function switchToSimpleView() {
   document.getElementById('simpleConnectionSection').style.display = 'block';
   document.getElementById('toggleViewBtn').textContent = 'Switch to Unified';
   load();
+}
+
+function renderIodineVpnTabs(data, container, uuid) {
+  // Create field lookup map
+  const fieldMap = new Map();
+  data.details.forEach(row => fieldMap.set(row.key, row.val));
+  
+  // Calculate readonly fields count dynamically
+  const editableKeys = new Set([
+    ...iodineVpnFields.general.map(f => f.key),
+    ...iodineVpnFields.vpn.map(f => f.key), 
+    ...iodineVpnFields.network.map(f => f.key),
+    ...iodineVpnFields.proxy.map(f => f.key)
+  ]);
+  const readonlyCount = data.details.filter(field => !editableKeys.has(field.key)).length;
+  
+  // Create tabbed interface
+  container.innerHTML = `
+    <ul class="nav nav-tabs" id="iodineVpnTabs" role="tablist">
+      <li class="nav-item" role="presentation">
+        <button class="nav-link active" id="general-tab" data-bs-toggle="tab" data-bs-target="#general" 
+                type="button" role="tab" aria-controls="general" aria-selected="true">
+          <i class="bi bi-gear me-1"></i>General
+        </button>
+      </li>
+      <li class="nav-item" role="presentation">
+        <button class="nav-link" id="vpn-tab" data-bs-toggle="tab" data-bs-target="#vpn" 
+                type="button" role="tab" aria-controls="vpn" aria-selected="false">
+          <i class="bi bi-shield-lock me-1"></i>DNS Tunnel
+        </button>
+      </li>
+      <li class="nav-item" role="presentation">
+        <button class="nav-link" id="network-tab" data-bs-toggle="tab" data-bs-target="#network" 
+                type="button" role="tab" aria-controls="network" aria-selected="false">
+          <i class="bi bi-ethernet me-1"></i>Network
+        </button>
+      </li>
+      <li class="nav-item" role="presentation">
+        <button class="nav-link" id="proxy-tab" data-bs-toggle="tab" data-bs-target="#proxy" 
+                type="button" role="tab" aria-controls="proxy" aria-selected="false">
+          <i class="bi bi-globe me-1"></i>Proxy
+        </button>
+      </li>
+    </ul>
+    <div class="tab-content mt-3" id="iodineVpnTabContent">
+      <div class="tab-pane fade show active" id="general" role="tabpanel" aria-labelledby="general-tab">
+        ${renderFieldGroup(iodineVpnFields.general, fieldMap)}
+      </div>
+      <div class="tab-pane fade" id="vpn" role="tabpanel" aria-labelledby="vpn-tab">
+        <div class="row">
+          <div class="col-12">
+            <h6 class="text-muted mb-3"><i class="bi bi-dns me-2"></i>DNS Tunnel Configuration</h6>
+            ${renderFieldGroup(iodineVpnFields.vpn, fieldMap)}
+          </div>
+        </div>
+      </div>
+      <div class="tab-pane fade" id="network" role="tabpanel" aria-labelledby="network-tab">
+        <div class="row">
+          <div class="col-12">
+            <h6 class="text-muted mb-3"><i class="bi bi-network-wired me-2"></i>IPv4 & IPv6 Configuration</h6>
+            ${renderFieldGroup(iodineVpnFields.network, fieldMap)}
+          </div>
+        </div>
+      </div>
+      <div class="tab-pane fade" id="proxy" role="tabpanel" aria-labelledby="proxy-tab">
+        ${renderFieldGroup(iodineVpnFields.proxy, fieldMap)}
+      </div>
+    </div>
+    
+    <!-- Additional Info Section -->
+    <div class="mt-4">
+      <div class="d-flex align-items-center mb-2">
+        <button class="btn btn-outline-secondary btn-sm" type="button" data-bs-toggle="collapse" 
+                data-bs-target="#additionalInfo" aria-expanded="false" aria-controls="additionalInfo">
+          <i class="bi bi-info-circle me-1"></i>Additional Information <span class="badge bg-secondary ms-1">${readonlyCount}</span>
+          <i class="bi bi-chevron-down ms-1"></i>
+        </button>
+      </div>
+      <div class="collapse" id="additionalInfo">
+        <div class="card card-body">
+          <h6 class="text-muted mb-3">Read-only System Information</h6>
+          ${renderReadOnlyFields(data.details, editableKeys)}
+        </div>
+      </div>
+    </div>
+  `;
+  
+  // Setup save handler for tabbed interface
+  document.getElementById('saveEditBtn').onclick = async () => {
+    const inputs = collectIodineVpnInputs();
+    const d2 = await api('save_conn_details', {uuid, rows: JSON.stringify(inputs)});
+    if(d2.error) toast(d2.error, false); 
+    else { 
+      toast('Connection settings saved successfully'); 
+      mInst.hide(); 
+      loadUnifiedView(); 
+    }
+  };
+}
+
+function collectIodineVpnInputs() {
+  const inputs = [];
+  const allFields = [...iodineVpnFields.general, ...iodineVpnFields.vpn, ...iodineVpnFields.network, ...iodineVpnFields.proxy];
+  
+  allFields.forEach(field => {
+    const element = document.querySelector(`[data-field="${field.key}"]`);
+    if (element) {
+      inputs.push({
+        key: field.key,
+        val: element.value
+      });
+    }
+  });
+  
+  return inputs;
+}
+
+function renderWifiTabs(data, container, uuid) {
+  // Create field lookup map
+  const fieldMap = new Map();
+  data.details.forEach(row => fieldMap.set(row.key, row.val));
+  
+  // Calculate readonly fields count dynamically
+  const editableKeys = new Set([
+    ...wifiFields.general.map(f => f.key),
+    ...wifiFields.wifi.map(f => f.key), 
+    ...wifiFields.security.map(f => f.key),
+    ...wifiFields.network.map(f => f.key),
+    ...wifiFields.advanced.map(f => f.key)
+  ]);
+  const readonlyCount = data.details.filter(field => !editableKeys.has(field.key)).length;
+  
+  // Determine WiFi mode for better tab labeling
+  const mode = fieldMap.get('802-11-wireless.mode') || 'infrastructure';
+  const modeLabel = mode === 'ap' ? 'Access Point' : mode === 'adhoc' ? 'Ad-Hoc' : 'Station';
+  
+  // Create tabbed interface
+  container.innerHTML = `
+    <ul class="nav nav-tabs" id="wifiTabs" role="tablist">
+      <li class="nav-item" role="presentation">
+        <button class="nav-link active" id="general-tab" data-bs-toggle="tab" data-bs-target="#general" 
+                type="button" role="tab" aria-controls="general" aria-selected="true">
+          <i class="bi bi-gear me-1"></i>General
+        </button>
+      </li>
+      <li class="nav-item" role="presentation">
+        <button class="nav-link" id="wifi-tab" data-bs-toggle="tab" data-bs-target="#wifi" 
+                type="button" role="tab" aria-controls="wifi" aria-selected="false">
+          <i class="bi bi-wifi me-1"></i>WiFi Settings
+        </button>
+      </li>
+      <li class="nav-item" role="presentation">
+        <button class="nav-link" id="security-tab" data-bs-toggle="tab" data-bs-target="#security" 
+                type="button" role="tab" aria-controls="security" aria-selected="false">
+          <i class="bi bi-shield-lock me-1"></i>Security
+        </button>
+      </li>
+      <li class="nav-item" role="presentation">
+        <button class="nav-link" id="network-tab" data-bs-toggle="tab" data-bs-target="#network" 
+                type="button" role="tab" aria-controls="network" aria-selected="false">
+          <i class="bi bi-ethernet me-1"></i>Network
+        </button>
+      </li>
+      <li class="nav-item" role="presentation">
+        <button class="nav-link" id="advanced-tab" data-bs-toggle="tab" data-bs-target="#advanced" 
+                type="button" role="tab" aria-controls="advanced" aria-selected="false">
+          <i class="bi bi-sliders me-1"></i>Advanced
+        </button>
+      </li>
+    </ul>
+    <div class="tab-content mt-3" id="wifiTabContent">
+      <div class="tab-pane fade show active" id="general" role="tabpanel" aria-labelledby="general-tab">
+        ${renderFieldGroup(wifiFields.general, fieldMap)}
+      </div>
+      <div class="tab-pane fade" id="wifi" role="tabpanel" aria-labelledby="wifi-tab">
+        <div class="row">
+          <div class="col-12">
+            <h6 class="text-muted mb-3"><i class="bi bi-broadcast me-2"></i>Wireless Configuration (${modeLabel})</h6>
+            ${renderFieldGroup(wifiFields.wifi, fieldMap)}
+          </div>
+        </div>
+      </div>
+      <div class="tab-pane fade" id="security" role="tabpanel" aria-labelledby="security-tab">
+        <div class="row">
+          <div class="col-12">
+            <h6 class="text-muted mb-3"><i class="bi bi-key me-2"></i>Authentication & Encryption</h6>
+            ${renderFieldGroup(wifiFields.security, fieldMap)}
+          </div>
+        </div>
+      </div>
+      <div class="tab-pane fade" id="network" role="tabpanel" aria-labelledby="network-tab">
+        <div class="row">
+          <div class="col-12">
+            <h6 class="text-muted mb-3"><i class="bi bi-network-wired me-2"></i>IPv4 & IPv6 Configuration</h6>
+            ${renderFieldGroup(wifiFields.network, fieldMap)}
+          </div>
+        </div>
+      </div>
+      <div class="tab-pane fade" id="advanced" role="tabpanel" aria-labelledby="advanced-tab">
+        <div class="row">
+          <div class="col-12">
+            <h6 class="text-muted mb-3"><i class="bi bi-cpu me-2"></i>Power Management & Advanced Settings</h6>
+            ${renderFieldGroup(wifiFields.advanced, fieldMap)}
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Additional Info Section -->
+    <div class="mt-4">
+      <div class="d-flex align-items-center mb-2">
+        <button class="btn btn-outline-secondary btn-sm" type="button" data-bs-toggle="collapse" 
+                data-bs-target="#additionalInfo" aria-expanded="false" aria-controls="additionalInfo">
+          <i class="bi bi-info-circle me-1"></i>Additional Information <span class="badge bg-secondary ms-1">${readonlyCount}</span>
+          <i class="bi bi-chevron-down ms-1"></i>
+        </button>
+      </div>
+      <div class="collapse" id="additionalInfo">
+        <div class="card card-body">
+          <h6 class="text-muted mb-3">Read-only System Information</h6>
+          ${renderReadOnlyFields(data.details, editableKeys)}
+        </div>
+      </div>
+    </div>
+  `;
+  
+  // Setup save handler for tabbed interface
+  document.getElementById('saveEditBtn').onclick = async () => {
+    const inputs = collectWifiInputs();
+    const d2 = await api('save_conn_details', {uuid, rows: JSON.stringify(inputs)});
+    if(d2.error) toast(d2.error, false); 
+    else { 
+      toast('WiFi connection settings saved successfully'); 
+      mInst.hide(); 
+      loadUnifiedView(); 
+    }
+  };
+}
+
+function collectWifiInputs() {
+  const inputs = [];
+  const allFields = [...wifiFields.general, ...wifiFields.wifi, ...wifiFields.security, ...wifiFields.network, ...wifiFields.advanced];
+  
+  allFields.forEach(field => {
+    const element = document.querySelector(`[data-field="${field.key}"]`);
+    if (element) {
+      inputs.push({
+        key: field.key,
+        val: element.value
+      });
+    }
+  });
+  
+  return inputs;
+}
+
+function renderEthernetTabs(data, container, uuid) {
+  // Create field lookup map
+  const fieldMap = new Map();
+  data.details.forEach(row => fieldMap.set(row.key, row.val));
+  
+  // Calculate readonly fields count dynamically
+  const editableKeys = new Set([
+    ...ethernetFields.general.map(f => f.key),
+    ...ethernetFields.ethernet.map(f => f.key), 
+    ...ethernetFields.network.map(f => f.key),
+    ...ethernetFields.advanced.map(f => f.key)
+  ]);
+  const readonlyCount = data.details.filter(field => !editableKeys.has(field.key)).length;
+  
+  // Determine interface type for better labeling
+  const interfaceName = fieldMap.get('connection.interface-name') || '';
+  const isUSB = interfaceName.startsWith('usb') || interfaceName.includes('usb');
+  const connectionLabel = isUSB ? 'USB Ethernet' : 'Ethernet';
+  
+  // Create tabbed interface
+  container.innerHTML = `
+    <ul class="nav nav-tabs" id="ethernetTabs" role="tablist">
+      <li class="nav-item" role="presentation">
+        <button class="nav-link active" id="general-tab" data-bs-toggle="tab" data-bs-target="#general" 
+                type="button" role="tab" aria-controls="general" aria-selected="true">
+          <i class="bi bi-gear me-1"></i>General
+        </button>
+      </li>
+      <li class="nav-item" role="presentation">
+        <button class="nav-link" id="ethernet-tab" data-bs-toggle="tab" data-bs-target="#ethernet" 
+                type="button" role="tab" aria-controls="ethernet" aria-selected="false">
+          <i class="bi bi-ethernet me-1"></i>Hardware
+        </button>
+      </li>
+      <li class="nav-item" role="presentation">
+        <button class="nav-link" id="network-tab" data-bs-toggle="tab" data-bs-target="#network" 
+                type="button" role="tab" aria-controls="network" aria-selected="false">
+          <i class="bi bi-hdd-network me-1"></i>Network
+        </button>
+      </li>
+      <li class="nav-item" role="presentation">
+        <button class="nav-link" id="advanced-tab" data-bs-toggle="tab" data-bs-target="#advanced" 
+                type="button" role="tab" aria-controls="advanced" aria-selected="false">
+          <i class="bi bi-sliders me-1"></i>Advanced
+        </button>
+      </li>
+    </ul>
+    <div class="tab-content mt-3" id="ethernetTabContent">
+      <div class="tab-pane fade show active" id="general" role="tabpanel" aria-labelledby="general-tab">
+        ${renderFieldGroup(ethernetFields.general, fieldMap)}
+      </div>
+      <div class="tab-pane fade" id="ethernet" role="tabpanel" aria-labelledby="ethernet-tab">
+        <div class="row">
+          <div class="col-12">
+            <h6 class="text-muted mb-3"><i class="bi bi-plug me-2"></i>${connectionLabel} Hardware Configuration</h6>
+            ${renderFieldGroup(ethernetFields.ethernet, fieldMap)}
+          </div>
+        </div>
+      </div>
+      <div class="tab-pane fade" id="network" role="tabpanel" aria-labelledby="network-tab">
+        <div class="row">
+          <div class="col-12">
+            <h6 class="text-muted mb-3"><i class="bi bi-network-wired me-2"></i>IPv4 & IPv6 Configuration</h6>
+            ${renderFieldGroup(ethernetFields.network, fieldMap)}
+          </div>
+        </div>
+      </div>
+      <div class="tab-pane fade" id="advanced" role="tabpanel" aria-labelledby="advanced-tab">
+        <div class="row">
+          <div class="col-12">
+            <h6 class="text-muted mb-3"><i class="bi bi-router me-2"></i>DHCP, Routing & Advanced Settings</h6>
+            ${renderFieldGroup(ethernetFields.advanced, fieldMap)}
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Additional Info Section -->
+    <div class="mt-4">
+      <div class="d-flex align-items-center mb-2">
+        <button class="btn btn-outline-secondary btn-sm" type="button" data-bs-toggle="collapse" 
+                data-bs-target="#additionalInfo" aria-expanded="false" aria-controls="additionalInfo">
+          <i class="bi bi-info-circle me-1"></i>Additional Information <span class="badge bg-secondary ms-1">${readonlyCount}</span>
+          <i class="bi bi-chevron-down ms-1"></i>
+        </button>
+      </div>
+      <div class="collapse" id="additionalInfo">
+        <div class="card card-body">
+          <h6 class="text-muted mb-3">Read-only System Information</h6>
+          ${renderReadOnlyFields(data.details, editableKeys)}
+        </div>
+      </div>
+    </div>
+  `;
+  
+  // Setup save handler for tabbed interface
+  document.getElementById('saveEditBtn').onclick = async () => {
+    const inputs = collectEthernetInputs();
+    const d2 = await api('save_conn_details', {uuid, rows: JSON.stringify(inputs)});
+    if(d2.error) toast(d2.error, false); 
+    else { 
+      toast(`${connectionLabel} connection settings saved successfully`); 
+      mInst.hide(); 
+      loadUnifiedView(); 
+    }
+  };
+}
+
+function collectEthernetInputs() {
+  const inputs = [];
+  const allFields = [...ethernetFields.general, ...ethernetFields.ethernet, ...ethernetFields.network, ...ethernetFields.advanced];
+  
+  allFields.forEach(field => {
+    const element = document.querySelector(`[data-field="${field.key}"]`);
+    if (element) {
+      inputs.push({
+        key: field.key,
+        val: element.value
+      });
+    }
+  });
+  
+  return inputs;
+}
+
+function renderOpenVpnTabs(data, container, uuid) {
+  // Create field lookup map
+  const fieldMap = new Map();
+  data.details.forEach(row => fieldMap.set(row.key, row.val));
+  
+  // Calculate readonly fields count dynamically
+  const editableKeys = new Set([
+    ...openVpnFields.general.map(f => f.key),
+    ...openVpnFields.openvpn.map(f => f.key),
+    ...openVpnFields.advanced.map(f => f.key), 
+    ...openVpnFields.network.map(f => f.key),
+    ...openVpnFields.proxy.map(f => f.key)
+  ]);
+  const readonlyCount = data.details.filter(field => !editableKeys.has(field.key)).length;
+  
+  // Create tabbed interface
+  container.innerHTML = `
+    <ul class="nav nav-tabs" id="openVpnTabs" role="tablist">
+      <li class="nav-item" role="presentation">
+        <button class="nav-link active" id="general-tab" data-bs-toggle="tab" data-bs-target="#general" 
+                type="button" role="tab" aria-controls="general" aria-selected="true">
+          <i class="bi bi-gear me-1"></i>General
+        </button>
+      </li>
+      <li class="nav-item" role="presentation">
+        <button class="nav-link" id="openvpn-tab" data-bs-toggle="tab" data-bs-target="#openvpn" 
+                type="button" role="tab" aria-controls="openvpn" aria-selected="false">
+          <i class="bi bi-shield-lock me-1"></i>OpenVPN
+        </button>
+      </li>
+      <li class="nav-item" role="presentation">
+        <button class="nav-link" id="advanced-tab" data-bs-toggle="tab" data-bs-target="#advanced" 
+                type="button" role="tab" aria-controls="advanced" aria-selected="false">
+          <i class="bi bi-sliders me-1"></i>Advanced
+        </button>
+      </li>
+      <li class="nav-item" role="presentation">
+        <button class="nav-link" id="network-tab" data-bs-toggle="tab" data-bs-target="#network" 
+                type="button" role="tab" aria-controls="network" aria-selected="false">
+          <i class="bi bi-ethernet me-1"></i>Network
+        </button>
+      </li>
+      <li class="nav-item" role="presentation">
+        <button class="nav-link" id="proxy-tab" data-bs-toggle="tab" data-bs-target="#proxy" 
+                type="button" role="tab" aria-controls="proxy" aria-selected="false">
+          <i class="bi bi-globe me-1"></i>Proxy
+        </button>
+      </li>
+    </ul>
+    <div class="tab-content mt-3" id="openVpnTabContent">
+      <div class="tab-pane fade show active" id="general" role="tabpanel" aria-labelledby="general-tab">
+        ${renderFieldGroup(openVpnFields.general, fieldMap)}
+      </div>
+      <div class="tab-pane fade" id="openvpn" role="tabpanel" aria-labelledby="openvpn-tab">
+        <div class="row">
+          <div class="col-12">
+            <h6 class="text-muted mb-3"><i class="bi bi-key me-2"></i>Authentication & Connection</h6>
+            ${renderFieldGroup(openVpnFields.openvpn, fieldMap)}
+          </div>
+        </div>
+      </div>
+      <div class="tab-pane fade" id="advanced" role="tabpanel" aria-labelledby="advanced-tab">
+        <div class="row">
+          <div class="col-12">
+            <h6 class="text-muted mb-3"><i class="bi bi-cpu me-2"></i>Protocol & Encryption Settings</h6>
+            ${renderFieldGroup(openVpnFields.advanced, fieldMap)}
+          </div>
+        </div>
+      </div>
+      <div class="tab-pane fade" id="network" role="tabpanel" aria-labelledby="network-tab">
+        <div class="row">
+          <div class="col-12">
+            <h6 class="text-muted mb-3"><i class="bi bi-network-wired me-2"></i>IPv4 & IPv6 Configuration</h6>
+            ${renderFieldGroup(openVpnFields.network, fieldMap)}
+          </div>
+        </div>
+      </div>
+      <div class="tab-pane fade" id="proxy" role="tabpanel" aria-labelledby="proxy-tab">
+        ${renderFieldGroup(openVpnFields.proxy, fieldMap)}
+      </div>
+    </div>
+    
+    <!-- Additional Info Section -->
+    <div class="mt-4">
+      <div class="d-flex align-items-center mb-2">
+        <button class="btn btn-outline-secondary btn-sm" type="button" data-bs-toggle="collapse" 
+                data-bs-target="#additionalInfo" aria-expanded="false" aria-controls="additionalInfo">
+          <i class="bi bi-info-circle me-1"></i>Additional Information <span class="badge bg-secondary ms-1">${readonlyCount}</span>
+          <i class="bi bi-chevron-down ms-1"></i>
+        </button>
+      </div>
+      <div class="collapse" id="additionalInfo">
+        <div class="card card-body">
+          <h6 class="text-muted mb-3">Read-only System Information</h6>
+          ${renderReadOnlyFields(data.details, editableKeys)}
+        </div>
+      </div>
+    </div>
+  `;
+  
+  // Setup save handler for tabbed interface
+  document.getElementById('saveEditBtn').onclick = async () => {
+    const inputs = collectOpenVpnInputs();
+    const d2 = await api('save_conn_details', {uuid, rows: JSON.stringify(inputs)});
+    if(d2.error) toast(d2.error, false); 
+    else { 
+      toast('OpenVPN connection settings saved successfully'); 
+      mInst.hide(); 
+      loadUnifiedView(); 
+    }
+  };
+}
+
+function collectOpenVpnInputs() {
+  const inputs = [];
+  const allFields = [...openVpnFields.general, ...openVpnFields.openvpn, ...openVpnFields.advanced, ...openVpnFields.network, ...openVpnFields.proxy];
+  
+  allFields.forEach(field => {
+    const element = document.querySelector(`[data-field="${field.key}"]`);
+    if (element) {
+      inputs.push({
+        key: field.key,
+        val: element.value
+      });
+    }
+  });
+  
+  return inputs;
 }
 </script>
