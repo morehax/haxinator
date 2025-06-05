@@ -1,6 +1,6 @@
 # Haxinator 2000 🚀
 
-Your Swiss Army Knife for Network Tunneling and Penetration Testing
+Your Swiss Army Knife for Internet Tethering, VPN and network management, Tunneling, and otherwise getting online.
 
 ## Features
 
@@ -9,6 +9,12 @@ Your Swiss Army Knife for Network Tunneling and Penetration Testing
 - **OpenVPN Support**: Traditional VPN when you need it
 - **WiFi & AP**: Connect to networks or create your own
 - **Bluetooth Serial**: Easy serial access with auto-pairing
+
+## Typical Use Cases
+
+You're at your hotel, just got in the room. You start connecting your devices to the hotel wifi network, but qiuckly get a message that there is a 2 device limit. You have 14 devices. Fear not, Haxinator to the rescue. By adding another wifi dongle to the haxinator you can connect to the hotel network with one wifi interface, and set up a wifi hotspot on the other interface. NetworkManager will handle all the routing and allow all your 14 devices to connect to your local hotspot, and then apear to the hotel network as a single "device". Victory!
+
+You're at the airport, and you need to get internet access for something urgent. There's a captive portal network which allows DNS or ICMP outbound traffic. Nuf said.
 
 ## Quick Start
 
