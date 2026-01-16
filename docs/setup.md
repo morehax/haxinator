@@ -62,14 +62,17 @@ ssh root@192.168.8.1
 
 ### 2.1 Overview
 The tunneling server is a remote VPS with unrestricted internet access that acts as your exit point. You'll need a cloud server from a provider like DigitalOcean, Linode, Vultr, or any VPS with a public IP address. Your Haxinator connects to this server through the restrictive network, and the server forwards your traffic to the internet.
-Haxinator supports two tunneling protocols that can bypass restrictive networks:
+Haxinator supports three methods to bypass restrictive networks:
 
 | Protocol | Method | Port | Use Case |
 |----------|--------|------|----------|
 | **Iodine** | DNS tunneling | 53/UDP | Networks that allow DNS queries |
 | **HANS** | ICMP tunneling | ICMP | Networks that allow ping |
+| **OpenVPN** | VPN tunnel | 1194/UDP or custom | Full encryption, requires open port |
 
-**Server Requirements:**
+> **Note:** Iodine and HANS require you to set up your own server (covered below). OpenVPN can use a commercial VPN provider or your own server.
+
+**Server Requirements (for Iodine/HANS):**
 - Ubuntu 24.04 (or similar Linux distribution)
 - Public IP address
 - Root access
@@ -324,6 +327,10 @@ IODINE_INTERVAL=4
 # Hans ICMP tunnel configuration
 HANS_SERVER=203.0.113.50
 HANS_PASSWORD=YourSecurePassword
+
+# OpenVPN configuration (requires VPN.ovpn file upload)
+VPN_USER=your_vpn_username
+VPN_PASS=your_vpn_password
 ```
 
 **Configuration options:**
@@ -338,16 +345,34 @@ HANS_PASSWORD=YourSecurePassword
 | `IODINE_INTERVAL` | Polling interval in seconds |
 | `HANS_SERVER` | Your server's IP address |
 | `HANS_PASSWORD` | Password set in `/etc/default/hans` |
+| `VPN_USER` | OpenVPN username |
+| `VPN_PASS` | OpenVPN password (minimum 6 characters) |
 
-### 3.2 Uploading Configuration
+### 3.2 OpenVPN Configuration
+
+OpenVPN provides full encryption and is ideal when you have access to an open port. You can use:
+- A commercial VPN provider (they will provide a `.ovpn` file)
+- Your own OpenVPN server (see [OpenVPN documentation](https://openvpn.net/community-resources/how-to/))
+
+**To configure OpenVPN on Haxinator:**
+
+1. Obtain a `.ovpn` configuration file from your VPN provider or server
+2. Add `VPN_USER` and `VPN_PASS` to your `env-secrets` file
+3. Upload both files via the **Configure** tab in the web UI
+4. Apply the configuration and activate from the **Connections** tab
+
+> **Note:** Unlike Iodine and HANS, OpenVPN traffic is encrypted. However, it requires an open port on the network you're connecting from.
+
+### 3.3 Uploading Configuration
 
 **Via Web UI (recommended):**
 
 1. Open `http://192.168.8.1:8080`
 2. Navigate to the **Configure** tab
 3. Drag and drop your `env-secrets` file (or click to browse)
-4. The system will detect available configurations
-5. Select which tunnels to enable and click **Apply Selected**
+4. For OpenVPN: also upload your `.ovpn` file
+5. The system will detect available configurations
+6. Select which tunnels to enable and click **Apply Selected**
 
 **Via SSH:**
 
@@ -355,11 +380,11 @@ HANS_PASSWORD=YourSecurePassword
 scp env-secrets root@192.168.8.1:/etc/haxinator/env-secrets
 ```
 
-### 3.3 Testing the Connection
+### 3.4 Testing the Connection
 
 1. Connect your Haxinator to a Wi-Fi network (via the **Wi-Fi** tab)
 2. Go to the **Connections** tab
-3. Activate your desired tunnel connection (Iodine or HANS)
+3. Activate your desired connection (Iodine, HANS, or OpenVPN)
 4. Check the **Status** tab and run diagnostics:
    - Click **Check External IP** - should show your server's IP
    - Click **Run Ping** - should succeed through the tunnel
