@@ -151,12 +151,11 @@ cd /opt/nm-webui/
 cd ..
 
 # --- Build & install HANS ----------------------------------------------------
-git clone https://github.com/friedrich/hans.git
-cd hans
+cp -rf /tmp/overlay/files/hans /opt
+cd /opt/hans
 make
 install -m 755 hans /usr/local/bin/hans
 cd ..
-rm -rf hans
 
 # --- NetworkManager helper scripts ------------------------------------------
 
