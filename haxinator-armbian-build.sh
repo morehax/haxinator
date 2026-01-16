@@ -18,7 +18,6 @@
 #   • rpi4b          - Raspberry Pi 5,4B,Zero W2 (and possibly others)
 #
 # REQUIREMENTS:
-#   • For native builds - check utils/install_something_something.sh
 #   • For Docker builds - it just does its thing
 #
 # OUTPUT:

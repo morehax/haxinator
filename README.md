@@ -39,6 +39,7 @@ A portable network tunneling platform built on Armbian. Plug it into any compute
 | Service | Username | Password |
 |---------|----------|----------|
 | SSH | `root` | `1234` |
+| SSH | `hax` | `hax` |
 | Web UI | `admin` | Auto-generated (check logs) |
 
 To view the web UI password:
