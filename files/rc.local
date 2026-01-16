@@ -1,0 +1,15 @@
+#!/bin/bash
+
+sysctl -w net.ipv4.ip_forward=1
+
+# Check if usb0 connection exists
+if ! nmcli con show | grep -q "usb0"; then
+    nmcli device set usb0 managed yes
+    nmcli con add type ethernet ifname usb0 con-name usb0 ip4 192.168.8.1/24
+    nmcli con mod usb0 ipv4.method shared
+    nmcli con up usb0
+else
+    nmcli con up usb0
+fi
+
+exit 0

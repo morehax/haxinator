@@ -1,0 +1,195 @@
+#!/bin/bash
+
+# NetworkManager Dispatcher Script for HANS VPN Routing
+# Automatically routes all traffic through HANS tunnel when connected
+# and restores original routing when disconnected
+
+INTERFACE="$1"
+ACTION="$2"
+
+# Configuration
+ENV_SECRETS_FILE="/var/www/env-secrets"
+ROUTE_BACKUP_FILE="/tmp/hans-original-route"
+
+# Check if HANS is configured - exit silently if not
+if [ ! -f "$ENV_SECRETS_FILE" ] || ! grep -q "^HANS_SERVER=" "$ENV_SECRETS_FILE"; then
+    exit 0
+fi
+
+# Log function
+log_message() {
+    logger -t "hans-vpn-routes" "$1"
+    echo "$(date): $1" >> /tmp/hans-vpn-routes.log
+}
+
+# Simple check - is this the tunnel interface?
+is_tunnel_interface() {
+    # Check if interface name suggests it's a tunnel (tun0, etc)
+    case "$INTERFACE" in
+        tun*) return 0 ;;
+        *) return 1 ;;
+    esac
+}
+
+# Get HANS server IP from env-secrets file
+get_hans_server_ip() {
+    grep "^HANS_SERVER=" "$ENV_SECRETS_FILE" | cut -d'=' -f2 | tr -d '"' | tr -d "'"
+}
+
+# Get tunnel gateway (assume .1 in tunnel subnet)
+get_tunnel_gateway() {
+    local tunnel_ip=$(ip addr show "$INTERFACE" 2>/dev/null | grep "inet " | awk '{print $2}' | cut -d'/' -f1)
+    if [ -n "$tunnel_ip" ]; then
+        local network_part=$(echo "$tunnel_ip" | cut -d'.' -f1-3)
+        echo "${network_part}.1"
+    else
+        echo "10.1.2.1"  # fallback
+    fi
+}
+
+# Get original gateway (excluding tunnel)
+get_original_gateway() {
+    ip route show default | grep -v "$INTERFACE" | awk '/default/ {print $3; exit}'
+}
+
+get_original_interface() {
+    ip route show default | grep -v "$INTERFACE" | awk '/default/ {print $5; exit}'
+}
+
+# Save original route
+save_original_route() {
+    local gateway="$1"
+    local interface="$2"
+    local hans_server="$3"
+    
+    cat > "$ROUTE_BACKUP_FILE" << EOF
+ORIGINAL_GATEWAY=$gateway
+ORIGINAL_INTERFACE=$interface
+HANS_SERVER_IP=$hans_server
+SAVED_AT="$(date '+%Y-%m-%d %H:%M:%S')"
+EOF
+    log_message "Saved original route: $gateway via $interface"
+}
+
+# Restore original route
+restore_saved_route() {
+    if [ ! -f "$ROUTE_BACKUP_FILE" ]; then
+        return 1
+    fi
+    
+    source "$ROUTE_BACKUP_FILE"
+    
+    if [ -n "$ORIGINAL_GATEWAY" ] && [ -n "$ORIGINAL_INTERFACE" ]; then
+        if ! ip route show | grep -q "default.*$ORIGINAL_GATEWAY.*$ORIGINAL_INTERFACE"; then
+            ip route add default via $ORIGINAL_GATEWAY dev $ORIGINAL_INTERFACE
+            log_message "Restored original default route: $ORIGINAL_GATEWAY via $ORIGINAL_INTERFACE"
+        fi
+    fi
+    
+    return 0
+}
+
+# Setup routing for tunnel
+setup_tunnel_routing() {
+    log_message "Setting up HANS tunnel routing for $INTERFACE"
+    
+    # Get HANS server IP
+    local hans_server_ip=$(get_hans_server_ip)
+    if [ -z "$hans_server_ip" ]; then
+        log_message "ERROR: Could not get HANS server IP"
+        return 1
+    fi
+    
+    # Get tunnel gateway
+    local tunnel_gateway=$(get_tunnel_gateway)
+    log_message "Using tunnel gateway: $tunnel_gateway"
+    
+    # Get original gateway
+    local original_gw=$(get_original_gateway)
+    local original_dev=$(get_original_interface)
+    
+    if [ -z "$original_gw" ] || [ -z "$original_dev" ]; then
+        log_message "ERROR: Could not determine original gateway"
+        return 1
+    fi
+    
+    log_message "Original gateway: $original_gw via $original_dev"
+    
+    # Save original route
+    save_original_route "$original_gw" "$original_dev" "$hans_server_ip"
+    
+    # Add specific route for HANS server
+    if ! ip route show | grep -q "$hans_server_ip.*$original_gw"; then
+        ip route add $hans_server_ip/32 via $original_gw dev $original_dev
+        log_message "Added route for HANS server: $hans_server_ip via $original_gw"
+    fi
+    
+    # Wait for tunnel to be ready
+    sleep 2
+    
+    # Check tunnel connectivity
+    if ! ping -c 1 -W 3 $tunnel_gateway >/dev/null 2>&1; then
+        log_message "ERROR: Tunnel gateway $tunnel_gateway not reachable"
+        return 1
+    fi
+    
+    # Remove old default route and add tunnel route
+    ip route del default via $original_gw dev $original_dev 2>/dev/null
+    ip route add default via $tunnel_gateway dev $INTERFACE
+    
+    log_message "SUCCESS: All traffic now routed through HANS tunnel"
+}
+
+# Restore original routing
+restore_original_routing() {
+    log_message "Restoring original routing for $INTERFACE"
+    
+    # Get saved info
+    local hans_server_ip=""
+    if [ -f "$ROUTE_BACKUP_FILE" ]; then
+        source "$ROUTE_BACKUP_FILE"
+        hans_server_ip="$HANS_SERVER_IP"
+    else
+        hans_server_ip=$(get_hans_server_ip)
+    fi
+    
+    # Clean up routes
+    if [ -n "$hans_server_ip" ]; then
+        ip route del $hans_server_ip/32 2>/dev/null
+        log_message "Removed specific route for HANS server: $hans_server_ip"
+    fi
+    
+    # Remove tunnel default route
+    local tunnel_gateway=$(get_tunnel_gateway)
+    ip route del default via $tunnel_gateway dev $INTERFACE 2>/dev/null
+    log_message "Removed tunnel default route"
+    
+    # Restore original route
+    if restore_saved_route; then
+        log_message "Original routing restored successfully"
+    else
+        log_message "Waiting for NetworkManager to restore routing"
+        sleep 3
+    fi
+    
+    # Clean up
+    rm -f "$ROUTE_BACKUP_FILE" 2>/dev/null
+}
+
+# Main logic - simple interface-based detection
+case "$ACTION" in
+    "up")
+        if is_tunnel_interface; then
+            log_message "Tunnel interface UP: $INTERFACE"
+            setup_tunnel_routing
+        fi
+        ;;
+    "down"|"pre-down")
+        if is_tunnel_interface; then
+            log_message "Tunnel interface DOWN: $INTERFACE"
+            restore_original_routing
+        fi
+        ;;
+esac
+
+exit 0

@@ -1,0 +1,10 @@
+--- network-manager-iodine-1.2.0.orig/src/nm-iodine-service.c
++++ network-manager-iodine-1.2.0/src/nm-iodine-service.c
+@@ -594,6 +594,7 @@ real_disconnect (NMVpnServicePlugin *plu
+ 			kill (priv->pid, SIGKILL);
+ 
+ 		g_message ("Terminated iodine daemon with PID %d.", priv->pid);
++		g_signal_emit_by_name (plugin, "quit");
+ 		priv->pid = 0;
+ 	}
+ 

@@ -1,0 +1,6 @@
+[VPN Connection]
+name=hans
+service=org.freedesktop.NetworkManager.hans
+program=/usr/lib/NetworkManager/hans-service.py
+supports-multiple-connections=false
+

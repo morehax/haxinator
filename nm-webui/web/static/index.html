@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#1a1a2e">
+    <title>Network Manager</title>
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+    <header class="header">
+        <div class="header-content">
+            <h1 class="logo">📡 Network Manager</h1>
+            <div class="status-bar">
+                <span id="hostname" class="status-item">--</span>
+                <span id="clock" class="status-item"></span>
+            </div>
+        </div>
+    </header>
+
+    <nav class="tabs">
+        <button class="tab active" data-tab="wifi">Wi-Fi</button>
+        <button class="tab" data-tab="connections">Connections</button>
+        <button class="tab" data-tab="status">Status</button>
+        <button class="tab" data-tab="logs">Logs</button>
+    </nav>
+
+    <main class="content">
+        <!-- Wi-Fi Tab -->
+        <section id="wifi-tab" class="tab-content active">
+            <div class="toolbar">
+                <div class="toolbar-group">
+                    <label for="wifi-iface">Interface:</label>
+                    <select id="wifi-iface" class="select"></select>
+                </div>
+                <div class="toolbar-group">
+                    <button id="scan-btn" class="btn btn-primary">
+                        <span class="icon">🔄</span> Scan
+                    </button>
+                    <button id="hotspot-btn" class="btn btn-success">
+                        <span class="icon">📶</span> Hotspot
+                    </button>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <h2>Available Networks</h2>
+                    <span id="network-count" class="badge">0</span>
+                </div>
+                <div class="card-body">
+                    <div id="wifi-list" class="network-list">
+                        <div class="loading">Scanning...</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <h2>Wired / USB Sharing</h2>
+                </div>
+                <div class="card-body">
+                    <div id="wired-list" class="network-list">
+                        <div class="empty">No wired connections</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Connections Tab -->
+        <section id="connections-tab" class="tab-content">
+            <div class="toolbar">
+                <button id="refresh-conn-btn" class="btn btn-primary">
+                    <span class="icon">🔄</span> Refresh
+                </button>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <h2>Saved Connections</h2>
+                    <span id="conn-count" class="badge">0</span>
+                </div>
+                <div class="card-body">
+                    <div id="conn-list" class="connection-list">
+                        <div class="loading">Loading...</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Status Tab -->
+        <section id="status-tab" class="tab-content">
+            <div class="card">
+                <div class="card-header">
+                    <h2>System Status</h2>
+                </div>
+                <div class="card-body">
+                    <div id="status-info" class="status-grid">
+                        <div class="loading">Loading...</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <h2>Network Devices</h2>
+                </div>
+                <div class="card-body">
+                    <div id="device-list" class="device-list">
+                        <div class="loading">Loading...</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Logs Tab -->
+        <section id="logs-tab" class="tab-content">
+            <div class="card">
+                <div class="card-header">
+                    <h2>Activity Log</h2>
+                    <button id="clear-logs-btn" class="btn btn-sm">Clear</button>
+                </div>
+                <div class="card-body">
+                    <div id="log-list" class="log-list">
+                        <div class="empty">No log entries</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Modals -->
+    <div id="modal-overlay" class="modal-overlay hidden">
+        <!-- Connect Modal -->
+        <div id="connect-modal" class="modal hidden">
+            <div class="modal-header">
+                <h3>Connect to Network</h3>
+                <button class="modal-close" data-close>&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="connect-form">
+                    <input type="hidden" id="connect-ssid-hidden" name="ssid">
+                    <div class="form-group">
+                        <label>Network</label>
+                        <input type="text" id="connect-ssid" readonly class="input">
+                    </div>
+                    <div class="form-group">
+                        <label for="connect-password">Password</label>
+                        <input type="password" id="connect-password" name="password" 
+                               class="input" placeholder="Leave blank for open networks">
+                    </div>
+                    <div class="form-group checkbox-group">
+                        <label>
+                            <input type="checkbox" id="connect-hidden" name="hidden">
+                            Hidden network
+                        </label>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn" data-close>Cancel</button>
+                <button type="submit" form="connect-form" class="btn btn-primary">Connect</button>
+            </div>
+        </div>
+
+        <!-- Hotspot Modal -->
+        <div id="hotspot-modal" class="modal hidden">
+            <div class="modal-header">
+                <h3>Start Hotspot</h3>
+                <button class="modal-close" data-close>&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="hotspot-form">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="hotspot-ssid">SSID</label>
+                            <input type="text" id="hotspot-ssid" name="ssid" 
+                                   class="input" value="MyHotspot" maxlength="32" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="hotspot-conname">Connection Name</label>
+                            <input type="text" id="hotspot-conname" name="con_name" 
+                                   class="input" placeholder="Auto-generated">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="hotspot-password">Password (≥8 chars for WPA2)</label>
+                        <input type="password" id="hotspot-password" name="password" 
+                               class="input" placeholder="Leave blank for open" maxlength="63">
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="hotspot-band">Band</label>
+                            <select id="hotspot-band" name="band" class="select">
+                                <option value="2.4">2.4 GHz</option>
+                                <option value="5">5 GHz</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="hotspot-channel">Channel</label>
+                            <input type="number" id="hotspot-channel" name="channel" 
+                                   class="input" placeholder="Auto" min="1" max="165">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="hotspot-iprange">IP Range (CIDR)</label>
+                        <input type="text" id="hotspot-iprange" name="ip_range" 
+                               class="input" placeholder="10.42.0.1/24 (default)">
+                    </div>
+                    <div class="form-group checkbox-group">
+                        <label>
+                            <input type="checkbox" id="hotspot-persistent" name="persistent">
+                            Remember (auto-start on boot)
+                        </label>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn" data-close>Cancel</button>
+                <button type="submit" form="hotspot-form" class="btn btn-success">Start Hotspot</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Container -->
+    <div id="toast-container" class="toast-container"></div>
+
+    <script src="js/app.js"></script>
+</body>
+</html>

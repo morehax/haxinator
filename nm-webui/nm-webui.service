@@ -1,0 +1,26 @@
+[Unit]
+Description=NetworkManager Web UI
+Documentation=https://github.com/your-repo/nm-webui
+After=network.target NetworkManager.service
+Wants=NetworkManager.service
+
+[Service]
+Type=simple
+ExecStart=/usr/local/bin/nm-webui --listen 0.0.0.0:8080 --auth-file /etc/nm-webui/auth
+Restart=always
+RestartSec=5
+User=root
+
+# Security hardening
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=yes
+ReadWritePaths=/etc/nm-webui
+
+# Environment (optional)
+# Environment=NM_WEBUI_USER=admin
+# Environment=NM_WEBUI_PASS=secretpassword
+
+[Install]
+WantedBy=multi-user.target
