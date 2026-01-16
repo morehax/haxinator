@@ -1,170 +1,117 @@
-# Haxinator 2000 🚀
+# Haxinator
 
-Your Swiss Army Knife for Internet Tethering, VPN and network management, Tunneling, and otherwise getting online.
+A portable network tunneling platform built on Armbian. Plug it into any computer via USB, access the web UI, and connect through restrictive networks using DNS or ICMP tunnels.
+
+![Status Tab](docs/screenshots/01-status.png)
 
 ## Features
 
-- **ICMP Tunneling**: Bypass firewalls using Hans VPN
-- **DNS Tunneling**: Sneak through DNS with Iodine
-- **OpenVPN Support**: Traditional VPN when you need it
-- **WiFi & AP**: Connect to networks or create your own
-- **Bluetooth Serial**: Easy serial access with auto-pairing
+- **Plug-and-Play USB** - Appears as a USB Ethernet adapter, no drivers needed
+- **Web-Based Management** - Configure everything from your browser at `192.168.8.1:8080`
+- **DNS Tunneling (Iodine)** - Bypass firewalls using DNS queries on port 53
+- **ICMP Tunneling (HANS)** - Tunnel traffic through ping packets
+- **OpenVPN Support** - Upload .ovpn configs for encrypted tunneling
+- **SSH Tunnel Manager** - Create local, remote, and SOCKS tunnels
+- **Wi-Fi Hotspot** - Share your tunnel connection with other devices
+- **Web Terminal** - Full shell access from your browser
+- **Mobile-Friendly UI** - Manage your Haxinator from any device
 
-## Typical Use Cases
+## Supported Hardware
 
-You're at your hotel, just got in the room. You start connecting your devices to the hotel wifi network, but qiuckly get a message that there is a 2 device limit. You have 14 devices. Fear not, Haxinator to the rescue. By adding another wifi dongle to the haxinator you can connect to the hotel network with one wifi interface, and set up a wifi hotspot on the other interface. NetworkManager will handle all the routing and allow all your 14 devices to connect to your local hotspot, and then apear to the hotel network as a single "device". Victory!
-
-You're at the airport, and you need to get internet access for something urgent. There's a captive portal network which allows DNS or ICMP outbound traffic. Nuf said.
+| Board | Status |
+|-------|--------|
+| Raspberry Pi 5 | Supported |
+| Raspberry Pi 4B | Supported |
+| Raspberry Pi Zero 2W | Supported |
+| Banana Pi M4 Zero | Supported |
+| Orange Pi Zero 2W | Supported |
 
 ## Quick Start
 
-1. Clone this repository
-2. Create your secrets file:
-   ```bash
-   cp haxinator-pigen-overlay/stage2/02-custom-config/root_files/files/env-secrets.template ~/.haxinator-secrets
-   ```
-3. Edit `~/.haxinator-secrets` with your configuration
-4. Run the build script:
-   ```bash
-   sudo ./01-build-script.sh
-   ```
+1. **Flash** the Haxinator image to an SD card using [Raspberry Pi Imager](https://www.raspberrypi.com/software/)
+2. **Connect** the Pi to your computer with a USB data cable
+3. **Wait** for the USB network interface to appear (~60 seconds)
+4. **Open** `http://192.168.8.1:8080` in your browser
+5. **Connect** to Wi-Fi and configure your tunnels
 
-## Working with Images
+## Default Credentials
 
-### Mounting Images
-After building, you can mount the image for inspection or modification:
+| Service | Username | Password |
+|---------|----------|----------|
+| SSH | `root` | `1234` |
+| Web UI | `admin` | Auto-generated (check logs) |
+
+To view the web UI password:
 ```bash
-sudo ./img-mount.sh
-```
-This script will:
-- Find the most recent .img file in `./pi-gen/deploy`
-- Mount both boot and root partitions
-- Clean up any existing mounts automatically
-- Display mount points for easy access
-
-### Unmounting Images
-When you're done working with the image:
-```bash
-sudo ./img-unmount.sh
-```
-This script will:
-- Verify all configurations are present
-- Safely unmount all partitions
-- Detach loop devices
-- Clean up mount points
-
-### Mount Points
-- Boot partition: `/mnt/boot`
-- Root partition: `/mnt/root`
-
-### Verification
-The unmount script performs several checks:
-- Network configurations
-- Service files
-- SSL certificates
-- PHP settings
-- Bluetooth configuration
-- Web server setup
-
-## Configuration Guide
-
-The Haxinator 2000 uses a secrets file to configure its various services. Create this file by copying the template:
-
-```bash
-cp haxinator-pigen-overlay/stage2/02-custom-config/root_files/files/env-secrets.template ~/.haxinator-secrets
+ssh root@192.168.8.1
+journalctl -u nm-webui | grep password
 ```
 
-### Service Requirements
+## Documentation
 
-#### Bluetooth Auto-Pairing
+| Document | Description |
+|----------|-------------|
+| [Setup Guide](docs/setup.md) | Full setup instructions for Pi and tunnel server |
+| [Web UI Guide](docs/webui.md) | Walkthrough of all web interface features |
+
+## Web UI Tabs
+
+| Tab | Function |
+|-----|----------|
+| **Status** | System stats, diagnostics, network devices |
+| **Wi-Fi** | Scan and connect to wireless networks |
+| **Connections** | Manage saved NetworkManager profiles |
+| **Network** | Interface management, internet sharing |
+| **SSH** | SSH key and tunnel management |
+| **Configure** | Upload env-secrets and VPN configs |
+| **Terminal** | Web-based shell access |
+| **Logs** | System activity and debugging |
+
+## Building from Source
+
+Build a fresh Armbian image for your board:
+
 ```bash
-BLUETOOTH_MAC=XX:XX:XX:XX:XX:XX
+# Raspberry Pi 4B/5/Zero 2W
+./haxinator-armbian-build.sh rpi4b
+
+# Banana Pi M4 Zero
+./haxinator-armbian-build.sh bananapim4zero
+
+# Orange Pi Zero 2W
+./haxinator-armbian-build.sh orangepizero2w
 ```
-- Set this to your device's MAC address for automatic discovery and pairing
-- Enables easy serial access over Bluetooth
-- Leave as XX:XX:XX:XX:XX:XX to disable auto-pairing
 
-#### OpenVPN Connection
-```bash
-VPN_USER=your_username
-VPN_PASS=your_password
+Build output: `build/output/images/`
+
+> **Note:** Building requires Docker or a Debian-based Linux system. See the [Armbian build documentation](https://docs.armbian.com/Developer-Guide_Build-Preparation/) for requirements.
+
+## Project Structure
+
 ```
-- Both values required for OpenVPN setup
-- Leave empty to disable OpenVPN
-
-#### Iodine DNS Tunnel
-```bash
-IODINE_TOPDOMAIN=your_domain
-IODINE_NAMESERVER=your_nameserver_ip
-IODINE_PASS=your_password
-IODINE_MTU=1400
-IODINE_LAZY=true
-IODINE_INTERVAL=4
+haxinator/
+├── haxinator-armbian-build.sh   # Main build script
+├── files/                       # System configuration files
+│   ├── rc.local                 # USB gadget setup
+│   ├── hans-service.py          # HANS NetworkManager integration
+│   ├── iodine-service.py        # Iodine NetworkManager integration
+│   └── ...
+├── nm-webui/                    # Go web application
+│   ├── cmd/nm-webui/            # Main application + static assets
+│   └── internal/                # Backend handlers and services
+└── docs/                        # Documentation
+    ├── setup.md
+    ├── webui.md
+    └── screenshots/
 ```
-- Required values: `IODINE_TOPDOMAIN`, `IODINE_NAMESERVER`, `IODINE_PASS`
-- Optional values have defaults shown above
-- Leave required values empty to disable Iodine
 
-#### Hans VPN (ICMP Tunnel)
-```bash
-HANS_SERVER=your_server_ip
-HANS_PASSWORD=your_password
-```
-- Both values required for Hans VPN setup
-- Leave empty to disable Hans VPN
+## Security Notes
 
-#### WiFi Access Point
-```bash
-WIFI_SSID="Haxinator 2000"
-WIFI_PASSWORD="ChangeMe"
-```
-- Both values required for AP setup
-- Default values shown above
-- Leave empty to disable AP mode
-
-### How It Works
-
-1. The build process reads your `~/.haxinator-secrets` file
-2. Creates necessary configuration files in the image
-3. On first boot, only services with complete configuration are enabled
-4. Services with missing or template values are automatically disabled
-
-### Security Notes
-
-- Keep your `~/.haxinator-secrets` file secure (permissions 600)
-- Never commit this file to version control
-- The template file is safe to commit as it contains no real values
-
-## Troubleshooting
-
-### Common Issues
-
-1. **Service Not Starting**
-   - Check if all required values are set in `~/.haxinator-secrets`
-   - Verify the service is enabled in the image
-
-2. **Bluetooth Not Pairing**
-   - Ensure `BLUETOOTH_MAC` is set to your device's address
-   - Check if Bluetooth service is enabled
-
-3. **VPN Connections Failing**
-   - Verify all required credentials are set
-   - Check network connectivity to VPN servers
-
-## Contributing
-
-Found a bug? Want to add a feature? Pull requests are welcome!
+- Change the default SSH password immediately after first boot
+- Tunnel traffic (Iodine/HANS) is **not encrypted** - use VPN on top for sensitive data
+- The web UI binds to the USB interface only by default
+- Auto-generated web UI passwords are logged - set your own in production
 
 ## License
 
-This project is licensed under the MIT License - see the LICENSE file for details.
-
-## Disclaimer
-
-**Haxinator 2000 was created as a personal pet project to manage network connections while traveling.** It should be treated as a hobbyist tool rather than production-grade software. While it works for my use cases, your mileage may vary.
-
-This tool is for educational and authorized testing purposes only. Always respect network policies and obtain proper authorization before testing.
-
-## Support
-
-Having issues? Check the troubleshooting guide or open an issue on GitHub.
+MIT

@@ -1,0 +1,14 @@
+env-secrets
+output/
+build
+.DS_Store
+# Jekyll generated files
+docs/_site/
+docs/.sass-cache/
+docs/.jekyll-cache/
+docs/.jekyll-metadata
+docs/_drafts/
+docs/vendor/
+
+# Auto-generated files
+docs/changelog.md
