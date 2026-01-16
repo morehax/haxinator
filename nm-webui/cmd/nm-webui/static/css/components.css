@@ -478,7 +478,8 @@
 }
 
 .log-duration { font-size: 10px; color: var(--color-text-muted); }
-.log-status { font-size: 12px; }
+.log-status { font-size: 12px; display: inline-flex; align-items: center; }
+.log-status svg { width: 14px; height: 14px; }
 .log-entry.error .log-status { color: var(--color-danger); }
 .log-entry:not(.error) .log-status { color: var(--color-success); }
 .log-time { font-size: 10px; color: var(--color-text-muted); white-space: nowrap; }
@@ -546,7 +547,10 @@
 
 .status-indicator {
     font-size: var(--text-sm);
+    display: inline-flex;
+    align-items: center;
 }
+.status-indicator svg { width: 16px; height: 16px; }
 
 .key-icon svg {
     width: 16px;
@@ -558,7 +562,11 @@
     padding: var(--space-md);
     border-radius: var(--radius-md);
     font-size: var(--text-sm);
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
 }
+.alert svg { width: 18px; height: 18px; flex-shrink: 0; }
 
 .alert-success {
     background: var(--color-success-muted);
