@@ -38,6 +38,7 @@ This guide covers setting up your Haxinator device and configuring a tunneling s
 3. Wait 60-90 seconds for the Pi to boot
 4. A new network interface will appear on your computer (usually named "USB Ethernet" or similar)
 5. Your computer will receive an IP address in the `192.168.8.x` range
+6. If using a headless setup, SSH to root@192.168.8.1 with password 1234 and follow the prompts.
 
 ### 1.4 Initial Access
 
@@ -60,7 +61,7 @@ ssh root@192.168.8.1
 ## Part 2: Tunneling Server Setup
 
 ### 2.1 Overview
-
+The tunneling server is a remote VPS with unrestricted internet access that acts as your exit point. You'll need a cloud server from a provider like DigitalOcean, Linode, Vultr, or any VPS with a public IP address. Your Haxinator connects to this server through the restrictive network, and the server forwards your traffic to the internet.
 Haxinator supports two tunneling protocols that can bypass restrictive networks:
 
 | Protocol | Method | Port | Use Case |

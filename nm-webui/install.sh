@@ -9,7 +9,7 @@ cd /opt/nm-webui
 go build -o nm-webui ./cmd/nm-webui
 
 echo "=== Installing binary ==="
-cp nm-webui /usr/local/bin/nm-webui
+mv nm-webui /usr/local/bin/nm-webui
 chmod +x /usr/local/bin/nm-webui
 
 echo "=== Installing systemd service ==="
@@ -30,9 +30,7 @@ User=root
 WantedBy=multi-user.target
 EOF
 
-echo "=== Starting service ==="
+echo "=== Starting nm-webui service ==="
 systemctl daemon-reload
 systemctl enable nm-webui
-systemctl restart nm-webui
-
-echo "=== Done! ==="
+echo "=== Done with nm-webui! ==="

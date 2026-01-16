@@ -44,7 +44,7 @@ type Server struct {
 const (
 	sshKeyDir     = "/var/lib/nm-webui/ssh"
 	sshDataDir    = "/var/lib/nm-webui/data"
-	configDataDir = "/var/www"
+	configDataDir = "/etc/haxinator"
 )
 
 // New creates a new server instance

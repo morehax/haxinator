@@ -145,7 +145,7 @@ sed -i 's/managed=false/managed=true/' /etc/NetworkManager/NetworkManager.conf
 
 install -m 755 /tmp/overlay/files/rc.local /etc/rc.local
 
-#New GO Web UI
+# New Web UI
 cp -rf /tmp/overlay/nm-webui /opt/
 cd /opt/nm-webui/
 ./install.sh
@@ -157,6 +157,7 @@ cd hans
 make
 install -m 755 hans /usr/local/bin/hans
 cd ..
+rm -rf hans
 
 # --- NetworkManager helper scripts ------------------------------------------
 

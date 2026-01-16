@@ -8,7 +8,7 @@ INTERFACE="$1"
 ACTION="$2"
 
 # Configuration
-ENV_SECRETS_FILE="/var/www/env-secrets"
+ENV_SECRETS_FILE="/etc/haxinator/env-secrets"
 ROUTE_BACKUP_FILE="/tmp/hans-original-route"
 
 # Check if HANS is configured - exit silently if not
