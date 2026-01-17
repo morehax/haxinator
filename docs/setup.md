@@ -356,7 +356,19 @@ VPN_MYVPN_PASS=your_vpn_password
 
 OpenVPN provides full encryption and is ideal when you have access to an open port. You can use:
 - A commercial VPN provider (they will provide a `.ovpn` file)
-- Your own OpenVPN server (see [OpenVPN documentation](https://openvpn.net/community-resources/how-to/))
+- Your own OpenVPN server (see below)
+
+**Setting up your own OpenVPN server:**
+
+If you want to run your own OpenVPN server, the easiest method is using [openvpn-install](https://github.com/angristan/openvpn-install). On a separate Ubuntu 24.04 VPS (not your Iodine/HANS server):
+
+```bash
+curl -O https://raw.githubusercontent.com/angristan/openvpn-install/master/openvpn-install.sh
+chmod +x openvpn-install.sh
+./openvpn-install.sh
+```
+
+The script will guide you through setup and generate a `.ovpn` client file. Download this file and upload it to Haxinator via the Configure tab. The generated config uses certificate-based authentication, so no `env-secrets` credentials are needed.
 
 **Haxinator supports two types of OpenVPN authentication:**
 
