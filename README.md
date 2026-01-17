@@ -26,13 +26,18 @@ A portable network tunneling platform built on Armbian. Plug it into any compute
 | Banana Pi M4 Zero | Supported |
 | Orange Pi Zero 2W | Supported |
 
+## Download
+
+Pre-built images for all supported boards are available at [hax.me/#downloads](https://hax.me/#downloads).
+
 ## Quick Start
 
-1. **Flash** the Haxinator image to an SD card using [Raspberry Pi Imager](https://www.raspberrypi.com/software/)
-2. **Connect** the Pi to your computer with a USB data cable
-3. **Wait** for the USB network interface to appear (~60 seconds)
-4. **Open** `http://192.168.8.1:8080` in your browser
-5. **Connect** to Wi-Fi and configure your tunnels
+1. **Download** the Haxinator image for your board from [hax.me/#downloads](https://hax.me/#downloads)
+2. **Flash** the image to an SD card using [Raspberry Pi Imager](https://www.raspberrypi.com/software/)
+3. **Connect** the Pi to your computer with a USB data cable
+4. **Wait** for the USB network interface to appear (~60 seconds)
+5. **Open** `http://192.168.8.1:8080` in your browser
+6. **Connect** to Wi-Fi and configure your tunnels
 
 ## Default Credentials
 

@@ -20,7 +20,7 @@ This guide covers setting up your Haxinator device and configuring a tunneling s
 
 ### 1.2 Flashing the Image
 
-1. Download the latest Haxinator image
+1. Download the latest Haxinator image from [hax.me/#downloads](https://hax.me/#downloads)
 2. Insert your MicroSD card into your computer
 3. Open Raspberry Pi Imager
 4. Click **Choose OS** → **Use custom** → Select the Haxinator `.img` file
