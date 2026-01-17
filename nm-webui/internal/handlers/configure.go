@@ -3,6 +3,9 @@ package handlers
 import (
 	"encoding/json"
 	"net/http"
+	"os"
+	"path/filepath"
+	"strings"
 
 	"nm-webui/internal/configure"
 	"nm-webui/internal/httputil"
@@ -49,17 +52,39 @@ func (h *ConfigureHandler) ViewFile(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	content, err := h.fileManager.ViewFile(ft)
+	var content string
+	var size int64
+	var err error
+	if ft == configure.FileTypeVPN {
+		profile := r.URL.Query().Get("profile")
+		if profile == "" {
+			httputil.JSONError(w, http.StatusBadRequest, "Profile required", "Provide a profile parameter")
+			return
+		}
+		content, err = h.fileManager.ViewVPNProfile(profile)
+		if err == nil {
+			if path, pathErr := h.fileManager.GetVPNProfilePath(profile); pathErr == nil {
+				if info, statErr := os.Stat(path); statErr == nil {
+					size = info.Size()
+				}
+			}
+		}
+	} else {
+		content, err = h.fileManager.ViewFile(ft)
+	}
 	if err != nil {
 		httputil.JSONError(w, http.StatusNotFound, "File not found", err.Error())
 		return
 	}
 
 	status := h.fileManager.GetFileStatus(ft)
+	if size == 0 {
+		size = status.Size
+	}
 	httputil.JSONOK(w, map[string]interface{}{
 		"success": true,
 		"content": content,
-		"size":    status.Size,
+		"size":    size,
 	})
 }
 
@@ -89,10 +114,23 @@ func (h *ConfigureHandler) UploadFile(w http.ResponseWriter, r *http.Request) {
 	}
 	defer file.Close()
 
-	if err := h.fileManager.SaveFile(ft, file, header.Size); err != nil {
-		h.logAction("configure", "upload", fileType+": "+err.Error(), false)
-		httputil.JSONError(w, http.StatusBadRequest, "Upload failed", err.Error())
-		return
+	if ft == configure.FileTypeVPN {
+		profile := r.FormValue("profile")
+		if profile == "" {
+			profile = header.Filename
+		}
+		profile = strings.TrimSuffix(profile, filepath.Ext(profile))
+		if err := h.fileManager.SaveVPNProfile(profile, file, header.Size); err != nil {
+			h.logAction("configure", "upload", fileType+": "+err.Error(), false)
+			httputil.JSONError(w, http.StatusBadRequest, "Upload failed", err.Error())
+			return
+		}
+	} else {
+		if err := h.fileManager.SaveFile(ft, file, header.Size); err != nil {
+			h.logAction("configure", "upload", fileType+": "+err.Error(), false)
+			httputil.JSONError(w, http.StatusBadRequest, "Upload failed", err.Error())
+			return
+		}
 	}
 
 	h.logAction("configure", "upload", fileType+" uploaded successfully", true)
@@ -106,7 +144,8 @@ func (h *ConfigureHandler) DeleteFile(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var req struct {
-		Type string `json:"type"`
+		Type    string `json:"type"`
+		Profile string `json:"profile"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		httputil.JSONError(w, http.StatusBadRequest, "Invalid request", err.Error())
@@ -119,10 +158,22 @@ func (h *ConfigureHandler) DeleteFile(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := h.fileManager.DeleteFile(ft); err != nil {
-		h.logAction("configure", "delete", req.Type+": "+err.Error(), false)
-		httputil.JSONError(w, http.StatusInternalServerError, "Delete failed", err.Error())
-		return
+	if ft == configure.FileTypeVPN {
+		if req.Profile == "" {
+			httputil.JSONError(w, http.StatusBadRequest, "Profile required", "Provide a profile name")
+			return
+		}
+		if err := h.fileManager.DeleteVPNProfile(req.Profile); err != nil {
+			h.logAction("configure", "delete", req.Type+": "+err.Error(), false)
+			httputil.JSONError(w, http.StatusInternalServerError, "Delete failed", err.Error())
+			return
+		}
+	} else {
+		if err := h.fileManager.DeleteFile(ft); err != nil {
+			h.logAction("configure", "delete", req.Type+": "+err.Error(), false)
+			httputil.JSONError(w, http.StatusInternalServerError, "Delete failed", err.Error())
+			return
+		}
 	}
 
 	h.logAction("configure", "delete", req.Type+" deleted", true)
@@ -158,7 +209,10 @@ func (h *ConfigureHandler) ApplyNetworkConfig(w http.ResponseWriter, r *http.Req
 	}
 
 	var req struct {
-		Configs []string `json:"configs"` // Array of config types to apply
+		Configs []struct {
+			Type    string `json:"type"`
+			Profile string `json:"profile,omitempty"`
+		} `json:"configs"` // Array of config types to apply
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		httputil.JSONError(w, http.StatusBadRequest, "Invalid request", err.Error())
@@ -173,19 +227,19 @@ func (h *ConfigureHandler) ApplyNetworkConfig(w http.ResponseWriter, r *http.Req
 	var results []string
 	var errors []string
 
-	for _, configType := range req.Configs {
-		ct, valid := configure.ValidateConfigType(configType)
+	for _, config := range req.Configs {
+		ct, valid := configure.ValidateConfigType(config.Type)
 		if !valid {
-			errors = append(errors, "Invalid config type: "+configType)
+			errors = append(errors, "Invalid config type: "+config.Type)
 			continue
 		}
 
-		if err := h.networkManager.ApplyConfiguration(ct); err != nil {
-			h.logAction("configure", "apply", configType+": "+err.Error(), false)
-			errors = append(errors, configType+": "+err.Error())
+		if err := h.networkManager.ApplyConfiguration(ct, configure.ApplyOptions{VPNProfile: config.Profile}); err != nil {
+			h.logAction("configure", "apply", config.Type+": "+err.Error(), false)
+			errors = append(errors, config.Type+": "+err.Error())
 		} else {
-			h.logAction("configure", "apply", configType+" configured successfully", true)
-			results = append(results, configType+" configured successfully")
+			h.logAction("configure", "apply", config.Type+" configured successfully", true)
+			results = append(results, config.Type+" configured successfully")
 		}
 	}
 

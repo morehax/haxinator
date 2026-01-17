@@ -329,7 +329,7 @@ IODINE_INTERVAL=4
 HANS_SERVER=203.0.113.50
 HANS_PASSWORD=YourSecurePassword
 
-# OpenVPN configuration (requires VPN.ovpn file upload)
+# OpenVPN configuration (only needed if .ovpn requires username/password)
 VPN_USER=your_vpn_username
 VPN_PASS=your_vpn_password
 ```
@@ -346,8 +346,8 @@ VPN_PASS=your_vpn_password
 | `IODINE_INTERVAL` | Polling interval in seconds |
 | `HANS_SERVER` | Your server's IP address |
 | `HANS_PASSWORD` | Password set in `/etc/default/hans` |
-| `VPN_USER` | OpenVPN username |
-| `VPN_PASS` | OpenVPN password (minimum 6 characters) |
+| `VPN_USER` | OpenVPN username (only if config has `auth-user-pass`) |
+| `VPN_PASS` | OpenVPN password (only if config has `auth-user-pass`) |
 
 ### 3.2 OpenVPN Configuration
 
@@ -355,11 +355,18 @@ OpenVPN provides full encryption and is ideal when you have access to an open po
 - A commercial VPN provider (they will provide a `.ovpn` file)
 - Your own OpenVPN server (see [OpenVPN documentation](https://openvpn.net/community-resources/how-to/))
 
+**Haxinator supports two types of OpenVPN authentication:**
+
+| Type | `.ovpn` contains | `env-secrets` needs |
+|------|------------------|---------------------|
+| **Certificate-based** | `<ca>`, `<cert>`, `<key>` | Nothing (just upload .ovpn) |
+| **Username/Password** | `auth-user-pass` directive | `VPN_USER` and `VPN_PASS` |
+
 **To configure OpenVPN on Haxinator:**
 
 1. Obtain a `.ovpn` configuration file from your VPN provider or server
-2. Add `VPN_USER` and `VPN_PASS` to your `env-secrets` file
-3. Upload both files via the **Configure** tab in the web UI
+2. If your config contains `auth-user-pass`, add `VPN_USER` and `VPN_PASS` to your `env-secrets` file
+3. Upload the `.ovpn` file (and `env-secrets` if needed) via the **Configure** tab
 4. Apply the configuration and activate from the **Connections** tab
 
 > **Note:** Unlike Iodine and HANS, OpenVPN traffic is encrypted. However, it requires an open port on the network you're connecting from.

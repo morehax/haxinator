@@ -736,6 +736,7 @@
 .config-params.missing code { background: var(--color-danger-muted); color: var(--color-danger); }
 .config-file { font-size: var(--text-sm); color: var(--color-text-muted); display: flex; align-items: center; gap: var(--space-xs); }
 .config-file svg { width: 16px; height: 16px; flex-shrink: 0; }
+.config-profile-list { display: flex; flex-direction: column; gap: var(--space-xs); }
 .config-footer { padding: var(--space-md); background: var(--color-bg-base); border-top: 1px solid var(--color-border); }
 .config-disabled { font-size: var(--text-xs); color: var(--color-text-muted); font-style: italic; }
 

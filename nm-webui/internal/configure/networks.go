@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"net"
+	"os"
 	"os/exec"
 	"regexp"
 	"strings"
@@ -58,9 +59,8 @@ var configDefinitions = map[NetworkConfigType]struct {
 		name:        "OpenVPN",
 		description: "Secure VPN tunnel connection",
 		icon:        "shield-lock",
-		required:    []string{"VPN_USER", "VPN_PASS"},
 		needsFile:   true,
-		fileName:    "VPN.ovpn",
+		fileName:    "OpenVPN profile",
 	},
 	ConfigIodine: {
 		name:        "Iodine DNS Tunnel",
@@ -141,8 +141,8 @@ func (nm *NetworkManager) DetectConfigurations() ([]NetworkConfig, error) {
 			}
 		}
 
-		// Skip if no params found at all
-		if len(foundParams) == 0 {
+		// Skip if required params exist but none found
+		if len(def.required) > 0 && len(foundParams) == 0 {
 			continue
 		}
 
@@ -160,8 +160,8 @@ func (nm *NetworkManager) DetectConfigurations() ([]NetworkConfig, error) {
 		fileReady := true
 
 		if def.needsFile {
-			vpnStatus := nm.fileManager.GetFileStatus(FileTypeVPN)
-			if vpnStatus.Exists {
+			vpnProfiles, err := nm.fileManager.ListVPNProfiles()
+			if err == nil && len(vpnProfiles) > 0 {
 				fileStatus = "found"
 			} else {
 				fileStatus = "missing"
@@ -203,7 +203,11 @@ func (nm *NetworkManager) DetectConfigurations() ([]NetworkConfig, error) {
 }
 
 // ApplyConfiguration applies a specific network configuration
-func (nm *NetworkManager) ApplyConfiguration(configType NetworkConfigType) error {
+type ApplyOptions struct {
+	VPNProfile string
+}
+
+func (nm *NetworkManager) ApplyConfiguration(configType NetworkConfigType, opts ApplyOptions) error {
 	// Read env-secrets
 	content, err := nm.fileManager.ViewFile(FileTypeEnvSecrets)
 	if err != nil {
@@ -214,7 +218,7 @@ func (nm *NetworkManager) ApplyConfiguration(configType NetworkConfigType) error
 
 	switch configType {
 	case ConfigOpenVPN:
-		return nm.applyOpenVPN(env)
+		return nm.applyOpenVPN(env, opts.VPNProfile)
 	case ConfigIodine:
 		return nm.applyIodine(env)
 	case ConfigHans:
@@ -227,22 +231,41 @@ func (nm *NetworkManager) ApplyConfiguration(configType NetworkConfigType) error
 }
 
 // applyOpenVPN configures OpenVPN connection
-func (nm *NetworkManager) applyOpenVPN(env map[string]string) error {
-	user := env["VPN_USER"]
-	pass := env["VPN_PASS"]
-
-	if user == "" || pass == "" {
-		return fmt.Errorf("VPN_USER and VPN_PASS are required")
+func (nm *NetworkManager) applyOpenVPN(env map[string]string, profile string) error {
+	if profile == "" {
+		return fmt.Errorf("vpn profile is required")
 	}
-	if len(pass) < 6 {
-		return fmt.Errorf("VPN_PASS must be at least 6 characters")
+	vpnFile, err := nm.fileManager.GetVPNProfilePath(profile)
+	if err != nil {
+		return err
 	}
 
-	vpnFile := nm.fileManager.GetFilePath(FileTypeVPN)
+	// Read .ovpn file to detect auth type
+	ovpnContent, err := os.ReadFile(vpnFile)
+	if err != nil {
+		return fmt.Errorf("failed to read VPN config file: %w", err)
+	}
 
-	// Delete existing connections
-	exec.Command("nmcli", "connection", "delete", "openvpn-udp").Run()
-	exec.Command("nmcli", "connection", "delete", "VPN").Run()
+	// Check if the config requires username/password authentication
+	needsCredentials := strings.Contains(string(ovpnContent), "auth-user-pass")
+
+	profileKey := strings.ToUpper(strings.ReplaceAll(profile, "-", "_"))
+	profileKey = strings.ToUpper(strings.ReplaceAll(profileKey, " ", "_"))
+	user := env["VPN_"+profileKey+"_USER"]
+	pass := env["VPN_"+profileKey+"_PASS"]
+
+	if needsCredentials {
+		if user == "" || pass == "" {
+			return fmt.Errorf("VPN_%s_USER and VPN_%s_PASS are required (config contains auth-user-pass)", profileKey, profileKey)
+		}
+		if len(pass) < 6 {
+			return fmt.Errorf("VPN_%s_PASS must be at least 6 characters", profileKey)
+		}
+	}
+
+	connectionID := "openvpn-" + profile
+	// Delete existing connection for this profile
+	exec.Command("nmcli", "connection", "delete", connectionID).Run()
 
 	// Import OpenVPN config
 	out, err := exec.Command("nmcli", "connection", "import", "type", "openvpn", "file", vpnFile).CombinedOutput()
@@ -250,22 +273,30 @@ func (nm *NetworkManager) applyOpenVPN(env map[string]string) error {
 		return fmt.Errorf("failed to import OpenVPN configuration: %s", string(out))
 	}
 
+	importedName := parseImportedConnectionName(string(out))
+	if importedName == "" {
+		importedName = "VPN"
+	}
+
 	// Rename connection
-	if out, err := exec.Command("nmcli", "connection", "modify", "VPN", "connection.id", "openvpn-udp").CombinedOutput(); err != nil {
+	if out, err := exec.Command("nmcli", "connection", "modify", importedName, "connection.id", connectionID).CombinedOutput(); err != nil {
 		return fmt.Errorf("failed to rename OpenVPN connection: %s", string(out))
 	}
 
-	// Set username
-	if out, err := exec.Command("nmcli", "connection", "modify", "openvpn-udp",
-		"+vpn.data", fmt.Sprintf("username=%s", user),
-		"+vpn.data", "password-flags=0").CombinedOutput(); err != nil {
-		return fmt.Errorf("failed to set OpenVPN username: %s", string(out))
-	}
+	// Only set credentials if the config requires them
+	if needsCredentials {
+		// Set username
+		if out, err := exec.Command("nmcli", "connection", "modify", connectionID,
+			"+vpn.data", fmt.Sprintf("username=%s", user),
+			"+vpn.data", "password-flags=0").CombinedOutput(); err != nil {
+			return fmt.Errorf("failed to set OpenVPN username: %s", string(out))
+		}
 
-	// Set password
-	if out, err := exec.Command("nmcli", "connection", "modify", "openvpn-udp",
-		"vpn.secrets", fmt.Sprintf("password=%s", pass)).CombinedOutput(); err != nil {
-		return fmt.Errorf("failed to set OpenVPN password: %s", string(out))
+		// Set password
+		if out, err := exec.Command("nmcli", "connection", "modify", connectionID,
+			"vpn.secrets", fmt.Sprintf("password=%s", pass)).CombinedOutput(); err != nil {
+			return fmt.Errorf("failed to set OpenVPN password: %s", string(out))
+		}
 	}
 
 	return nil
@@ -438,6 +469,15 @@ func isValidDomain(domain string) bool {
 	}
 	domainRegex := regexp.MustCompile(`^([a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?\.)+[a-zA-Z]{2,}$`)
 	return domainRegex.MatchString(domain)
+}
+
+func parseImportedConnectionName(output string) string {
+	re := regexp.MustCompile(`Connection '([^']+)'`)
+	matches := re.FindStringSubmatch(output)
+	if len(matches) > 1 {
+		return matches[1]
+	}
+	return ""
 }
 
 // ValidateConfigType validates a configuration type string

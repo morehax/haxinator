@@ -81,6 +81,20 @@ GOOS=linux GOARCH=amd64 go build -o nm-webui ./cmd/nm-webui
 |----------|-------------|
 | `NM_WEBUI_USER` | HTTP Basic Auth username |
 | `NM_WEBUI_PASS` | HTTP Basic Auth password |
+| `VPN_<PROFILE>_USER` | OpenVPN username for profile |
+| `VPN_<PROFILE>_PASS` | OpenVPN password for profile |
+
+OpenVPN profiles are uploaded via the Configure tab and stored as separate files.
+Each profile name is derived from the uploaded filename (without extension) and
+must be alphanumeric with `-` or `_`. Example: `travel-vpn.ovpn` → `travel-vpn`.
+
+If the OpenVPN profile contains `auth-user-pass`, the matching per-profile
+credentials are required, e.g. for profile `openvpn`:
+
+```
+VPN_OPENVPN_USER=youruser
+VPN_OPENVPN_PASS=yourpass
+```
 
 ### Authentication
 

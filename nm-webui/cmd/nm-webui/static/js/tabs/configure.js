@@ -12,6 +12,8 @@ const ConfigureTab = {
     eventsBound: false,
     fileStatus: {},
     networkConfigs: [],
+    selectedVPNProfile: '',
+    selectedVPNProfiles: [],
 
     init() {
         // Nothing async to initialize
@@ -56,7 +58,7 @@ const ConfigureTab = {
                 </div>
                 <div class="card-body">
                     <p class="form-hint" style="margin-bottom: 1rem;">
-                        Upload OpenVPN configuration file for secure connections
+                        Upload OpenVPN configuration file for secure connections. Profile name is derived from the filename.
                     </p>
                     <div class="upload-zone" data-type="vpn" id="vpn-upload">
                         <div class="upload-content">
@@ -70,6 +72,18 @@ const ConfigureTab = {
                         </div>
                         <input type="file" class="file-input" accept=".ovpn,.conf" style="display: none;">
                     </div>
+                </div>
+            </div>
+
+            <div class="card" id="vpn-profiles-card" style="display: none;">
+                <div class="card-header">
+                    <span class="card-title">${Icons.fileText} VPN Profiles</span>
+                    <div class="card-actions">
+                        <span class="badge" id="vpn-profiles-count">0</span>
+                    </div>
+                </div>
+                <div class="card-body padded" id="vpn-profiles-list">
+                    ${UI.loading('Loading profiles...')}
                 </div>
             </div>
 
@@ -109,8 +123,28 @@ const ConfigureTab = {
         });
 
         document.getElementById('env-view')?.addEventListener('click', () => this.viewFile('env-secrets'));
-        document.getElementById('vpn-view')?.addEventListener('click', () => this.viewFile('vpn'));
+        document.getElementById('vpn-view')?.addEventListener('click', () => this.viewFile('vpn', this.selectedVPNProfile));
         document.getElementById('apply-configs')?.addEventListener('click', () => this.applyConfigs());
+
+        document.getElementById('vpn-profiles-list')?.addEventListener('click', (e) => {
+            const action = e.target.closest('button')?.dataset.action;
+            const profile = e.target.closest('button')?.dataset.profile;
+            if (!action || !profile) return;
+            if (action === 'vpn-view') {
+                this.viewFile('vpn', profile);
+            } else if (action === 'vpn-delete') {
+                this.deleteVPNProfile(profile);
+            }
+        });
+
+        document.getElementById('network-configs-list')?.addEventListener('change', (e) => {
+            if (e.target.classList.contains('vpn-profile-select')) {
+                this.selectedVPNProfile = e.target.value;
+            }
+            if (e.target.classList.contains('vpn-profile-checkbox')) {
+                this.selectedVPNProfiles = this.getSelectedVPNProfiles();
+            }
+        });
     },
 
     initUploadZone(zone) {
@@ -165,6 +199,13 @@ const ConfigureTab = {
             const formData = new FormData();
             formData.append('type', type);
             formData.append('file', file);
+            if (type === 'vpn') {
+                const profile = this.profileFromFilename(file.name);
+                if (!profile) {
+                    throw new Error('Profile name must be alphanumeric, "-" or "_"');
+                }
+                formData.append('profile', profile);
+            }
 
             const response = await fetch('/api/configure/upload', {
                 method: 'POST',
@@ -209,6 +250,7 @@ const ConfigureTab = {
             const response = await fetch('/api/configure/files');
             const result = await response.json();
             this.fileStatus = result.data || result;
+            this.setDefaultVPNProfile();
             this.updateFileStatusUI();
         } catch (err) {
             console.error('Failed to load file status:', err);
@@ -230,20 +272,27 @@ const ConfigureTab = {
 
         const vpnStatus = document.getElementById('vpn-status');
         const vpnView = document.getElementById('vpn-view');
-        if (this.fileStatus['vpn']?.exists) {
-            vpnStatus.textContent = 'File Present';
+        const profiles = this.getVPNProfiles();
+        if (profiles.length) {
+            vpnStatus.textContent = `${profiles.length} Profile${profiles.length > 1 ? 's' : ''}`;
             vpnStatus.className = 'badge badge-success';
             vpnView.style.display = 'inline-flex';
         } else {
-            vpnStatus.textContent = 'No File';
+            vpnStatus.textContent = 'No Profiles';
             vpnStatus.className = 'badge';
             vpnView.style.display = 'none';
         }
+
+        this.updateVPNProfilesUI();
     },
 
-    async viewFile(type) {
+    async viewFile(type, profile = '') {
         try {
-            const response = await fetch(`/api/configure/view?type=${type}`);
+            const params = new URLSearchParams({ type });
+            if (type === 'vpn' && profile) {
+                params.set('profile', profile);
+            }
+            const response = await fetch(`/api/configure/view?${params.toString()}`);
             const result = await response.json();
 
             if (!response.ok || !result.ok) {
@@ -258,7 +307,8 @@ const ConfigureTab = {
                 </div>
             `;
 
-            UI.modal(`${type} File Contents`, content, { width: '600px' });
+            const title = type === 'vpn' ? `${profile} Profile` : `${type} File Contents`;
+            UI.modal(title, content, { width: '600px' });
 
         } catch (err) {
             UI.error('Failed to view file: ' + err.message);
@@ -275,6 +325,7 @@ const ConfigureTab = {
             const result = await response.json();
             const data = result.data || result;
             this.networkConfigs = data.configs || [];
+            this.setDefaultVPNProfile();
 
             if (this.networkConfigs.length === 0) {
                 card.style.display = 'none';
@@ -316,6 +367,7 @@ const ConfigureTab = {
             'wifi': Icons.wifi
         };
         const icon = iconMap[config.icon] || Icons.settings;
+        const profileSelect = config.type === 'openvpn' ? this.renderVPNProfileSelector() : '';
 
         return `
             <div class="config-card ${statusClass}">
@@ -328,6 +380,7 @@ const ConfigureTab = {
                     <span class="badge badge-${statusClass}">${config.status}</span>
                 </div>
                 <div class="config-body">
+                    ${profileSelect}
                     ${config.found_params?.length ? `
                         <div class="config-params">
                             <small>Found:</small>
@@ -365,10 +418,22 @@ const ConfigureTab = {
 
     async applyConfigs() {
         const checkboxes = document.querySelectorAll('.config-checkbox:checked');
-        const configs = Array.from(checkboxes).map(cb => cb.dataset.type);
+        const configs = Array.from(checkboxes).flatMap(cb => {
+            const type = cb.dataset.type;
+            if (type === 'openvpn') {
+                const profiles = this.getSelectedVPNProfiles();
+                return profiles.map(profile => ({ type, profile }));
+            }
+            return [{ type }];
+        });
 
         if (configs.length === 0) {
             UI.warning('No configurations selected');
+            return;
+        }
+        const missingProfile = configs.some(c => c.type === 'openvpn' && !c.profile);
+        if (missingProfile) {
+            UI.warning('Select at least one VPN profile');
             return;
         }
 
@@ -415,6 +480,142 @@ const ConfigureTab = {
         if (bytes < 1024) return bytes + ' B';
         if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
         return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+    },
+
+    getVPNProfiles() {
+        return this.fileStatus?.vpn_profiles || [];
+    },
+
+    setDefaultVPNProfile() {
+        const profiles = this.getVPNProfiles();
+        if (!profiles.length) {
+            this.selectedVPNProfile = '';
+            this.selectedVPNProfiles = [];
+            return;
+        }
+        const exists = profiles.some(p => p.name === this.selectedVPNProfile);
+        if (!exists) {
+            this.selectedVPNProfile = profiles[0].name;
+        }
+        if (!this.selectedVPNProfiles.length) {
+            this.selectedVPNProfiles = profiles.map(p => p.name);
+        }
+    },
+
+    renderVPNProfilesList() {
+        const profiles = this.getVPNProfiles();
+        if (!profiles.length) {
+            return UI.empty('No VPN profiles uploaded');
+        }
+        return `
+            <div class="config-grid">
+                ${profiles.map(profile => `
+                    <div class="config-card">
+                        <div class="config-header">
+                            <span class="config-icon">${Icons.fileText}</span>
+                            <div class="config-title">
+                                <strong>${UI.escape(profile.name)}</strong>
+                                <small>${UI.escape(profile.file_name)} • ${this.formatSize(profile.size)} • ${UI.escape(profile.modified)}</small>
+                            </div>
+                            <div class="card-actions">
+                                <button class="btn btn-sm" data-action="vpn-view" data-profile="${UI.escape(profile.name)}">${Icons.eye} View</button>
+                                <button class="btn btn-sm btn-danger" data-action="vpn-delete" data-profile="${UI.escape(profile.name)}">${Icons.trash} Delete</button>
+                            </div>
+                        </div>
+                    </div>
+                `).join('')}
+            </div>
+        `;
+    },
+
+    updateVPNProfilesUI() {
+        const card = document.getElementById('vpn-profiles-card');
+        const count = document.getElementById('vpn-profiles-count');
+        const list = document.getElementById('vpn-profiles-list');
+        const profiles = this.getVPNProfiles();
+        if (!card || !count || !list) return;
+
+        if (!profiles.length) {
+            card.style.display = 'none';
+            return;
+        }
+
+        card.style.display = 'block';
+        count.textContent = String(profiles.length);
+        list.innerHTML = this.renderVPNProfilesList();
+    },
+
+    renderVPNProfileSelector() {
+        const profiles = this.getVPNProfiles();
+        if (!profiles.length) {
+            return `
+                <div class="config-params missing">
+                    <small>Profiles:</small>
+                    <code>No profiles uploaded</code>
+                </div>
+            `;
+        }
+        const items = profiles.map(profile => {
+            const checked = this.selectedVPNProfiles.includes(profile.name) ? 'checked' : '';
+            return `
+                <label class="checkbox-label">
+                    <input type="checkbox" class="vpn-profile-checkbox" value="${UI.escape(profile.name)}" ${checked}>
+                    <span>${UI.escape(profile.name)}</span>
+                </label>
+            `;
+        }).join('');
+        return `
+            <div class="config-params">
+                <small>Profiles:</small>
+                <div class="config-profile-list">
+                    ${items}
+                </div>
+            </div>
+        `;
+    },
+
+    getSelectedVPNProfiles() {
+        const checked = document.querySelectorAll('.vpn-profile-checkbox:checked');
+        const values = Array.from(checked).map(input => input.value);
+        this.selectedVPNProfiles = values;
+        if (values.length) {
+            this.selectedVPNProfile = values[0];
+        }
+        return values;
+    },
+
+    profileFromFilename(filename) {
+        const base = filename.replace(/\.[^/.]+$/, '');
+        if (!base || base.length > 64) {
+            return '';
+        }
+        if (!/^[A-Za-z0-9_-]+$/.test(base)) {
+            return '';
+        }
+        return base;
+    },
+
+    async deleteVPNProfile(profile) {
+        const confirmed = await UI.confirm(`Delete VPN profile "${profile}"?`, 'Delete Profile');
+        if (!confirmed) {
+            return;
+        }
+        try {
+            const response = await fetch('/api/configure/delete', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ type: 'vpn', profile })
+            });
+            const data = await response.json();
+            if (!response.ok || data.error) {
+                throw new Error(data.error || 'Delete failed');
+            }
+            UI.success('VPN profile deleted');
+            this.loadFileStatus();
+            this.loadNetworkConfigs();
+        } catch (err) {
+            UI.error('Failed to delete VPN profile: ' + err.message);
+        }
     }
 };
 

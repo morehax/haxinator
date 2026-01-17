@@ -2,5 +2,6 @@ env-secrets
 output/
 build
 openvpn.ovpn
+travel-vpn.ovpn
 .chglog
 .DS_Store
