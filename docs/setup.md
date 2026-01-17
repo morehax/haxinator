@@ -329,9 +329,12 @@ IODINE_INTERVAL=4
 HANS_SERVER=203.0.113.50
 HANS_PASSWORD=YourSecurePassword
 
-# OpenVPN configuration (only needed if .ovpn requires username/password)
-VPN_USER=your_vpn_username
-VPN_PASS=your_vpn_password
+# OpenVPN credentials (only needed if .ovpn contains auth-user-pass)
+# Format: VPN_<PROFILE>_USER and VPN_<PROFILE>_PASS
+# Profile name is uppercased with hyphens/spaces converted to underscores
+# Example: travel-vpn.ovpn → VPN_TRAVEL_VPN_USER / VPN_TRAVEL_VPN_PASS
+VPN_MYVPN_USER=your_vpn_username
+VPN_MYVPN_PASS=your_vpn_password
 ```
 
 **Configuration options:**
@@ -346,8 +349,8 @@ VPN_PASS=your_vpn_password
 | `IODINE_INTERVAL` | Polling interval in seconds |
 | `HANS_SERVER` | Your server's IP address |
 | `HANS_PASSWORD` | Password set in `/etc/default/hans` |
-| `VPN_USER` | OpenVPN username (only if config has `auth-user-pass`) |
-| `VPN_PASS` | OpenVPN password (only if config has `auth-user-pass`) |
+| `VPN_<PROFILE>_USER` | OpenVPN username for profile (only if config has `auth-user-pass`) |
+| `VPN_<PROFILE>_PASS` | OpenVPN password for profile (only if config has `auth-user-pass`) |
 
 ### 3.2 OpenVPN Configuration
 
