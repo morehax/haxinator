@@ -363,12 +363,12 @@ OpenVPN provides full encryption and is ideal when you have access to an open po
 | Type | `.ovpn` contains | `env-secrets` needs |
 |------|------------------|---------------------|
 | **Certificate-based** | `<ca>`, `<cert>`, `<key>` | Nothing (just upload .ovpn) |
-| **Username/Password** | `auth-user-pass` directive | `VPN_USER` and `VPN_PASS` |
+| **Username/Password** | `auth-user-pass` directive | `VPN_<PROFILE>_USER` and `VPN_<PROFILE>_PASS` |
 
 **To configure OpenVPN on Haxinator:**
 
 1. Obtain a `.ovpn` configuration file from your VPN provider or server
-2. If your config contains `auth-user-pass`, add `VPN_USER` and `VPN_PASS` to your `env-secrets` file
+2. If your config contains `auth-user-pass`, add credentials to your `env-secrets` file using the profile name (e.g., `myvpn.ovpn` needs `VPN_MYVPN_USER` and `VPN_MYVPN_PASS`)
 3. Upload the `.ovpn` file (and `env-secrets` if needed) via the **Configure** tab
 4. Apply the configuration and activate from the **Connections** tab
 
