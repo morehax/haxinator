@@ -3,6 +3,7 @@ package handlers
 import (
 	"context"
 	"io"
+	"net"
 	"net/http"
 	"os/exec"
 	"regexp"
@@ -60,7 +61,18 @@ func (h *StatusHandler) GetExternalIP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	client := &http.Client{Timeout: 3 * time.Second}
+	// Use a fresh transport to avoid stale connections after network changes
+	transport := &http.Transport{
+		DisableKeepAlives: true,
+		IdleConnTimeout:   1 * time.Second,
+		DialContext: (&net.Dialer{
+			Timeout: 5 * time.Second,
+		}).DialContext,
+	}
+	client := &http.Client{
+		Timeout:   5 * time.Second,
+		Transport: transport,
+	}
 	resp, err := client.Get("https://ifconfig.me/ip")
 	if err != nil {
 		httputil.JSONError(w, http.StatusBadGateway, "Failed to fetch external IP", err.Error())
