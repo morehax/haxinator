@@ -1,0 +1,15 @@
+[Unit]
+Description=Haxinator USB Gadget Network (RNDIS + ECM)
+DefaultDependencies=no
+After=systemd-modules-load.service sys-kernel-config.mount
+Before=network-pre.target NetworkManager.service systemd-networkd.service
+Wants=sys-kernel-config.mount
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/local/bin/setup-haxinator-usb-gadget.sh
+ExecStop=/usr/local/bin/remove-haxinator-usb-gadget.sh
+
+[Install]
+WantedBy=sysinit.target

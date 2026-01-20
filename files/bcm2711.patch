@@ -7,11 +7,11 @@
 +		dtoverlay=dwc2,dr_mode=peripheral
  	EOD
  }
- 
+
  function pre_umount_final_image__write_raspi_cmdline() {
  	cat <<- EOD > "${MOUNT}"/boot/firmware/cmdline.txt
 -		console=serial0,115200 console=tty1 loglevel=1 root=LABEL=${ROOT_FS_LABEL} rootfstype=${ROOTFS_TYPE} fsck.repair=yes rootwait logo.nologo cgroup_enable=cpuset cgroup_memory=1 cgroup_enable=memory
-+		console=tty1 modules-load=dwc2,g_cdc cfg80211.ieee80211_regdom=GB console=ttyGS0,115200 loglevel=1 root=LABEL=${ROOT_FS_LABEL} rootfstype=${ROOTFS_TYPE} fsck.repair=yes rootwait logo.nologo cgroup_enable=cpuset cgroup_memory=1 cgroup_enable=memory
++		console=tty1 modules-load=dwc2 cfg80211.ieee80211_regdom=GB console=ttyGS0,115200 loglevel=1 root=LABEL=${ROOT_FS_LABEL} rootfstype=${ROOTFS_TYPE} fsck.repair=yes rootwait logo.nologo cgroup_enable=cpuset cgroup_memory=1 cgroup_enable=memory
  	EOD
- 
+
  	if [[ "${SHOW_DEBUG}" == "yes" ]]; then

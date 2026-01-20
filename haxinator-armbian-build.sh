@@ -144,6 +144,11 @@ sed -i 's/managed=false/managed=true/' /etc/NetworkManager/NetworkManager.conf
 
 install -m 755 /tmp/overlay/files/rc.local /etc/rc.local
 
+# --- USB Gadget (Cross-platform: RNDIS for Windows, ECM for Linux/macOS) ------
+install -m 755 /tmp/overlay/files/setup-haxinator-usb-gadget.sh /usr/local/bin/setup-haxinator-usb-gadget.sh
+install -m 755 /tmp/overlay/files/remove-haxinator-usb-gadget.sh /usr/local/bin/remove-haxinator-usb-gadget.sh
+install -m 644 /tmp/overlay/files/haxinator-usb-gadget.service /etc/systemd/system/haxinator-usb-gadget.service
+
 # --- Bluetooth PAN (commented out for now) ------------------------------------
 # install -m 755 /tmp/overlay/files/haxinator-bt-pan.sh /usr/local/sbin/haxinator-bt-pan.sh
 # install -m 644 /tmp/overlay/files/haxinator-bt-agent.service /etc/systemd/system/haxinator-bt-agent.service
@@ -203,6 +208,7 @@ systemctl enable serial-getty@ttyGS0.service
 systemctl enable shellinabox
 systemctl mask wpa_supplicant@wlan0.service
 systemctl enable NetworkManager
+systemctl enable haxinator-usb-gadget.service
 # Bluetooth services (commented out for now)
 # systemctl enable bluetooth
 # systemctl enable haxinator-bt-agent.service
@@ -223,7 +229,8 @@ if [ "\$BOARD" = "bananapim4zero" ] || [ "\$BOARD" = "orangepizero2w" ]; then
     echo "Added WiFi overlay to armbianEnv.txt"
     
     # Modify boot.cmd for console and module loading
-    sed -i 's/console=ttyS0,115200/console=ttyGS0,115200 modules-load=dwc2,g_cdc cfg80211.ieee80211_regdom=GB/' /boot/boot.cmd
+    # Note: We only load dwc2 here; the USB gadget is configured via systemd service using configfs
+    sed -i 's/console=ttyS0,115200/console=ttyGS0,115200 modules-load=dwc2 cfg80211.ieee80211_regdom=GB/' /boot/boot.cmd
     
     # Rebuild boot.scr from modified boot.cmd
     mkimage -C none -A arm -T script -d /boot/boot.cmd /boot/boot.scr
