@@ -39,7 +39,9 @@ This guide covers setting up your Haxinator device and configuring a tunneling s
 4. A new network interface will appear on your computer (usually named "USB Ethernet" or similar)
 5. Your computer will receive an IP address in the `192.168.8.x` range
 6. If using a headless setup, SSH to root@192.168.8.1 with password 1234 and follow the prompts.
-7. After (auto)setup, you can access via ssh hax@192.168.8.1, with password hax. 
+7. After (auto)setup, you can access via ssh hax@192.168.8.1, with password hax.
+
+> **USB Compatibility:** Haxinator uses CDC NCM (Network Control Model) which has native driver support on **Windows 10/11**, **macOS**, and **Linux** - no additional drivers required. 
 
 ### 1.4 Initial Access
 

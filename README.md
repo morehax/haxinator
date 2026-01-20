@@ -6,7 +6,7 @@ A portable network tunneling platform built on Armbian. Plug it into any compute
 
 ## Features
 
-- **Plug-and-Play USB** - Appears as a USB Ethernet adapter, no drivers needed
+- **Plug-and-Play USB** - Appears as a USB Ethernet adapter on Windows 10/11, macOS, and Linux (no drivers needed)
 - **Web-Based Management** - Configure everything from your browser at `192.168.8.1:8080`
 - **DNS Tunneling (Iodine)** - Bypass firewalls using DNS queries on port 53
 - **ICMP Tunneling (HANS)** - Tunnel traffic through ping packets

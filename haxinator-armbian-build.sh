@@ -144,7 +144,7 @@ sed -i 's/managed=false/managed=true/' /etc/NetworkManager/NetworkManager.conf
 
 install -m 755 /tmp/overlay/files/rc.local /etc/rc.local
 
-# --- USB Gadget (Cross-platform: RNDIS for Windows, ECM for Linux/macOS) ------
+# --- USB Gadget (Cross-platform: CDC NCM for Windows/macOS/Linux) -------------
 install -m 755 /tmp/overlay/files/setup-haxinator-usb-gadget.sh /usr/local/bin/setup-haxinator-usb-gadget.sh
 install -m 755 /tmp/overlay/files/remove-haxinator-usb-gadget.sh /usr/local/bin/remove-haxinator-usb-gadget.sh
 install -m 644 /tmp/overlay/files/haxinator-usb-gadget.service /etc/systemd/system/haxinator-usb-gadget.service
