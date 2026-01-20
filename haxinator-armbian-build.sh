@@ -138,16 +138,18 @@ apt-get install -y \\
 # bluez bluez-tools
 # --- dnsmasq & NetworkManager -------------------------------------------------
 
-echo "interface=usb0" >> /etc/dnsmasq.conf
-echo "dhcp-range=192.168.8.2,192.168.8.100,12h" >> /etc/dnsmasq.conf
+# echo "interface=usb0" >> /etc/dnsmasq.conf
+# echo "dhcp-range=192.168.8.2,192.168.8.100,12h" >> /etc/dnsmasq.conf
 sed -i 's/managed=false/managed=true/' /etc/NetworkManager/NetworkManager.conf
-
-install -m 755 /tmp/overlay/files/rc.local /etc/rc.local
 
 # --- USB Gadget (Cross-platform: CDC NCM for Windows/macOS/Linux) -------------
 install -m 755 /tmp/overlay/files/setup-haxinator-usb-gadget.sh /usr/local/bin/setup-haxinator-usb-gadget.sh
 install -m 755 /tmp/overlay/files/remove-haxinator-usb-gadget.sh /usr/local/bin/remove-haxinator-usb-gadget.sh
 install -m 644 /tmp/overlay/files/haxinator-usb-gadget.service /etc/systemd/system/haxinator-usb-gadget.service
+
+# --- USB0 Network Configuration ---------------------------
+install -m 755 /tmp/overlay/files/setup-usb0-network.sh /usr/local/bin/setup-usb0-network.sh
+install -m 644 /tmp/overlay/files/haxinator-usb0-network.service /etc/systemd/system/haxinator-usb0-network.service
 
 # --- Bluetooth PAN (commented out for now) ------------------------------------
 # install -m 755 /tmp/overlay/files/haxinator-bt-pan.sh /usr/local/sbin/haxinator-bt-pan.sh
@@ -209,6 +211,7 @@ systemctl enable shellinabox
 systemctl mask wpa_supplicant@wlan0.service
 systemctl enable NetworkManager
 systemctl enable haxinator-usb-gadget.service
+systemctl enable haxinator-usb0-network.service
 # Bluetooth services (commented out for now)
 # systemctl enable bluetooth
 # systemctl enable haxinator-bt-agent.service

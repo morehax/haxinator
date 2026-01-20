@@ -2,8 +2,7 @@ package handlers
 
 import (
 	"context"
-	"io"
-	"net"
+	"fmt"
 	"net/http"
 	"os/exec"
 	"regexp"
@@ -61,43 +60,65 @@ func (h *StatusHandler) GetExternalIP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Use a fresh transport to avoid stale connections after network changes
-	transport := &http.Transport{
-		DisableKeepAlives: true,
-		IdleConnTimeout:   1 * time.Second,
-		DialContext: (&net.Dialer{
-			Timeout: 5 * time.Second,
-		}).DialContext,
-	}
-	client := &http.Client{
-		Timeout:   5 * time.Second,
-		Transport: transport,
-	}
-	resp, err := client.Get("https://ifconfig.me/ip")
+	ctx, cancel := context.WithTimeout(r.Context(), 10*time.Second)
+	defer cancel()
+
+	curlPath, err := exec.LookPath("curl")
 	if err != nil {
-		httputil.JSONError(w, http.StatusBadGateway, "Failed to fetch external IP", err.Error())
-		return
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		httputil.JSONError(w, http.StatusBadGateway, "Failed to fetch external IP", resp.Status)
+		httputil.JSONError(w, http.StatusBadGateway, "curl not found", err.Error())
 		return
 	}
 
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		httputil.JSONError(w, http.StatusBadGateway, "Failed to read external IP", err.Error())
+	urls := []string{
+		"https://api.ipify.org",
+		"http://api.ipify.org",
+	}
+
+	var lastErr error
+	for _, url := range urls {
+		cmd := exec.CommandContext(
+			ctx,
+			curlPath,
+			"-4",
+			"-sS",
+			"--fail",
+			"--connect-timeout", "4",
+			"--max-time", "6",
+			"-A", "nm-webui/1.0",
+			url,
+		)
+		output, err := cmd.CombinedOutput()
+		if ctx.Err() != nil {
+			httputil.JSONError(w, http.StatusGatewayTimeout, "External IP request timed out", "")
+			return
+		}
+		if err != nil {
+			detail := strings.TrimSpace(string(output))
+			if detail == "" {
+				detail = err.Error()
+			} else {
+				detail = fmt.Sprintf("%s: %s", err.Error(), detail)
+			}
+			lastErr = fmt.Errorf("%s: %s", url, detail)
+			continue
+		}
+
+		ip := strings.TrimSpace(string(output))
+		if ip == "" {
+			lastErr = fmt.Errorf("%s: empty response", url)
+			continue
+		}
+
+		httputil.JSONOK(w, ip)
 		return
 	}
 
-	ip := strings.TrimSpace(string(body))
-	if ip == "" {
-		httputil.JSONError(w, http.StatusBadGateway, "External IP response was empty", "")
+	if lastErr != nil {
+		httputil.JSONError(w, http.StatusBadGateway, "Failed to fetch external IP", lastErr.Error())
 		return
 	}
 
-	httputil.JSONOK(w, ip)
+	httputil.JSONError(w, http.StatusBadGateway, "Failed to fetch external IP", "no providers available")
 }
 
 // GetDNSLookup handles GET /api/status/dns

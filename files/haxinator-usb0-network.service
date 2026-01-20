@@ -1,0 +1,14 @@
+[Unit]
+Description=Configure Haxinator USB0 Network
+BindsTo=sys-subsystem-net-devices-usb0.device
+After=sys-subsystem-net-devices-usb0.device
+After=NetworkManager.service
+Wants=NetworkManager.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/local/bin/setup-usb0-network.sh
+
+[Install]
+WantedBy=multi-user.target
