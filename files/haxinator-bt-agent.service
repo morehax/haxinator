@@ -1,0 +1,15 @@
+[Unit]
+Description=Haxinator Bluetooth pairing agent
+After=bluetooth.service
+Requires=bluetooth.service
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/bt-agent -c NoInputNoOutput
+KillSignal=SIGINT
+TimeoutStopSec=5
+Restart=on-failure
+RestartSec=2
+
+[Install]
+WantedBy=multi-user.target

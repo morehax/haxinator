@@ -18,7 +18,7 @@ func (c *Client) ConnectionsList() ([]types.Connection, error) {
 		if line == "" {
 			continue
 		}
-		parts := strings.Split(line, ":")
+		parts := parseEscapedLine(line)
 		if len(parts) < 5 {
 			continue
 		}
@@ -27,6 +27,11 @@ func (c *Client) ConnectionsList() ([]types.Connection, error) {
 
 		// Skip tun connections - they are managed by parent VPN connections
 		if connType == "tun" {
+			continue
+		}
+
+		// Hide loopback connection from UI
+		if connType == "loopback" || parts[0] == "lo" || parts[3] == "lo" {
 			continue
 		}
 

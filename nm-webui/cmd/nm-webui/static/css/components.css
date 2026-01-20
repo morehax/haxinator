@@ -96,6 +96,10 @@
     font-weight: 500;
 }
 
+.nowrap {
+    white-space: nowrap;
+}
+
 /* Signal Strength */
 .signal {
     display: inline-flex;

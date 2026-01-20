@@ -1,0 +1,15 @@
+[Match]
+Name=br-bt
+
+[Network]
+Address=192.168.44.1/24
+ConfigureWithoutCarrier=yes
+DHCPServer=yes
+IPForward=yes
+IPMasquerade=ipv4
+IPv6AcceptRA=no
+
+[DHCPServer]
+PoolOffset=10
+PoolSize=200
+DNS=8.8.8.8 1.1.1.1

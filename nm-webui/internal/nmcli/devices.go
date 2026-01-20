@@ -32,7 +32,7 @@ func (c *Client) GetStatus() (*types.Status, error) {
 		if line == "" {
 			continue
 		}
-		parts := strings.Split(line, ":")
+		parts := parseEscapedLine(line)
 		if len(parts) < 4 {
 			continue
 		}

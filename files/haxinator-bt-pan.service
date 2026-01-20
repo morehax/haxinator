@@ -1,0 +1,13 @@
+[Unit]
+Description=Haxinator Bluetooth PAN (NAP) service
+After=bluetooth.service NetworkManager.service haxinator-bt-agent.service
+Requires=bluetooth.service NetworkManager.service haxinator-bt-agent.service
+
+[Service]
+Type=simple
+ExecStart=/usr/local/sbin/haxinator-bt-pan.sh
+Restart=on-failure
+RestartSec=2
+
+[Install]
+WantedBy=multi-user.target

@@ -136,7 +136,7 @@ const ConnectionsTab = {
             html += `
                 <div class="list-item" style="background: var(--color-bg-elevated); padding: var(--space-sm) var(--space-lg);">
                     <strong class="text-sm text-secondary" style="display: flex; align-items: center; gap: var(--space-sm);">
-                        ${typeInfo.icon} ${typeInfo.label}
+                        ${typeInfo.icon} <span class="nowrap">${typeInfo.label}</span>
                     </strong>
                 </div>
             `;

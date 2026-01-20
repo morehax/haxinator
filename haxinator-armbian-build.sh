@@ -134,7 +134,8 @@ apt-get install -y \\
     vim htop net-tools wireless-tools locate iodine iptables \\
     cryptsetup openssl ca-certificates git \\
     network-manager-openvpn dnsutils shellinabox \\
-    ssl-cert dnsmasq python3-dbus python3-gi git make g++ golang-go nmap ncat
+    ssl-cert dnsmasq python3-dbus python3-gi git make g++ golang-go nmap ncat \\
+    bluez bluez-tools
 
 # --- dnsmasq & NetworkManager -------------------------------------------------
 
@@ -143,6 +144,19 @@ echo "dhcp-range=192.168.8.2,192.168.8.100,12h" >> /etc/dnsmasq.conf
 sed -i 's/managed=false/managed=true/' /etc/NetworkManager/NetworkManager.conf
 
 install -m 755 /tmp/overlay/files/rc.local /etc/rc.local
+
+# --- Bluetooth PAN ------------------------------------------------------------
+install -m 755 /tmp/overlay/files/haxinator-bt-pan.sh /usr/local/sbin/haxinator-bt-pan.sh
+install -m 644 /tmp/overlay/files/haxinator-bt-agent.service /etc/systemd/system/haxinator-bt-agent.service
+install -m 644 /tmp/overlay/files/haxinator-bt-pan.service /etc/systemd/system/haxinator-bt-pan.service
+install -m 644 /tmp/overlay/files/99-haxinator-bt-pan.conf /etc/sysctl.d/99-haxinator-bt-pan.conf
+install -m 644 /tmp/overlay/files/br-bt.netdev /etc/systemd/network/br-bt.netdev
+install -m 644 /tmp/overlay/files/br-bt.network /etc/systemd/network/br-bt.network
+install -m 644 /tmp/overlay/files/99-unmanaged-br-bt.conf /etc/NetworkManager/conf.d/99-unmanaged-br-bt.conf
+
+sed -i 's/^#*AutoEnable=.*/AutoEnable=true/' /etc/bluetooth/main.conf
+sed -i 's/^#*DiscoverableTimeout=.*/DiscoverableTimeout=0/' /etc/bluetooth/main.conf
+sed -i 's/^#*PairableTimeout=.*/PairableTimeout=0/' /etc/bluetooth/main.conf
 
 # New Web UI
 cp -rf /tmp/overlay/nm-webui /opt/
@@ -179,6 +193,12 @@ systemctl enable serial-getty@ttyGS0.service
 systemctl enable shellinabox
 systemctl mask wpa_supplicant@wlan0.service
 systemctl enable NetworkManager
+systemctl enable bluetooth
+systemctl enable haxinator-bt-agent.service
+systemctl enable haxinator-bt-pan.service
+systemctl enable systemd-networkd
+systemctl disable systemd-networkd-wait-online.service
+systemctl mask systemd-networkd-wait-online.service
 systemctl disable dnsmasq
 
 apt-get clean
