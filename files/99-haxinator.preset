@@ -1,0 +1,2 @@
+disable NetworkManager-wait-online.service
+disable systemd-networkd-wait-online.service

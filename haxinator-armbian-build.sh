@@ -154,6 +154,17 @@ install -m 644 /tmp/overlay/files/br-bt.netdev /etc/systemd/network/br-bt.netdev
 install -m 644 /tmp/overlay/files/br-bt.network /etc/systemd/network/br-bt.network
 install -m 644 /tmp/overlay/files/99-unmanaged-br-bt.conf /etc/NetworkManager/conf.d/99-unmanaged-br-bt.conf
 
+mkdir -p /etc/systemd/system-preset
+install -m 644 /tmp/overlay/files/99-haxinator.preset /etc/systemd/system-preset/99-haxinator.preset
+
+mkdir -p /etc/systemd/system/systemd-networkd-wait-online.service.d
+install -m 644 /tmp/overlay/files/systemd-networkd-wait-online.override.conf \\
+  /etc/systemd/system/systemd-networkd-wait-online.service.d/override.conf
+
+mkdir -p /etc/systemd/system/NetworkManager-wait-online.service.d
+install -m 644 /tmp/overlay/files/NetworkManager-wait-online.override.conf \\
+  /etc/systemd/system/NetworkManager-wait-online.service.d/override.conf
+
 sed -i 's/^#*AutoEnable=.*/AutoEnable=true/' /etc/bluetooth/main.conf
 sed -i 's/^#*DiscoverableTimeout=.*/DiscoverableTimeout=0/' /etc/bluetooth/main.conf
 sed -i 's/^#*PairableTimeout=.*/PairableTimeout=0/' /etc/bluetooth/main.conf
@@ -198,7 +209,7 @@ systemctl enable haxinator-bt-agent.service
 systemctl enable haxinator-bt-pan.service
 systemctl enable systemd-networkd
 systemctl disable systemd-networkd-wait-online.service
-systemctl mask systemd-networkd-wait-online.service
+systemctl disable NetworkManager-wait-online.service
 systemctl disable dnsmasq
 
 apt-get clean
@@ -223,6 +234,9 @@ fi
 
 ## This is for all images
 install -m 644 /tmp/overlay/files/armbian-preset.txt /root/.not_logged_in_yet
+
+# Patch armbian-firstlogin to remove TTY requirement (allows headless first boot)
+sed -i 's/&& -n \$(tty)//' /usr/lib/armbian/armbian-firstlogin
 
 # --- Shellinabox SSL certificate setup --------------------------------------
 echo "Configuring shellinabox"
