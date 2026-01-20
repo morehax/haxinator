@@ -21,7 +21,7 @@ Wants=NetworkManager.service
 
 [Service]
 Type=simple
-ExecStart=/usr/local/bin/nm-webui --listen 192.168.8.1:8080 --no-auth
+ExecStart=/usr/local/bin/nm-webui --listen 0.0.0.0:8080 --no-auth
 Restart=always
 RestartSec=5
 User=root
