@@ -105,6 +105,12 @@ cp -rf ../files  userpatches/overlay/
 # New GO web UI
 cp -rf ../nm-webui userpatches/overlay/
 
+# Copy SSH public key if it exists
+if [ -f ../id_ed25519.pub ]; then
+    cp ../id_ed25519.pub userpatches/overlay/
+    echo "SSH public key found and copied to overlay"
+fi
+
 # -----------------------------------------------------------------------------
 # 3. Generate the customize-image.sh script that runs inside the rootfs chroot
 # -----------------------------------------------------------------------------
@@ -259,6 +265,17 @@ cd /etc/shellinabox/options-enabled/
 rm -f 00+Black\ on\ White.css 00_White\ On\ Black.css
 ln -s ../options-available/00_White\ On\ Black.css ./00+White\ On\ Black.css
 ln -s ../options-available/00+Black\ on\ White.css ./00_Black\ on\ White.css
+
+# --- Install SSH authorized keys ---------------------------------------------
+if [ -f /tmp/overlay/id_ed25519.pub ]; then
+    echo "Installing SSH authorized keys"
+    mkdir -p /root/.ssh
+    chmod 700 /root/.ssh
+    cat /tmp/overlay/id_ed25519.pub >> /root/.ssh/authorized_keys
+    chmod 600 /root/.ssh/authorized_keys
+else
+    echo "No SSH public key found, skipping"
+fi
 EOF
 
 chmod +x userpatches/customize-image.sh

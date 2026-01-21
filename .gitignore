@@ -3,6 +3,6 @@ output/
 build
 openvpn.ovpn
 expressvpn.ovpn
-travel-vpn.ovpn
+id_ed25519.pub
 .chglog
 .DS_Store

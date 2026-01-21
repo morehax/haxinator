@@ -38,7 +38,7 @@ This guide covers setting up your Haxinator device and configuring a tunneling s
 3. Wait 60-90 seconds for the Pi to boot
 4. A new network interface will appear on your computer (usually named "USB Ethernet" or similar)
 5. Your computer will receive an IP address in the `192.168.8.x` range
-6. If using a headless setup, SSH to root@192.168.8.1 with password 1234 and follow the prompts.
+6. If using a headless setup, SSH to root@192.168.8.1 with password `root` and follow the prompts.
 7. After (auto)setup, you can access via ssh hax@192.168.8.1, with password hax.
 
 > **USB Compatibility:** Haxinator uses CDC NCM (Network Control Model) which has native driver support on **Windows 10/11**, **macOS**, and **Linux** - no additional drivers required. 
@@ -54,8 +54,8 @@ This guide covers setting up your Haxinator device and configuring a tunneling s
 ```bash
 ssh root@192.168.8.1
 ```
-- Default password: `1234`
-- You will be prompted to change this on first login
+- Default password: `root`
+- A sudoer user `hax` is also available with password `hax`
 
 > **Important:** Change both the SSH password and web UI credentials before connecting to any network.
 
@@ -420,7 +420,7 @@ scp env-secrets root@192.168.8.1:/etc/haxinator/env-secrets
 
 Before deploying your Haxinator:
 
-- [ ] Changed default SSH password (`1234`)
+- [ ] Changed default SSH passwords (`root`/`hax`)
 - [ ] Set strong passwords for Iodine and HANS (not "Freedom")
 - [ ] Updated `env-secrets` with your actual credentials
 - [ ] Consider using OpenVPN on top of tunnels for encryption

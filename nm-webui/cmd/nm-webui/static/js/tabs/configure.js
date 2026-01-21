@@ -50,6 +50,34 @@ const ConfigureTab = {
 
             <div class="card">
                 <div class="card-header">
+                    <span class="card-title">${Icons.key} Authorized SSH Keys</span>
+                    <div class="card-actions">
+                        <span class="badge" id="authorized-keys-status">No File</span>
+                        <button class="btn btn-sm" id="authorized-keys-view" style="display:none">${Icons.eye} View</button>
+                        <button class="btn btn-sm btn-danger" id="authorized-keys-delete" style="display:none">${Icons.trash} Delete</button>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <p class="form-hint" style="margin-bottom: 1rem;">
+                        Upload a single-line public key to append into <code>/root/.ssh/authorized_keys</code>
+                    </p>
+                    <div class="upload-zone" data-type="authorized-keys" id="authorized-keys-upload">
+                        <div class="upload-content">
+                            <div class="upload-icon">${Icons.key}</div>
+                            <div class="upload-text">Drop your public key here or click to browse</div>
+                            <div class="upload-info">Single line • .pub (Max 16KB)</div>
+                        </div>
+                        <div class="upload-progress" style="display: none;">
+                            <div class="progress-bar"></div>
+                            <div class="upload-status"></div>
+                        </div>
+                        <input type="file" class="file-input" accept=".pub,text/plain" style="display: none;">
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
                     <span class="card-title">${Icons.shield} VPN Configuration</span>
                     <div class="card-actions">
                         <span class="badge" id="vpn-status">No File</span>
@@ -123,6 +151,8 @@ const ConfigureTab = {
         });
 
         document.getElementById('env-view')?.addEventListener('click', () => this.viewFile('env-secrets'));
+        document.getElementById('authorized-keys-view')?.addEventListener('click', () => this.viewFile('authorized-keys'));
+        document.getElementById('authorized-keys-delete')?.addEventListener('click', () => this.deleteConfigFile('authorized-keys'));
         document.getElementById('vpn-view')?.addEventListener('click', () => this.viewFile('vpn', this.selectedVPNProfile));
         document.getElementById('apply-configs')?.addEventListener('click', () => this.applyConfigs());
 
@@ -270,6 +300,21 @@ const ConfigureTab = {
             envView.style.display = 'none';
         }
 
+        const authorizedStatus = document.getElementById('authorized-keys-status');
+        const authorizedView = document.getElementById('authorized-keys-view');
+        const authorizedDelete = document.getElementById('authorized-keys-delete');
+        if (this.fileStatus['authorized-keys']?.exists) {
+            authorizedStatus.textContent = 'File Present';
+            authorizedStatus.className = 'badge badge-success';
+            authorizedView.style.display = 'inline-flex';
+            authorizedDelete.style.display = 'inline-flex';
+        } else {
+            authorizedStatus.textContent = 'No File';
+            authorizedStatus.className = 'badge';
+            authorizedView.style.display = 'none';
+            authorizedDelete.style.display = 'none';
+        }
+
         const vpnStatus = document.getElementById('vpn-status');
         const vpnView = document.getElementById('vpn-view');
         const profiles = this.getVPNProfiles();
@@ -307,11 +352,37 @@ const ConfigureTab = {
                 </div>
             `;
 
-            const title = type === 'vpn' ? `${profile} Profile` : `${type} File Contents`;
+            const titleMap = {
+                'env-secrets': 'Environment Secrets',
+                'authorized-keys': 'Authorized SSH Keys'
+            };
+            const title = type === 'vpn' ? `${profile} Profile` : `${titleMap[type] || type} File Contents`;
             UI.modal(title, content, { width: '600px' });
 
         } catch (err) {
             UI.error('Failed to view file: ' + err.message);
+        }
+    },
+
+    async deleteConfigFile(type) {
+        const confirmed = await UI.confirm('Delete the authorized_keys file?', 'Delete File');
+        if (!confirmed) {
+            return;
+        }
+        try {
+            const response = await fetch('/api/configure/delete', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ type })
+            });
+            const data = await response.json();
+            if (!response.ok || data.error) {
+                throw new Error(data.error || 'Delete failed');
+            }
+            UI.success('authorized_keys deleted');
+            this.loadFileStatus();
+        } catch (err) {
+            UI.error('Failed to delete: ' + err.message);
         }
     },
 

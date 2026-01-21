@@ -43,8 +43,8 @@ Pre-built images for all supported boards are available at [hax.me/#downloads](h
 
 | Service | Username | Password |
 |---------|----------|----------|
-| SSH | `root` | `1234` |
-| SSH | `hax` | `hax` |
+| SSH | `root` | `root` |
+| SSH | `hax` | `hax` (sudoer) |
 | Web UI | `admin` | Auto-generated (check logs) |
 
 To view the web UI password:
@@ -90,7 +90,7 @@ Build a fresh Armbian image for your board:
 
 Build output: `build/output/images/`
 
-> **Note:** Building requires Docker or a Debian-based Linux system. See the [Armbian build documentation](https://docs.armbian.com/Developer-Guide_Build-Preparation/) for requirements.
+> **Note:** Building requires Docker. See the [Armbian build documentation](https://docs.armbian.com/Developer-Guide_Build-Preparation/) for details.
 
 ## Project Structure
 

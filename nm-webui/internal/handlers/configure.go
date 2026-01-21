@@ -125,6 +125,21 @@ func (h *ConfigureHandler) UploadFile(w http.ResponseWriter, r *http.Request) {
 			httputil.JSONError(w, http.StatusBadRequest, "Upload failed", err.Error())
 			return
 		}
+	} else if ft == configure.FileTypeAuthorizedKeys {
+		added, err := h.fileManager.AppendAuthorizedKey(file, header.Size)
+		if err != nil {
+			h.logAction("configure", "upload", fileType+": "+err.Error(), false)
+			httputil.JSONError(w, http.StatusBadRequest, "Upload failed", err.Error())
+			return
+		}
+		if added {
+			h.logAction("configure", "upload", fileType+" appended", true)
+			httputil.JSONMessage(w, "Public key added to authorized_keys")
+		} else {
+			h.logAction("configure", "upload", fileType+" duplicate", true)
+			httputil.JSONMessage(w, "Public key already present")
+		}
+		return
 	} else {
 		if err := h.fileManager.SaveFile(ft, file, header.Size); err != nil {
 			h.logAction("configure", "upload", fileType+": "+err.Error(), false)
